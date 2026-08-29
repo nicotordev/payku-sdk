@@ -1,0 +1,104 @@
+{
+  "name": "@nicotordev/payku",
+  "version": "1.0.0",
+  "packageManager": "bun@1.4.0",
+  "description": "SDK en TypeScript para integrar Payku, la pasarela de pagos LATAM, en aplicaciones web",
+  "homepage": "https://payku.com/about",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicotordev/payku-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nicotordev/payku-sdk/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --config ./src/jest.config.cjs",
+    "test:unit": "jest --config ./src/jest.config.cjs --testPathPatterns=flow.unit.test",
+    "test:integration": "jest --config ./src/jest.config.cjs --testPathIgnorePatterns=flow.unit.test",
+    "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "prepare": "husky",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
+    "prepublishOnly": "bun run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "payku",
+    "pagos",
+    "api",
+    "typescript",
+    "chile",
+    "peru",
+    "latam",
+    "ecommerce",
+    "transacciones",
+    "sdk",
+    "integración",
+    "webpay",
+    "mach",
+    "yape",
+    "plin",
+    "etpay",
+    "floid",
+    "fintoc",
+    "suscripciones",
+    "payouts",
+    "link de pagos",
+    "pasarela de pagos",
+    "fintech",
+    "tarjetas",
+    "billetera digital",
+    "pagos electrónicos"
+  ],
+  "author": "Nicolas Torres <nicotordev@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/crypto-js": "^4.2.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.0.0",
+    "@types/qs": "^6.15.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.8.4",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.28.19",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "axios": "^1.18.0",
+    "axios-mock-adapter": "^2.1.0",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^4.4.0",
+    "qs": "^6.15.2"
+  },
+  "overrides": {
+    "@babel/helpers": "^7.26.10",
+    "diff": "^4.0.4",
+    "flatted": "^3.4.2",
+    "picomatch": "^2.3.2",
+    "yaml": "^2.8.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "lint-staged": {
+    "./src/*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
