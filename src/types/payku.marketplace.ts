@@ -81,15 +81,46 @@ export interface PaykuDeleteMarketplaceClientResponse {
   id: string;
 }
 
-/**
- * Response genérica interim para endpoints marketplace aún no tipados
- * (`maaffiliation`, `transactions`) — no reutilizar el shape de maclient.
- */
+/** Response genérica interim para endpoints marketplace aún no tipados. */
 export type PaykuMarketplaceUntypedResponse = Record<string, unknown>;
 
-export interface PaykuMarketplaceAffiliationRequest {
-  client?: string;
-  [key: string]: unknown;
+/** Par `[clientId, percentage]` en wire `affiliation`. */
+export type PaykuMarketplaceAffiliationPair = [string, string];
+
+/**
+ * `POST /api/maaffiliation` — crear afiliación.
+ */
+export interface PaykuCreateMarketplaceAffiliationRequest {
+  name: string;
+  /** % del comercio (usuario Payku). */
+  percentage: string;
+  affiliation: PaykuMarketplaceAffiliationPair[];
+}
+
+/** @deprecated Preferir `PaykuCreateMarketplaceAffiliationRequest`. */
+export type PaykuMarketplaceAffiliationRequest =
+  PaykuCreateMarketplaceAffiliationRequest;
+
+export interface PaykuMarketplaceAffiliationMember {
+  id: string;
+  name: string;
+  percentage: string;
+}
+
+/** Response create/get maaffiliation (200). */
+export interface PaykuMarketplaceAffiliationResponse {
+  id: string;
+  status: string;
+  name: string;
+  token: string;
+  percentage: string;
+  affiliations: PaykuMarketplaceAffiliationMember[];
+}
+
+/** Respuesta 200 de `DELETE /api/maaffiliation/{id}`. */
+export interface PaykuDeleteMarketplaceAffiliationResponse {
+  status: string;
+  id: string;
 }
 
 export interface PaykuMarketplaceTransactionRequest {
