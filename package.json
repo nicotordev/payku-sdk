@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "@nicotordev/payku",
   "version": "1.1.0",
   "packageManager": "bun@1.4.0",
@@ -11,32 +12,21 @@
   "bugs": {
     "url": "https://github.com/nicotordev/payku-sdk/issues"
   },
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/nicotordev"
+  },
+  "author": "Nicolas Torres <nicotordev@gmail.com>",
+  "maintainers": [
+    "Nicolas Torres <nicotordev@gmail.com>"
+  ],
+  "contributors": [
+    {
+      "name": "Aradhya Gupta",
+      "url": "https://github.com/challenge456"
     }
-  },
-  "scripts": {
-    "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && tsc",
-    "test": "bun run test:unit",
-    "test:unit": "bun test src/__tests__ src/http",
-    "test:integration": "bun test --path-ignore-patterns '' src/__tests__/integration",
-    "docs:api": "typedoc",
-    "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
-    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "prepare": "husky",
-    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
-    "prepublishOnly": "bun run build"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
+  ],
+  "license": "MIT",
   "keywords": [
     "payku",
     "pagos",
@@ -65,16 +55,73 @@
     "billetera digital",
     "pagos electrónicos"
   ],
-  "author": "Nicolas Torres <nicotordev@gmail.com>",
-  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "lib": "src",
+    "test": "src/__tests__",
+    "doc": "docs"
+  },
+  "engines": {
+    "node": ">=18",
+    "bun": ">=1.1.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "bun",
+      "version": ">=1.4.0",
+      "onFail": "error"
+    },
+    "packageManager": {
+      "name": "bun",
+      "version": ">=1.4.0",
+      "onFail": "error"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && tsc",
+    "test": "bun run test:unit",
+    "test:unit": "bun test src/__tests__ src/http",
+    "test:integration": "bun test --path-ignore-patterns '' src/__tests__/integration",
+    "docs:api": "typedoc",
+    "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "prepare": "husky",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "axios": "^1.18.0",
+    "crypto-js": "^4.2.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/bun": "^1.4.0",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^26.0.0",
-    "@types/qs": "^6.15.1",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.61.0",
+    "axios-mock-adapter": "^2.1.0",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
@@ -84,13 +131,6 @@
     "typedoc": "^0.28.19",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "axios": "^1.18.0",
-    "axios-mock-adapter": "^2.1.0",
-    "crypto-js": "^4.2.0",
-    "date-fns": "^4.4.0",
-    "qs": "^6.15.2"
-  },
   "overrides": {
     "@babel/helpers": "^7.26.10",
     "diff": "^4.0.4",
@@ -98,9 +138,13 @@
     "picomatch": "^2.3.2",
     "yaml": "^2.8.3"
   },
-  "files": [
-    "dist"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "stackblitz": {
+    "installDependencies": true,
+    "startCommand": "bun run test:unit"
+  },
   "lint-staged": {
     "./src/*.{js,jsx,ts,tsx}": [
       "eslint --fix",
