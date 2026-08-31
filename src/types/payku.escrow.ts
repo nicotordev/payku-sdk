@@ -1,6 +1,9 @@
+/**
+ * `POST /api/escrow` — autorizar liquidación.
+ * Docs: array `transactions` (IDs `trx…`), no campo singular `transaction`.
+ */
 export interface PaykuEscrowAuthorizeRequest {
-  transaction?: string;
-  [key: string]: unknown;
+  transactions: string[];
 }
 
 export interface PaykuEscrowAuthorizeResponse {

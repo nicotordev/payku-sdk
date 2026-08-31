@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `escrow.authorize`: request usa `transactions: string[]` (eliminado `transaction` singular); ejemplo README Chile.
 - `nullification.get`: se mantiene `signed: true` — sandbox exige Sign (`401 waiting sign` sin header); docs incompletas. Test unitario + nota en README/sdk-spec.
 - `nullification.create` / `get`: responses tipadas (`nullify`, `gateway_response` en create; get solo `{ nullify }`); unions `type` y `status_nullify`.
 - `nullification.create`: body tipado `id`, `amount`, `subject` (eliminado `transaction`, que no existe en docs); ejemplo README Chile.
