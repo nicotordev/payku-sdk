@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `events.create` / `events.get`: responses tipadas (`affiliation` vs `affiliations`, `distribution`); request create alineado a docs.
+- `events.create`: request tipado (`event`, `name`, fechas, `affiliation` tuplas); sin `description` inventado.
 - `mall.get`: se mantiene **sin** Sign — sandbox no exige firma (vs nullification); docs PHP/JS muestran Sign, cURL solo Bearer.
 
 ## [1.1.0] - 2026-08-31
