@@ -6,18 +6,20 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
   PaykuCreateSubscriptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
   PaykuDeleteCardResponse,
+  PaykuDeleteSubscriptionClientResponse,
   PaykuRegisterCardRequest,
   PaykuRegisterCardResponse,
-  PaykuSubscriptionClientRequest,
   PaykuSubscriptionClientResponse,
   PaykuSubscriptionPlansResponse,
   PaykuSubscriptionResponse,
   PaykuSubscriptionsListResponse,
+  PaykuUpdateSubscriptionClientRequest,
 } from "../types/payku.subscriptions";
 
 export default class PaykuSubscriptions {
@@ -67,7 +69,7 @@ export default class PaykuSubscriptions {
     });
   }
 
-  private createClient(params: PaykuSubscriptionClientRequest) {
+  private createClient(params: PaykuCreateSubscriptionClientRequest) {
     return this.wrap("subscriptions.clients.create", () =>
       this.http.request<PaykuSubscriptionClientResponse>({
         method: "POST",
@@ -88,7 +90,10 @@ export default class PaykuSubscriptions {
     );
   }
 
-  private updateClient(id: string, params: PaykuSubscriptionClientRequest) {
+  private updateClient(
+    id: string,
+    params: PaykuUpdateSubscriptionClientRequest,
+  ) {
     return this.wrap("subscriptions.clients.update", () =>
       this.http.request<PaykuSubscriptionClientResponse>({
         method: "PUT",
@@ -101,7 +106,7 @@ export default class PaykuSubscriptions {
 
   private deleteClient(id: string) {
     return this.wrap("subscriptions.clients.delete", () =>
-      this.http.request<PaykuSubscriptionClientResponse>({
+      this.http.request<PaykuDeleteSubscriptionClientResponse>({
         method: "DELETE",
         path: `/suclient/${id}`,
         signed: true,

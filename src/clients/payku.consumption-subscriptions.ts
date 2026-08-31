@@ -6,18 +6,21 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
   PaykuCreateSubscriptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
   PaykuDeleteCardResponse,
-  PaykuSubscriptionClientRequest,
+  PaykuSubscriptionClientResponse,
 } from "../types/payku.subscriptions";
 
 /** Endpoints de suscripción de consumo (Chile) con trailing slash. */
 export default class PaykuConsumptionSubscriptions {
   public clients = {
-    create: (params: PaykuSubscriptionClientRequest) =>
+    create: (
+      params: PaykuCreateSubscriptionClientRequest,
+    ): Promise<PaykuSubscriptionClientResponse> =>
       this.post(
         "/suclient/",
         bodyAsRecord(params),
