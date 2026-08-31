@@ -5,6 +5,7 @@ export {
   PaykuChile,
   PaykuPeru,
   PaykuVenezuela,
+  PaykuChileTransactions,
   PaykuScopedTransactions,
   PaykuVenezuelaTransactions,
   PaykuSharedWallet,

@@ -3,10 +3,12 @@ import type { PaykuEventAffiliationTuple } from "../types/payku.events";
 import type { PaykuMallMerchantTuple } from "../types/payku.mall";
 import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
 import type {
+  PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
 } from "../types/payku.transactions";
 import {
+  PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
@@ -66,6 +68,35 @@ export function bodyAsRecord<T extends object>(
   return value as unknown as Record<string, unknown>;
 }
 
+function requireNonEmptyField(value: unknown, field: string): void {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    throw new PaykuError(`${field} is required`);
+  }
+}
+
+function validateClpPayerRutRequirement(
+  payment: number | undefined,
+  payerRut: string | undefined,
+): void {
+  if (payment === undefined) {
+    return;
+  }
+
+  if (
+    !(PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT as readonly number[]).includes(
+      payment,
+    )
+  ) {
+    return;
+  }
+
+  if (payerRut === undefined || String(payerRut).trim() === "") {
+    throw new PaykuError(
+      "additional_parameters.payer_rut is required for payment methods Etpay (4), Fintoc (19), and Floid (26)",
+    );
+  }
+}
+
 export function validateCreateTransactionRequest(
   params: PaykuCreateTransactionRequest,
 ): void {
@@ -85,6 +116,13 @@ export function validateCreateTransactionRequest(
     }
   }
 
+  if (params.currency === "CLP") {
+    validateClpPayerRutRequirement(
+      params.payment,
+      params.additional_parameters?.payer_rut,
+    );
+  }
+
   const gateway = params.additional_parameters?.gateway;
 
   if (params.currency === "VES" && gateway !== undefined) {
@@ -94,6 +132,26 @@ export function validateCreateTransactionRequest(
       throw new PaykuError(`Unknown VES gateway: ${gateway}`);
     }
   }
+}
+
+/** Validación runtime para `Payku.forCountry("CL").transactions.create`. */
+export function validateChileCreateTransactionRequest(
+  params: PaykuChileCreateTransactionRequest,
+): void {
+  for (const field of [
+    "email",
+    "order",
+    "subject",
+    "urlreturn",
+    "urlnotify",
+  ] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  validateCreateTransactionRequest({
+    ...params,
+    currency: "CLP",
+  });
 }
 
 /** Construye pares `[clientId, percentage]` para `affiliation`. */

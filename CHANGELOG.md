@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).
+- Validación `additional_parameters.payer_rut` obligatorio para CLP + payment Etpay/Fintoc/Floid (4/19/26).
+
 ## [1.2.0] - 2026-08-31
 
 Fase 2 (P0 módulos Chile) completada.
