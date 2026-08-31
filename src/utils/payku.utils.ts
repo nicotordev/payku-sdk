@@ -4,6 +4,7 @@ import type {
 } from "../types/payku.transactions";
 import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
 import type { PaykuCurrency } from "../types/payku.common";
+import type { PaykuMallMerchantTuple } from "../types/payku.mall";
 import {
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
@@ -14,6 +15,23 @@ export function buildPaymentRedirectUrl(
   response: Pick<PaykuCreateTransactionResponse, "url">,
 ): string {
   return response.url;
+}
+
+/** Construye la tupla `merchant[]` esperada por `POST /api/mall`. */
+export function buildMallMerchant(params: {
+  tokenOrAffiliationId: string;
+  amount: string | number;
+  subject: string;
+  eventId?: string | null;
+  individualOrder: string;
+}): PaykuMallMerchantTuple {
+  return [
+    params.tokenOrAffiliationId,
+    params.amount,
+    params.subject,
+    params.eventId ?? null,
+    params.individualOrder,
+  ];
 }
 
 export function toQueryRecord(

@@ -50,8 +50,9 @@ export {
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "./constants/payku.constants";
-export { buildPaymentRedirectUrl } from "./utils/payku.utils";
 export {
+  buildPaymentRedirectUrl,
+  buildMallMerchant,
   buildMarketplaceAffiliation,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
