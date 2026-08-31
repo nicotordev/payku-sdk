@@ -102,8 +102,8 @@ src/
 
 ## 8. Testing
 
-- **Unit** (`bun test`): firma, errores, webhooks con mock, guards de auth.
-- **Integración** (gated): `PAYKU_RUN_INTEGRATION_TESTS=false` en CI; credenciales desde `.env`.
+- **Unit** (`bun run test` / `test:unit`): firma, errores, webhooks con mock, guards de auth. Bare `bun test` también es unit-only gracias a `bunfig.toml`.
+- **Integración** (`bun run test:integration`): smoke sandbox si hay tokens reales en `.env` y `PAYKU_ENVIRONMENT=sandbox`; CI no lo ejecuta.
 
 ## 9. Roadmap por fases
 

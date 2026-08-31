@@ -177,8 +177,8 @@ La salida queda en [`docs/api/`](./docs/api/).
 ## Tests
 
 ```bash
-bun run test:unit
-PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
+bun run test             # unit (default)
+bun run test:integration # smoke sandbox (requiere tokens + PAYKU_ENVIRONMENT=sandbox)
 ```
 
 ## Contribuir
