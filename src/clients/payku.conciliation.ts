@@ -7,7 +7,7 @@ import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
   PaykuConciliationRequest,
-  PaykuConciliationResponse,
+  PaykuListConciliationsResponse,
 } from "../types/payku.conciliation";
 
 export default class PaykuConciliation {
@@ -18,9 +18,11 @@ export default class PaykuConciliation {
     private readonly options?: PaykuClientOptions,
   ) {}
 
-  private createConciliation(params: PaykuConciliationRequest) {
+  private createConciliation(
+    params: PaykuConciliationRequest,
+  ): Promise<PaykuListConciliationsResponse> {
     return this.http
-      .request<PaykuConciliationResponse>({
+      .request<PaykuListConciliationsResponse>({
         method: "POST",
         path: "/conciliation",
         body: bodyAsRecord(params),

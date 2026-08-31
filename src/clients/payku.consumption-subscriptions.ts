@@ -6,8 +6,11 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateConsumptionPlanRequest,
+  PaykuCreateConsumptionPlanResponse,
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
+  PaykuCreateSubscriptionResponse,
   PaykuCreateConsumptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
@@ -15,13 +18,19 @@ import type {
   PaykuSubscriptionClientResponse,
 } from "../types/payku.subscriptions";
 
-/** Endpoints de suscripción de consumo (Chile) con trailing slash. */
+/**
+ * Suscripción de consumo (Chile): paths **con** trailing slash (`/suclient/`, …).
+ *
+ * `HttpClient` firma con `signPath = /api${path}` → p. ej. `/api/suplan/`.
+ * Sandbox valida la firma con el slash final cuando la URL usa `/suplan/`.
+ * La suscripción regular usa paths sin slash (`/suclient`, `/sutransaction`, …).
+ */
 export default class PaykuConsumptionSubscriptions {
   public clients = {
     create: (
       params: PaykuCreateSubscriptionClientRequest,
     ): Promise<PaykuSubscriptionClientResponse> =>
-      this.post(
+      this.post<PaykuSubscriptionClientResponse>(
         "/suclient/",
         bodyAsRecord(params),
         "consumption.clients.create",
@@ -29,13 +38,21 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public plans = {
-    create: (params: Record<string, unknown>) =>
-      this.post("/suplan/", params, "consumption.plans.create"),
+    create: (
+      params: PaykuCreateConsumptionPlanRequest,
+    ): Promise<PaykuCreateConsumptionPlanResponse> =>
+      this.post<PaykuCreateConsumptionPlanResponse>(
+        "/suplan/",
+        bodyAsRecord(params),
+        "consumption.plans.create",
+      ),
   };
 
   public subscriptions = {
-    create: (params: PaykuCreateSubscriptionRequest) =>
-      this.post(
+    create: (
+      params: PaykuCreateSubscriptionRequest,
+    ): Promise<PaykuCreateSubscriptionResponse> =>
+      this.post<PaykuCreateSubscriptionResponse>(
         "/sususcription/",
         bodyAsRecord(params),
         "consumption.subscriptions.create",
@@ -46,7 +63,7 @@ export default class PaykuConsumptionSubscriptions {
     create: (
       params: PaykuCreateConsumptionTransactionRequest,
     ): Promise<PaykuCreateSubscriptionTransactionResponse> =>
-      this.post(
+      this.post<PaykuCreateSubscriptionTransactionResponse>(
         "/sutransaction/",
         bodyAsRecord(params),
         "consumption.transactions.create",
@@ -57,7 +74,7 @@ export default class PaykuConsumptionSubscriptions {
     delete: (
       params: PaykuDeleteCardRequest,
     ): Promise<PaykuDeleteCardResponse> =>
-      this.post(
+      this.post<PaykuDeleteCardResponse>(
         "/suscriptionsdeletecards/",
         bodyAsRecord(params),
         "consumption.cards.delete",

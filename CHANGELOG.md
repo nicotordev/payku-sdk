@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `PaykuCreateConsumptionPlanRequest` / `PaykuCreateConsumptionPlanResponse` para `consumptionSubscriptions.plans.create`.
+- Return types explícitos en `consumptionSubscriptions.clients.create` y `subscriptions.create`.
+- `PaykuConciliationItem`, `PaykuConciliationTransaction`, `PaykuListConciliationsResponse` para `conciliation.create`.
+- Tests unitarios consumption (Sign `/api/suplan/`, fixtures create) y conciliation; smoke integración consumption/conciliation.
+
 ### Changed
 
 - Smoke sandbox dividido en `src/__tests__/integration/*.test.ts` por módulo; `test:integration` corre esa carpeta; `bunfig.toml` la excluye del unit discovery.
