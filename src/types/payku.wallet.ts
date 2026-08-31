@@ -76,6 +76,56 @@ export interface PaykuWalletListResponse extends PaykuSuccessResponse {
   [key: string]: unknown;
 }
 
+/** Estados documentados de payout GET / payoutv3. */
+export type PaykuPayoutStatus =
+  | "pending"
+  | "processing"
+  | "success"
+  | "banking_error"
+  | "fraud_prevention";
+
+/**
+ * Detalle anidado en `GET /api/payout/{id}` y `GET /api/payoutv3/{id}`.
+ * Wire typo: `update_at` (no `updated_at`).
+ */
+export interface PaykuPayoutDetail {
+  id?: string;
+  phone?: string;
+  email?: string;
+  subject?: string;
+  amount?: string | number;
+  accountbank_rut?: string;
+  accountbank_name?: string;
+  accountbank_type?: number | string;
+  accountbank_num?: number | string;
+  accountbank_sbif?: string;
+  status?: PaykuPayoutStatus | string;
+  /** Wire typo Payku: `update_at`. */
+  update_at?: string;
+  origin_wallet?: string;
+}
+
+/** Respuesta 200 de `GET /api/payout/{id}`. */
+export interface PaykuGetPayoutResponse {
+  payout: PaykuPayoutDetail;
+}
+
+/**
+ * Detalle v3: incluye `reason_rejection` cuando el payout fue rechazado.
+ */
+export interface PaykuPayoutDetailV3 extends PaykuPayoutDetail {
+  reason_rejection?: string;
+}
+
+/** Respuesta 200 de `GET /api/payoutv3/{id}`. */
+export interface PaykuGetPayoutV3Response {
+  payout: PaykuPayoutDetailV3;
+}
+
+/**
+ * Forma plana de callback `url_notify` (no es la response de GET).
+ * @deprecated Preferir `PaykuGetPayoutResponse` para GET payout.
+ */
 export interface PaykuPayoutResponse {
   status?: string;
   id?: string;
