@@ -103,7 +103,7 @@ src/
 ## 8. Testing
 
 - **Unit** (`bun run test` / `test:unit`): firma, errores, webhooks con mock, guards de auth. Bare `bun test` también es unit-only gracias a `bunfig.toml`.
-- **Integración** (`bun run test:integration`): smoke sandbox si hay tokens reales en `.env` y `PAYKU_ENVIRONMENT=sandbox`; CI no lo ejecuta.
+- **Integración** (`bun run test:integration`): smoke sandbox por módulo en `src/__tests__/integration/` si hay tokens reales en `.env` y `PAYKU_ENVIRONMENT=sandbox`; CI no lo ejecuta.
 
 ## 9. Roadmap por fases
 

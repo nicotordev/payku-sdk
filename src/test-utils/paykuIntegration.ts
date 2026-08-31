@@ -1,4 +1,6 @@
 import { describe } from "bun:test";
+import Payku from "../clients/payku";
+import type { PaykuChile } from "../clients/payku.chile";
 
 const PLACEHOLDER_VALUES = new Set([
   "",
@@ -23,9 +25,9 @@ export const hasPaykuIntegrationCredentials =
  * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
  *
  * Protecciones fuera de este helper:
- * - `bunfig.toml` excluye el smoke del discovery de `bun test`
- * - `bun run test` / `test:unit` no incluyen el archivo de integración
- * - `bun run test:integration` es el comando explícito para ejecutarlo
+ * - `bunfig.toml` excluye la carpeta `src/__tests__/integration` del discovery de `bun test`
+ * - `bun run test` / `test:unit` no incluyen esa carpeta
+ * - `bun run test:integration` ejecuta `src/__tests__/integration`
  */
 export const shouldRunIntegrationTests =
   paykuIntegrationConfig.environment === "sandbox" &&
@@ -34,3 +36,14 @@ export const shouldRunIntegrationTests =
 export const describePaykuIntegration = shouldRunIntegrationTests
   ? describe
   : describe.skip;
+
+/** Cliente Chile apuntando a sandbox (tokens de env). */
+export function createSandboxChileClient(): PaykuChile {
+  return Payku.forCountry("CL", {
+    publicToken: paykuIntegrationConfig.publicToken,
+    privateToken: paykuIntegrationConfig.privateToken,
+    environment: paykuIntegrationConfig.environment as
+      | "sandbox"
+      | "production",
+  });
+}

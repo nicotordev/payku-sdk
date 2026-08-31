@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Smoke sandbox dividido en `src/__tests__/integration/*.test.ts` por módulo; `test:integration` corre esa carpeta; `bunfig.toml` la excluye del unit discovery.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added

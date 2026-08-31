@@ -1,3 +1,4 @@
 [test]
-# Default `bun test` is unit-only. Live smoke lives behind `bun run test:integration`.
-pathIgnorePatterns = ["**/payku.integration.test.ts"]
+# Default `bun test` / `test:unit` are unit-only. Live smoke lives under
+# `src/__tests__/integration` and is run via `bun run test:integration`.
+pathIgnorePatterns = ["**/__tests__/integration/**"]

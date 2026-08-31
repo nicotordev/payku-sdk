@@ -347,7 +347,7 @@ La salida queda en [`docs/api/`](./docs/api/).
 
 ```bash
 bun run test             # unit (default)
-bun run test:integration # smoke sandbox (requiere tokens + PAYKU_ENVIRONMENT=sandbox)
+bun run test:integration # smoke sandbox por módulo (tokens + PAYKU_ENVIRONMENT=sandbox)
 ```
 
 ## Contribuir
