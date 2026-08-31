@@ -27,9 +27,20 @@ export interface PaykuCreateSubscriptionRequest {
 }
 
 export interface PaykuCreateSubscriptionTransactionRequest {
-  subscription: string;
+  /** Wire format Payku: `suscription` (ortografía de la API). */
+  suscription: string;
   amount?: string;
-  [key: string]: unknown;
+  order?: string;
+  description?: string;
+}
+
+/** Respuesta 200 de `POST /api/sutransaction`. */
+export interface PaykuCreateSubscriptionTransactionResponse {
+  status: string;
+  order?: string;
+  amount?: string;
+  transaction_id?: string;
+  verification_key?: string;
 }
 
 export interface PaykuRegisterCardRequest {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `subscriptions.transactions.create` / consumo: body usa `suscription` (wire Payku) y response tipada (`transaction_id`, `verification_key`, …).
+
 ### Added
 
 - Export público de `isPaykuFailedResponse`, `isPaykuUnauthorizedResponse` y tipos de error JSON (`PaykuFailedResponse`, etc.) para inspeccionar respuestas crudas.
