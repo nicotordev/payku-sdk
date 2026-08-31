@@ -1,5 +1,3 @@
-import type { PaykuRegisterResponse } from "./payku.responses";
-
 /** Tupla wire de un beneficiario Mall: [token|afiliación, amount, subject, eventId|null, individualOrder]. */
 export type PaykuMallMerchantTuple = [
   tokenOrAffiliationId: string,
@@ -21,7 +19,57 @@ export interface PaykuMallTransactionRequest {
   urlnotify?: string;
 }
 
-/** Interim create response; #39 splits create vs get shapes. */
-export interface PaykuMallTransactionResponse extends PaykuRegisterResponse {
-  [key: string]: unknown;
+/** Estados documentados de transacción Mall. */
+export type PaykuMallTransactionStatus =
+  | "pending"
+  | "success"
+  | "rejected"
+  | "refunded partial"
+  | "refunded";
+
+export interface PaykuMallIndividualOrder {
+  merchant: string;
+  amount: number | string;
+  subject: string;
+  event: string | null;
+  identificador: string;
+  individual_order: string;
 }
+
+/** `POST /api/mall` 200. */
+export interface PaykuMallCreateResponse {
+  status: PaykuMallTransactionStatus;
+  id: string;
+  individual_orders: PaykuMallIndividualOrder[];
+  url: string;
+}
+
+export interface PaykuMallGetPayment {
+  media?: string;
+  verification_key?: string;
+  authorization_code?: string;
+  last_4_digits?: string;
+  card_type?: string;
+  currency?: string;
+}
+
+export interface PaykuMallGetMerchant {
+  name: string;
+  amount: number | string;
+  subject: string;
+}
+
+/** `GET /api/mall/{id}` 200. */
+export interface PaykuMallGetResponse {
+  status: PaykuMallTransactionStatus;
+  id: string;
+  created_at: string;
+  amount: string | number;
+  payment: PaykuMallGetPayment;
+  merchant: PaykuMallGetMerchant[];
+}
+
+/** @deprecated Prefer PaykuMallCreateResponse / PaykuMallGetResponse */
+export type PaykuMallTransactionResponse =
+  | PaykuMallCreateResponse
+  | PaykuMallGetResponse;

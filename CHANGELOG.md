@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `mall.create` / `mall.get`: responses tipadas (`PaykuMallCreateResponse` con `individual_orders`; `PaykuMallGetResponse` con `merchant[]` + `payment`); status union documentada.
 - `mall.create`: request tipado (`email`, `payment`, `merchant` tuplas, `order`, `urlreturn`, `urlnotify?`) + helper `buildMallMerchant`.
 - `marketplace` Sign: solo `clients.update` (`PUT /maclient`) envía `Sign`; create/delete maclient van solo con Bearer (docs + sandbox).
 - `marketplace.transactions.create`: requiere `marketplace` (token afiliación); response `{ status, id, url }` vía path `/transaction/`.

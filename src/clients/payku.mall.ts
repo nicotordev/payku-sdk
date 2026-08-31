@@ -6,8 +6,9 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuMallCreateResponse,
+  PaykuMallGetResponse,
   PaykuMallTransactionRequest,
-  PaykuMallTransactionResponse,
 } from "../types/payku.mall";
 
 export default class PaykuMall {
@@ -19,9 +20,11 @@ export default class PaykuMall {
     private readonly options?: PaykuClientOptions,
   ) {}
 
-  private createTransaction(params: PaykuMallTransactionRequest) {
+  private createTransaction(
+    params: PaykuMallTransactionRequest,
+  ): Promise<PaykuMallCreateResponse> {
     return this.http
-      .request<PaykuMallTransactionResponse>({
+      .request<PaykuMallCreateResponse>({
         method: "POST",
         path: "/mall",
         body: bodyAsRecord(params),
@@ -37,9 +40,9 @@ export default class PaykuMall {
       });
   }
 
-  private getTransaction(id: string) {
+  private getTransaction(id: string): Promise<PaykuMallGetResponse> {
     return this.http
-      .request<PaykuMallTransactionResponse>({
+      .request<PaykuMallGetResponse>({
         method: "GET",
         path: `/mall/${id}`,
       })
