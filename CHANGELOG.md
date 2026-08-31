@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `test:unit` usa globs `src/__tests__` + `src/http` (deja de listar archivos uno a uno); la integración sigue excluida vía `bunfig.toml`.
+
 ### Fixed
 
 - `consumptionSubscriptions.transactions.create`: wire `suscription` + opcionales `marketplace`/`card` en `/sutransaction/`; alias `PaykuCreateConsumptionTransactionRequest`.
