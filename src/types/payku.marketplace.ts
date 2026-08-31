@@ -13,12 +13,15 @@ export interface PaykuMarketplaceAffiliationRequest {
 }
 
 export interface PaykuMarketplaceTransactionRequest {
-  email?: string;
-  order?: string;
-  subject?: string;
-  amount?: number;
-  currency?: string;
-  [key: string]: unknown;
+  email: string;
+  order: string;
+  subject: string;
+  amount: number;
+  payment?: number;
+  urlreturn?: string;
+  urlnotify?: string;
+  /** Token de afiliación (`maaffiliation.token`). */
+  marketplace: string;
 }
 
 export interface PaykuMarketplaceClientResponse extends PaykuRegisterResponse {
