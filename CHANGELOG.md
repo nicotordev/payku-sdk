@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `wallet.payouts.get` / `getV3`: response anidada `{ payout: … }` (`PaykuGetPayoutResponse` / `PaykuGetPayoutV3Response` con `reason_rejection`); statuses documentados.
 - `wallet.payouts.create` / `wallet.withdraw.create`: responses tipadas `PaykuCreateWalletPayoutResponse` (`identifier_wallet`, `identifier_payout`) y `PaykuCreateWalletWithdrawResponse` (`identifier_wallet`).
 - `wallet.withdraw.create`: request solo `subject`/`currency`/`order`/`amount`; response `{ status, identifier_wallet }` (ya no reutiliza campos de payout).
 - `subscriptions.clients` (`suclient`): create exige `email`/`name`/`phone`; update parcial; response tipada con typos API (`update_at`, `subcriptions`); delete `{ status, id }`.

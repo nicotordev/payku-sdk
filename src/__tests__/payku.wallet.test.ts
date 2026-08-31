@@ -126,3 +126,88 @@ describe("PaykuWallet payout create", () => {
     expect(response.identifier_payout).toBe("mor33e36b01e8a11b9ee");
   });
 });
+
+describe("PaykuWallet payout get", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let wallet: PaykuWallet;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    wallet = new PaykuWallet(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("get maps nested payout fixture", async () => {
+    const getFixture = {
+      payout: {
+        id: "war3999847529816f2",
+        phone: "111111111",
+        email: "test@test.com",
+        subject: "subject order",
+        amount: "3680",
+        accountbank_rut: "111111111",
+        accountbank_name: "test",
+        accountbank_type: 1,
+        accountbank_num: 123123123,
+        accountbank_sbif: "0001",
+        status: "pending",
+        update_at: "2023-06-09 21:10:46",
+        origin_wallet: "wa1933f37cdaf7d1c6",
+      },
+    };
+
+    mock.onGet("/payout/war3999847529816f2").reply(200, getFixture);
+
+    const response = await wallet.payouts.get("war3999847529816f2");
+
+    expect(response).toEqual(getFixture);
+    expect(response.payout.status).toBe("pending");
+    expect(response.payout.update_at).toBe("2023-06-09 21:10:46");
+  });
+
+  test("getV3 maps nested payout with reason_rejection", async () => {
+    const getV3Fixture = {
+      payout: {
+        id: "war3999847529816f2",
+        phone: "111111111",
+        email: "test@test.com",
+        subject: "subject order",
+        amount: "3680",
+        accountbank_rut: "111111111",
+        accountbank_name: "test",
+        accountbank_type: 1,
+        accountbank_num: 123123123,
+        accountbank_sbif: "0001",
+        status: "banking_error",
+        update_at: "2023-06-09 21:10:46",
+        origin_wallet: "wa1933f37cdaf7d1c6",
+        reason_rejection:
+          " Error CCA 51. Cuenta Beneficiario no Existe, error_creditor_account_not_found",
+      },
+    };
+
+    mock.onGet("/payoutv3/war3999847529816f2").reply(200, getV3Fixture);
+
+    const response = await wallet.payouts.getV3("war3999847529816f2");
+
+    expect(response).toEqual(getV3Fixture);
+    expect(response.payout.reason_rejection).toContain("error_creditor_account");
+  });
+});

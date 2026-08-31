@@ -8,7 +8,8 @@ import { bodyAsRecord, toQueryRecord } from "../utils/payku.utils";
 import type {
   PaykuCreateWalletPayoutResponse,
   PaykuCreateWalletWithdrawResponse,
-  PaykuPayoutResponse,
+  PaykuGetPayoutResponse,
+  PaykuGetPayoutV3Response,
   PaykuWalletBalanceResponse,
   PaykuWalletListParams,
   PaykuWalletListResponse,
@@ -135,9 +136,9 @@ export default class PaykuWallet {
     }
   }
 
-  private async getPayout(id: string): Promise<PaykuPayoutResponse> {
+  private async getPayout(id: string): Promise<PaykuGetPayoutResponse> {
     try {
-      return await this.http.request<PaykuPayoutResponse>({
+      return await this.http.request<PaykuGetPayoutResponse>({
         method: "GET",
         path: `/payout/${id}`,
         signed: true,
@@ -152,9 +153,9 @@ export default class PaykuWallet {
     }
   }
 
-  private async getPayoutV3(id: string): Promise<PaykuPayoutResponse> {
+  private async getPayoutV3(id: string): Promise<PaykuGetPayoutV3Response> {
     try {
-      return await this.http.request<PaykuPayoutResponse>({
+      return await this.http.request<PaykuGetPayoutV3Response>({
         method: "GET",
         path: `/payoutv3/${id}`,
         signed: true,
