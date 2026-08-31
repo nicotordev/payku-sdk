@@ -32,6 +32,10 @@ export interface PaykuCreateSubscriptionTransactionRequest {
   amount?: string;
   order?: string;
   description?: string;
+  /** Opcional en suscripción de consumo (`POST /api/sutransaction/`). */
+  marketplace?: string;
+  /** Opcional: tarjeta activa a cobrar (consumo). */
+  card?: string;
 }
 
 /** Respuesta 200 de `POST /api/sutransaction`. */
