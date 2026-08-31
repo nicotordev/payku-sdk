@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMall from "../clients/payku.mall";
 import { HttpClient } from "../http/client";
 import { PaykuAPIError } from "../errors";
+import { buildMallMerchant } from "../utils/payku.utils";
 
 const createFixture = {
   status: "success" as const,
@@ -49,7 +50,7 @@ const getFixture = {
   ],
 };
 
-describe("PaykuMall responses", () => {
+describe("PaykuMall", () => {
   let mock: InstanceType<typeof MockAdapter>;
   let apiAxios: ReturnType<typeof axios.create>;
   let mall: PaykuMall;
@@ -76,22 +77,64 @@ describe("PaykuMall responses", () => {
     mock.restore();
   });
 
-  test("create maps individual_orders fixture", async () => {
-    mock.onPost("/mall").reply(200, createFixture);
+  test("create posts documented mall body with merchant tuples", async () => {
+    mock.onPost("/mall").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer public-token");
+      expect(config.headers?.Sign).toMatch(/^[a-f0-9]{64}$/);
+
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({
+        email: "joedoe@example.com",
+        payment: 1,
+        merchant: [
+          [
+            "81b6179e4feeef2b50af71d660f830de",
+            "30000",
+            "item1",
+            null,
+            "4545",
+          ],
+          [
+            "bcf6c06c523d9394be41bc0174c43d1476f274abb342955aac93cc8014737b3b",
+            "25000",
+            "item2",
+            null,
+            "4546",
+          ],
+        ],
+        order: 123,
+        urlreturn: "https://youwebsite.com/urlreturn",
+        urlnotify: "https://youwebsite.com/urlnotify",
+      });
+
+      return [200, createFixture];
+    });
 
     const response = await mall.create({
       email: "joedoe@example.com",
       payment: 1,
       merchant: [
-        ["81b6179e4feeef2b50af71d660f830de", "30000", "item1", null, "4545"],
+        buildMallMerchant({
+          tokenOrAffiliationId: "81b6179e4feeef2b50af71d660f830de",
+          amount: "30000",
+          subject: "item1",
+          individualOrder: "4545",
+        }),
+        [
+          "bcf6c06c523d9394be41bc0174c43d1476f274abb342955aac93cc8014737b3b",
+          "25000",
+          "item2",
+          null,
+          "4546",
+        ],
       ],
       order: 123,
       urlreturn: "https://youwebsite.com/urlreturn",
+      urlnotify: "https://youwebsite.com/urlnotify",
     });
 
     expect(response).toEqual(createFixture);
     expect(response.individual_orders[0]?.event).toBeNull();
-    expect(response.url).toContain("/gateway/mall/");
   });
 
   test("get maps merchant and payment fixture", async () => {
@@ -104,8 +147,8 @@ describe("PaykuMall responses", () => {
     expect(response.merchant).toHaveLength(3);
   });
 
-  test("get throws PaykuAPIError on 404 business failure", async () => {
-    mock.onGet("/mall/missing").reply(200, {
+  test("get throws PaykuAPIError on HTTP 404", async () => {
+    mock.onGet("/mall/missing").reply(404, {
       status: "failed",
       type: "Not Found",
       message_error: "id:it is not valid",
