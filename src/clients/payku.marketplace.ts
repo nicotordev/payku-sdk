@@ -11,7 +11,9 @@ import type {
   PaykuMarketplaceAffiliationRequest,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
+  PaykuMarketplaceUntypedResponse,
   PaykuUpdateMarketplaceClientRequest,
+  PaykuUpdateMarketplaceClientResponse,
 } from "../types/payku.marketplace";
 
 export default class PaykuMarketplace {
@@ -68,7 +70,7 @@ export default class PaykuMarketplace {
     params: PaykuUpdateMarketplaceClientRequest,
   ) {
     return this.wrap("marketplace.clients.update", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuUpdateMarketplaceClientResponse>({
         method: "PUT",
         path: `/maclient/${id}`,
         body: bodyAsRecord(params),
@@ -89,7 +91,7 @@ export default class PaykuMarketplace {
 
   private createAffiliation(params: PaykuMarketplaceAffiliationRequest) {
     return this.wrap("marketplace.affiliations.create", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceUntypedResponse>({
         method: "POST",
         path: "/maaffiliation",
         body: bodyAsRecord(params),
@@ -99,7 +101,7 @@ export default class PaykuMarketplace {
 
   private getAffiliation(id: string) {
     return this.wrap("marketplace.affiliations.get", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceUntypedResponse>({
         method: "GET",
         path: `/maaffiliation/${id}`,
       }),
@@ -108,7 +110,7 @@ export default class PaykuMarketplace {
 
   private deleteAffiliation(id: string) {
     return this.wrap("marketplace.affiliations.delete", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceUntypedResponse>({
         method: "DELETE",
         path: `/maaffiliation/${id}`,
       }),
@@ -117,7 +119,7 @@ export default class PaykuMarketplace {
 
   private createTransaction(params: PaykuMarketplaceTransactionRequest) {
     return this.wrap("marketplace.transactions.create", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceUntypedResponse>({
         method: "POST",
         path: "/transaction/",
         body: bodyAsRecord(params),
