@@ -25,10 +25,14 @@ export interface PaykuWalletWithdrawRequest {
 }
 
 /** Respuesta 200 de `POST /api/wallet/withdraw` (retiro a cuenta del comercio). */
-export interface PaykuWalletWithdrawCreateResponse {
+export interface PaykuCreateWalletWithdrawResponse {
   status: string;
   identifier_wallet: string;
 }
+
+/** @deprecated Preferir `PaykuCreateWalletWithdrawResponse`. */
+export type PaykuWalletWithdrawCreateResponse =
+  PaykuCreateWalletWithdrawResponse;
 
 export interface PaykuWalletMovementPayout {
   id?: string;
@@ -136,8 +140,12 @@ export interface PaykuPayoutResponse {
   [key: string]: unknown;
 }
 
-export interface PaykuWalletPayoutCreateResponse {
-  status?: string;
-  id?: string;
-  [key: string]: unknown;
+/** Respuesta 200 de `POST /api/wallet/payout` (pago a terceros). */
+export interface PaykuCreateWalletPayoutResponse {
+  status: string;
+  identifier_wallet: string;
+  identifier_payout: string;
 }
+
+/** @deprecated Preferir `PaykuCreateWalletPayoutResponse`. */
+export type PaykuWalletPayoutCreateResponse = PaykuCreateWalletPayoutResponse;

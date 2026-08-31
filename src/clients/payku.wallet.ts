@@ -6,14 +6,14 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord, toQueryRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateWalletPayoutResponse,
+  PaykuCreateWalletWithdrawResponse,
   PaykuGetPayoutResponse,
   PaykuGetPayoutV3Response,
   PaykuWalletBalanceResponse,
   PaykuWalletListParams,
   PaykuWalletListResponse,
-  PaykuWalletPayoutCreateResponse,
   PaykuWalletPayoutRequest,
-  PaykuWalletWithdrawCreateResponse,
   PaykuWalletWithdrawRequest,
 } from "../types/payku.wallet";
 
@@ -44,9 +44,9 @@ export default class PaykuWallet {
 
   private async createPayout(
     params: PaykuWalletPayoutRequest,
-  ): Promise<PaykuWalletPayoutCreateResponse> {
+  ): Promise<PaykuCreateWalletPayoutResponse> {
     try {
-      return await this.http.request<PaykuWalletPayoutCreateResponse>({
+      return await this.http.request<PaykuCreateWalletPayoutResponse>({
         method: "POST",
         path: "/wallet/payout",
         body: bodyAsRecord(params),
@@ -64,9 +64,9 @@ export default class PaykuWallet {
 
   private async createWithdraw(
     params: PaykuWalletWithdrawRequest,
-  ): Promise<PaykuWalletWithdrawCreateResponse> {
+  ): Promise<PaykuCreateWalletWithdrawResponse> {
     try {
-      return await this.http.request<PaykuWalletWithdrawCreateResponse>({
+      return await this.http.request<PaykuCreateWalletWithdrawResponse>({
         method: "POST",
         path: "/wallet/withdraw",
         body: bodyAsRecord(params),
