@@ -134,7 +134,7 @@ export interface PaykuSubscriptionDetailClient {
   rut?: string;
   phone?: string;
   /** Wire typo Payku con tilde. */
-  "parámetros"?: unknown[];
+  parámetros?: unknown[];
   additional_parameters?: unknown;
 }
 
@@ -234,8 +234,10 @@ export interface PaykuSubscriptionV3PaidItem {
 }
 
 /** Ítem v3: usa `estatus` (typo API) en lugar de `status` y omite `cards`. */
-export interface PaykuSubscriptionV3Item
-  extends Omit<PaykuGetSubscriptionResponse, "status" | "active_cards" | "cards"> {
+export interface PaykuSubscriptionV3Item extends Omit<
+  PaykuGetSubscriptionResponse,
+  "status" | "active_cards" | "cards"
+> {
   estatus: string;
   active_cards?: PaykuSubscriptionDetailCard;
   paid?: PaykuSubscriptionV3PaidItem[];
@@ -370,5 +372,24 @@ export interface PaykuListSubscriptionPlansResponse {
 
 /** @deprecated Prefer get/list específicos. */
 export type PaykuSubscriptionPlansResponse =
-  | PaykuGetSubscriptionPlanResponse
-  | PaykuListSubscriptionPlansResponse;
+  PaykuGetSubscriptionPlanResponse | PaykuListSubscriptionPlansResponse;
+
+/**
+ * `POST /api/suplan/` — crear plan (solo suscripción de consumo).
+ * Suscripción regular expone get/list en `subscriptions.plans`, no create.
+ */
+export interface PaykuCreateConsumptionPlanRequest {
+  name: string;
+  description?: string;
+  /** Wire typo Payku: `url_notify_suscription`. */
+  url_notify_suscription?: string;
+  url_notify_payment?: string;
+  url_success_payment?: string;
+  url_failed_payment?: string;
+}
+
+/** Response 200 de `POST /api/suplan/` (consumo). */
+export interface PaykuCreateConsumptionPlanResponse {
+  status: string;
+  id: string;
+}
