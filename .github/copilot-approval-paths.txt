@@ -1,0 +1,19 @@
+# Copilot PR approval paths (payku-sdk)
+#
+# Paste these globs in GitHub:
+#   Repository → Settings → Copilot → Code review
+#   → Allow Copilot to approve pull requests → On → File paths
+#
+# Copilot approvals count toward merge requirements only when every
+# changed file in the PR matches at least one glob below.
+#
+# Do not include src/** or .github/workflows/** — those need human review.
+
+*.md
+docs/**
+.github/FUNDING.yml
+.github/ISSUE_TEMPLATE/**
+.github/PULL_REQUEST_TEMPLATE.md
+.github/copilot-instructions.md
+.github/copilot-approval-paths.txt
+.github/instructions/**

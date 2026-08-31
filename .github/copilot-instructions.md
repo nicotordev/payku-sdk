@@ -30,3 +30,9 @@ bun run lint
 bun run build
 bun run test:unit
 ```
+
+## Pull request reviews
+
+- **SDK code** (`src/**`, tests, `package.json`, workflows): human review required.
+- **Docs / community** (see [`.github/copilot-approval-paths.txt`](./copilot-approval-paths.txt)): Copilot may approve when enabled under **Settings → Copilot → Code review**.
+- Never approve changes that add secrets, weaken CI, or alter HTTP/sign behavior without tests.
