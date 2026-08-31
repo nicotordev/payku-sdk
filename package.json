@@ -26,7 +26,7 @@
     "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && tsc",
     "test": "bun run test:unit",
     "test:unit": "bun test src/__tests__ src/http",
-    "test:integration": "bun test --path-ignore-patterns '' ./src/__tests__/payku.integration.test.ts",
+    "test:integration": "bun test --path-ignore-patterns '' src/__tests__/integration",
     "docs:api": "typedoc",
     "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",

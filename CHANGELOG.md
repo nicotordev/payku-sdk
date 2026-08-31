@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Smoke sandbox dividido en `src/__tests__/integration/*.test.ts` por módulo; `test:integration` corre esa carpeta; `bunfig.toml` la excluye del unit discovery.
 - `test:unit` usa globs `src/__tests__` + `src/http` (deja de listar archivos uno a uno); la integración sigue excluida vía `bunfig.toml`.
 
 ### Fixed
