@@ -45,8 +45,8 @@ src/
 
 ## Tests
 
-- **Unit:** `bun test` / `bun run test:unit` (CI siempre)
-- **Integración:** `bun run test:integration` (sandbox + tokens reales)
+- **Unit:** `bun run test` / `bun run test:unit` (CI siempre; bare `bun test` también unit-only vía `bunfig.toml`)
+- **Integración:** `bun run test:integration` (sandbox + tokens reales en `.env`)
 
 ## TypeDoc
 

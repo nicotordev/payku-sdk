@@ -21,7 +21,11 @@ export const hasPaykuIntegrationCredentials =
 
 /**
  * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
- * El opt-in es el comando `bun run test:integration` (no una env flag extra).
+ *
+ * Protecciones fuera de este helper:
+ * - `bunfig.toml` excluye el smoke del discovery de `bun test`
+ * - `bun run test` / `test:unit` no incluyen el archivo de integración
+ * - `bun run test:integration` es el comando explícito para ejecutarlo
  */
 export const shouldRunIntegrationTests =
   paykuIntegrationConfig.environment === "sandbox" &&
