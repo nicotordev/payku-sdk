@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `mall.create`: request tipado (`email`, `payment`, `merchant` tuplas, `order`, `urlreturn`, `urlnotify?`) + helper `buildMallMerchant`.
 - `escrow.authorize`: response tipada `{ transactions: PaykuEscrowSettlementItem[] }` con statuses documentados; `deposit_date` puede ser `"N/D"`.
 - `escrow.authorize`: request usa `transactions: string[]` (eliminado `transaction` singular); ejemplo README Chile.
 - `nullification.get`: se mantiene `signed: true` — sandbox exige Sign (`401 waiting sign` sin header); docs incompletas. Test unitario + nota en README/sdk-spec.
