@@ -35,6 +35,47 @@ bun run test:unit
 
 Never commit real Payku tokens. Use placeholders in docs/examples.
 
+## GitHub Codespaces (optional)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/nicotordev/payku-sdk)
+
+The repo includes [`.devcontainer/devcontainer.json`](./.devcontainer/devcontainer.json) (Bun 1.4.0). After the codespace starts:
+
+```bash
+bun run lint && bun run build && bun run test:unit
+```
+
+Integration tests stay off by default (`PAYKU_RUN_INTEGRATION_TESTS=false`). Edit `.env` locally in the codespace only if you add sandbox tokens.
+
+### Prebuilds (maintainers)
+
+Prebuilds are configured in the GitHub UI, not via `gh codespace`:
+
+1. [Settings → Codespaces](https://github.com/nicotordev/payku-sdk/settings/codespaces)
+2. **Set up prebuild**
+3. **Branch:** `main`
+4. **Dev container:** `.devcontainer/devcontainer.json`
+5. **Trigger:** every push to the branch (or manual if you want to save minutes)
+6. **Region:** pick the closest to you (e.g. `East US`); one region is enough for a small SDK
+
+Each prebuild run consumes Codespaces compute on your account. For this repo the gain is mainly skipping `bun install` (~1–2 min). Verify with:
+
+```bash
+gh codespace create -r nicotordev/payku-sdk -b main
+gh codespace view --web
+# In the codespace, check prebuild: true via API after creation
+```
+
+## Wiki
+
+Guías ampliadas en [GitHub Wiki](https://github.com/nicotordev/payku-sdk/wiki). Fuente en [`wiki/`](./wiki/).
+
+**Primera vez (maintainers):** crea [Home](https://github.com/nicotordev/payku-sdk/wiki/_new) en la UI (pega `wiki/Home.md`), luego:
+
+```bash
+./scripts/sync-wiki.sh
+```
+
 ## Branching
 
 1. Fork the repo (or create a branch if you have write access)

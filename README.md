@@ -153,6 +153,7 @@ PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
 
 Pull requests y issues son bienvenidos. Empieza por:
 
+- [Wiki](https://github.com/nicotordev/payku-sdk/wiki) (guías ampliadas)
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)
 - [SUPPORT.md](./SUPPORT.md)
