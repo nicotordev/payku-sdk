@@ -7,48 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- `mall.create` / `mall.get`: responses tipadas (`PaykuMallCreateResponse` con `individual_orders`; `PaykuMallGetResponse` con `merchant[]` + `payment`); status union documentada.
-- `mall.create`: request tipado (`email`, `payment`, `merchant` tuplas, `order`, `urlreturn`, `urlnotify?`) + helper `buildMallMerchant`.
-- `marketplace` Sign: solo `clients.update` (`PUT /maclient`) envía `Sign`; create/delete maclient van solo con Bearer (docs + sandbox).
-- `marketplace.transactions.create`: requiere `marketplace` (token afiliación); response `{ status, id, url }` vía path `/transaction/`.
-- `marketplace.affiliations` (`maaffiliation`): request `name`/`percentage`/`affiliation[][]`; response tipada + delete `{ status, id }`; helpers `buildMarketplaceAffiliation` / `validateMarketplaceAffiliationPercentages`.
-- `marketplace.clients` (`maclient`): create con `bank` tipado; update parcial; response sin `url` falso (`update_at` typo API); delete `{ status, id }`.
-- `escrow.authorize`: response tipada `{ transactions: PaykuEscrowSettlementItem[] }` con statuses documentados; `deposit_date` puede ser `"N/D"`.
-- `escrow.authorize`: request usa `transactions: string[]` (eliminado `transaction` singular); ejemplo README Chile.
-- `nullification.get`: se mantiene `signed: true` — sandbox exige Sign (`401 waiting sign` sin header); docs incompletas. Test unitario + nota en README/sdk-spec.
-- `nullification.create` / `get`: responses tipadas (`nullify`, `gateway_response` en create; get solo `{ nullify }`); unions `type` y `status_nullify`.
-- `nullification.create`: body tipado `id`, `amount`, `subject` (eliminado `transaction`, que no existe en docs); ejemplo README Chile.
-- `wallet.balance` / `movements.list` / `movements.get`: `PaykuWalletFilter` tipado; list response alineada a balance (`current_id`, `amount_available`, `currency`, `filter`); JSDoc de typos API (`update_at`, “moviminto”).
-- `wallet.payouts.get` / `getV3`: response anidada `{ payout: … }` (`PaykuGetPayoutResponse` / `PaykuGetPayoutV3Response` con `reason_rejection`); statuses documentados.
-- `wallet.payouts.create` / `wallet.withdraw.create`: responses tipadas `PaykuCreateWalletPayoutResponse` (`identifier_wallet`, `identifier_payout`) y `PaykuCreateWalletWithdrawResponse` (`identifier_wallet`).
-- `wallet.withdraw.create`: request solo `subject`/`currency`/`order`/`amount`; response `{ status, identifier_wallet }` (ya no reutiliza campos de payout).
-- `subscriptions.clients` (`suclient`): create exige `email`/`name`/`phone`; update parcial; response tipada con typos API (`update_at`, `subcriptions`); delete `{ status, id }`.
-- `subscriptions.cards.register`: body usa `suscription` (no `client`); response tipada (`status`, `id`, `url`).
-- `subscriptions.cards.delete` / consumo: body usa `card` (wire Payku; ejemplos docs); response tipada (`status`, `card`).
-- `subscriptions.transactions.create` / consumo: body usa `suscription` (wire Payku) y response tipada (`transaction_id`, `verification_key`, …).
-
-### Added
-
-- Export público de `isPaykuFailedResponse`, `isPaykuUnauthorizedResponse` y tipos de error JSON (`PaykuFailedResponse`, etc.) para inspeccionar respuestas crudas.
-- Sección README **Errores y respuestas** (HTTP 200 + `status: "failed"`, try/catch con `PaykuAPIError`).
-- Sección README **Autenticación y firma** (Bearer, `buildSign`, matriz Sign, links Postman).
-
-### Changed
-
-- Tests de integración ya no usan `PAYKU_RUN_INTEGRATION_TESTS`; el opt-in es `bun run test:integration` con tokens + `PAYKU_ENVIRONMENT=sandbox`.
-- `bun run test` ejecuta solo la suite unitaria (`test:unit`).
-
-## [1.1.0] - 2026-08-30
+## [1.1.0] - 2026-08-31
 
 ### Added
 
 - `Payku.forCountry("CL" | "PE" | "VE")` y `Payku.fromEnvForCountry()` con clientes tipados (`PaykuChile`, `PaykuPeru`, `PaykuVenezuela`).
 - Currency implícita por país y `PaykuUnsupportedFeatureError` para módulos no soportados.
 - Transacciones scoped (`PaykuScopedTransactions`) y wallet parcial para PE/VE (`PaykuSharedWallet`).
+- Export público de `isPaykuFailedResponse`, `isPaykuUnauthorizedResponse` y tipos de error JSON (`PaykuFailedResponse`, etc.).
+- Helpers `buildMallMerchant`, `buildMarketplaceAffiliation`, `validateMarketplaceAffiliationPercentages`.
+- Sección README **Errores y respuestas** y **Autenticación y firma** (Bearer, `buildSign`, matriz Sign).
 
-## [1.0.0] - 2026-08-30
+### Fixed
+
+- `mall.create` / `mall.get`: request (`email`, `payment`, `merchant` tuplas, urls) y responses tipadas (`PaykuMallCreateResponse` / `PaykuMallGetResponse`).
+- `marketplace`: maclient/maaffiliation/transactions tipados; Sign solo en `PUT /maclient`.
+- `escrow.authorize`: `transactions: string[]` y response de settlement tipada.
+- `nullification`: body/responses tipados; Sign en create y get (sandbox).
+- `wallet`: withdraw/payout/balance/movements alineados a docs Chile.
+- `subscriptions`: wire `suscription`/`card`; `suclient` tipado.
+
+### Changed
+
+- Tests de integración: opt-in `bun run test:integration` (tokens + `PAYKU_ENVIRONMENT=sandbox`).
+- `bun run test` ejecuta solo `test:unit`.
+
+## [1.0.0] - 2026-08-29
 
 ### Added
 
@@ -59,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tipos TypeScript por dominio bajo `src/types/payku.*`.
 - Jerarquía de errores tipados (`PaykuError`, `PaykuAPIError`, errores por operación).
 - Tests unitarios (firma, webhooks, transacciones con axios-mock-adapter).
-- Tests de integración gated (`PAYKU_RUN_INTEGRATION_TESTS`).
+- Tests de integración gated.
 - Documentación: `docs/sdk-spec.md`, `README.md`, `SECURITY.md`.
 - CI GitHub Actions (`verify-build.yml`).
 
@@ -68,4 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Estructura del SDK migrada de `src/resources/` a `src/clients/`.
 - Entry point unificado en `src/index.ts`.
 
+[Unreleased]: https://github.com/nicotordev/payku-sdk/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nicotordev/payku-sdk/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nicotordev/payku-sdk/releases/tag/v1.0.0
