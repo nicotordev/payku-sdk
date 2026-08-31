@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-08-30
+
+### Added
+
+- Facade `Payku` con clientes por recurso (`transactions`, `wallet`, `banks`, `paymentMethods`, `webhooks`, `subscriptions`, `marketplace`, `mall`, `events`, `escrow`, `nullification`, `conciliation`, `consumptionSubscriptions`).
+- Firma HMAC centralizada (`buildSign`) para endpoints sensibles.
+- Verificación de webhooks `urlnotify` con re-consulta a la API.
+- Soporte Venezuela On-Site (`transactions.confirmOnSite`).
+- Tipos TypeScript por dominio bajo `src/types/payku.*`.
+- Jerarquía de errores tipados (`PaykuError`, `PaykuAPIError`, errores por operación).
+- Tests unitarios (firma, webhooks, transacciones con axios-mock-adapter).
+- Tests de integración gated (`PAYKU_RUN_INTEGRATION_TESTS`).
+- Documentación: `docs/sdk-spec.md`, `README.md`, `SECURITY.md`.
+- CI GitHub Actions (`verify-build.yml`).
+
+### Changed
+
+- Estructura del SDK migrada de `src/resources/` a `src/clients/`.
+- Entry point unificado en `src/index.ts`.
+
+[1.0.0]: https://github.com/nicotordev/payku-sdk/releases/tag/v1.0.0

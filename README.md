@@ -1,38 +1,6 @@
 # Payku — Cliente API para TypeScript
 
-<p align="center">
-  <img src="./public/logo.png" alt="Payku" width="120" />
-</p>
-
-<p align="center">
-  SDK en TypeScript para integrar <a href="https://payku.com/about">Payku</a>, la pasarela de pagos LATAM, en aplicaciones web.
-</p>
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/@nicotordev/payku"><img src="https://img.shields.io/npm/v/@nicotordev/payku.svg" alt="NPM Version" /></a>
-  <a href="https://www.npmjs.com/package/@nicotordev/payku"><img src="https://img.shields.io/npm/dm/@nicotordev/payku.svg" alt="NPM Downloads" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@nicotordev/payku.svg" alt="License" /></a>
-  <a href="https://github.com/nicotordev/payku-sdk/actions"><img src="https://github.com/nicotordev/payku-sdk/actions/workflows/verify-build.yml/badge.svg" alt="Build" /></a>
-  <img src="https://img.shields.io/badge/runtime-Bun-fbf0df?logo=bun&logoColor=000" alt="Bun" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-</p>
-
-## Descripción
-
-Este paquete proporciona un cliente API tipado para integrar Payku de forma sencilla y segura.
-
-[Payku](https://payku.com/about) es una pasarela de pagos LATAM (desde 2017) orientada a comercios y emprendedores. Facilita cobros con tarjetas, billeteras digitales, links de pago, suscripciones y payouts en Chile, Perú y el resto de la región.
-
-Con este SDK podrás trabajar con:
-
-- **Transacciones / pagos**
-- **Links de pago**
-- **Suscripciones y cobros recurrentes**
-- **Payouts**
-- **Webhooks / confirmaciones de pago**
-- **Consulta de estado de órdenes**
-
-> Métodos de pago soportados por Payku (referencia): Webpay, Mach, tarjetas, Yape, Plin, Etpay, Floid, Fintoc, entre otros.
+SDK en TypeScript para integrar [Payku](https://payku.com/about), la pasarela de pagos LATAM.
 
 ## Instalación
 
@@ -40,91 +8,101 @@ Con este SDK podrás trabajar con:
 bun add @nicotordev/payku
 ```
 
-```bash
-npm install @nicotordev/payku
-```
-
-```bash
-yarn add @nicotordev/payku
-```
-
-## Uso
-
-### Importar y configurar el cliente
+## Configuración
 
 ```typescript
-// TODO: API pública pendiente de implementar
 import Payku from "@nicotordev/payku";
 
 const payku = new Payku(
-  "tu_public_token",
-  "tu_private_token",
-  "sandbox", // o 'production'
+  process.env.PAYKU_PUBLIC_TOKEN!,
+  process.env.PAYKU_PRIVATE_TOKEN!,
+  "production",
 );
+
+// o desde variables de entorno (Bun carga .env automáticamente)
+const paykuFromEnv = Payku.fromEnv();
 ```
 
-### Verificar callbacks de Payku
+## Transacciones
 
 ```typescript
-// TODO: ejemplo de verificación de webhook / confirmación de pago
+const order = await payku.transactions.create({
+  email: "cliente@example.com",
+  order: "orden-001",
+  subject: "Compra test",
+  amount: 1000,
+  currency: "CLP",
+  payment: 1,
+  urlreturn: "https://tu-sitio.com/return",
+  urlnotify: "https://tu-sitio.com/notify",
+});
+
+// Redirigir al pagador
+console.log(order.url);
 ```
 
-## Ejemplos
-
-> Sección placeholder — se completará a medida que avance el SDK.
-
-### Crear una orden de pago
+## Catálogo
 
 ```typescript
-// TODO
-// const order = await payku.payments.create({ ... });
-// console.log('URL de pago:', order.url);
+const methods = await payku.paymentMethods.list({ currency: "clp" });
+const banks = await payku.banks.list({ currency: "clp" });
 ```
 
-### Consultar el estado de un pago
+## Webhooks
 
 ```typescript
-// TODO
-// const status = await payku.payments.status.byToken('token_de_transaccion');
+const result = await payku.webhooks.verifyNotify(payload, {
+  expectedOrder: "orden-001",
+  expectedAmount: 1000,
+});
+
+if (result.valid) {
+  // Pago verificado contra la API de Payku
+}
 ```
 
-### Crear un link de pago
+## Wallet (Chile)
 
 ```typescript
-// TODO
-// const link = await payku.paymentLinks.create({ ... });
+const balance = await payku.wallet.balance.get();
+const movements = await payku.wallet.movements.list({ page: 1, per_page: 20 });
 ```
 
-### Crear una suscripción
+## Suscripciones (Chile)
 
 ```typescript
-// TODO
-// const subscription = await payku.subscriptions.create({ ... });
+const client = await payku.subscriptions.clients.create({
+  email: "cliente@example.com",
+  name: "Cliente Test",
+});
+
+const subscription = await payku.subscriptions.subscriptions.create({
+  plan: "pl...",
+  client: client.id as string,
+});
 ```
 
-### Solicitar un payout
+## Especificación del SDK
 
-```typescript
-// TODO
-// const payout = await payku.payouts.create({ ... });
-```
+Ver [`docs/sdk-spec.md`](./docs/sdk-spec.md) para arquitectura, convenciones y roadmap.
 
-## Desarrollo
+## Referencia API
+
+Generar documentación TypeDoc:
 
 ```bash
-bun install
-bun run build
-bun test
+bun run docs:api
 ```
 
-## Documentación
+La salida queda en [`docs/api/`](./docs/api/).
 
-- [Payku — sitio oficial](https://payku.com)
-- [Acerca de Payku](https://payku.com/about)
-- [Centro de ayuda Payku](https://ayuda.payku.com)
-- Ambiente de pruebas: [des.payku.cl](https://des.payku.cl)
-- Ambiente de producción: [app.payku.cl](https://app.payku.cl)
+## Tests
+
+```bash
+bun run test:unit
+PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
+```
 
 ## Licencia
 
-MIT © [Nicolas Torres](https://github.com/nicotordev)
+MIT
