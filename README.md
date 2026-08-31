@@ -126,6 +126,7 @@ const subscription = await payku.subscriptions.subscriptions.create({
   plan: "pl...",
   client: client.id as string,
 });
+```
 
 ## Eventos (Chile)
 
@@ -154,8 +155,6 @@ const detail = await payku.events.get(created.id);
 ```
 
 > **Nota:** La respuesta de `events.create()` usa `affiliation`, mientras que el detalle obtenido con `events.get()` usa `affiliations`.
-
-```
 
 ## Especificación del SDK
 
