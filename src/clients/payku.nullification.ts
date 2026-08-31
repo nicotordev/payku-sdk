@@ -42,6 +42,8 @@ export default class PaykuNullification {
       .request<PaykuNullificationResponse>({
         method: "GET",
         path: `/nullification/${id}`,
+        // Docs omit Sign on GET examples, but sandbox returns 401
+        // `error:waiting sign` without it — keep signed.
         signed: true,
       })
       .catch((error) => {
