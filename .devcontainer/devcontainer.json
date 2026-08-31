@@ -1,0 +1,21 @@
+{
+  "name": "Payku SDK (Bun)",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/oven-sh/devcontainer-feature/bun:1": {
+      "version": "1.4.0"
+    }
+  },
+  "postCreateCommand": "bun install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "oven.bun-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "remoteUser": "node"
+}

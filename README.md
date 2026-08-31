@@ -1,6 +1,12 @@
 # Payku — Cliente API para TypeScript
 
-SDK en TypeScript para integrar [Payku](https://payku.com/about), la pasarela de pagos LATAM.
+[![npm](https://img.shields.io/npm/v/@nicotordev/payku.svg)](https://www.npmjs.com/package/@nicotordev/payku)
+[![CI](https://github.com/nicotordev/payku-sdk/actions/workflows/verify-build.yml/badge.svg)](https://github.com/nicotordev/payku-sdk/actions/workflows/verify-build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Bun](https://img.shields.io/badge/runtime-Bun-fbf0df?logo=bun&logoColor=000)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+SDK en TypeScript de código abierto para integrar [Payku](https://payku.com/about), la pasarela de pagos LATAM (Chile, Perú y Venezuela).
 
 ## Instalación
 
@@ -143,6 +149,15 @@ bun run test:unit
 PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
 ```
 
+## Contribuir
+
+Pull requests y issues son bienvenidos. Empieza por:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [SUPPORT.md](./SUPPORT.md)
+- [Discussions](https://github.com/nicotordev/payku-sdk/discussions)
+
 ## Licencia
 
-MIT
+MIT © [Nicolas Torres](https://github.com/nicotordev)

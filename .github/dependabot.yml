@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+    groups:
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint*"
+          - "@eslint/*"
+      types:
+        patterns:
+          - "@types/*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"

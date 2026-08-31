@@ -1,0 +1,13 @@
+---
+description: Conventions for contributing to @nicotordev/payku
+alwaysApply: true
+---
+
+# Payku SDK
+
+- Default to Bun for install, test, build, and scripts.
+- Do not use dotenv; Bun loads `.env` automatically.
+- Keep secrets out of commits, logs, and examples.
+- Follow `docs/sdk-spec.md` for public API naming and module layout.
+- Prefer `Payku.forCountry()` when changing country-scoped DX.
+- Run `bun run lint && bun run build && bun run test:unit` after substantive edits.
