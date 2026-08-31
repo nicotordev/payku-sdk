@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `consumptionSubscriptions.transactions.create`: wire `suscription` + opcionales `marketplace`/`card` en `/sutransaction/`; alias `PaykuCreateConsumptionTransactionRequest`.
+- `consumptionSubscriptions.cards.delete`: body `{ card }` en `/suscriptionsdeletecards/`.
 - `subscriptions` (`sususcription`): create/get/list/listV3/delete tipados; query params en list/v3; v3 usa `estatus`.
 - `subscriptions.plans`: get (`plans` objeto) vs list (`plans` array) con `url_notify_*`.
 - `events.create` / `events.get`: responses tipadas (`affiliation` vs `affiliations`, `distribution`); request create alineado a docs.

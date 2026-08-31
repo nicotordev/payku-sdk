@@ -8,7 +8,7 @@ import { bodyAsRecord } from "../utils/payku.utils";
 import type {
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
-  PaykuCreateSubscriptionTransactionRequest,
+  PaykuCreateConsumptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
   PaykuDeleteCardResponse,
@@ -44,7 +44,7 @@ export default class PaykuConsumptionSubscriptions {
 
   public transactions = {
     create: (
-      params: PaykuCreateSubscriptionTransactionRequest,
+      params: PaykuCreateConsumptionTransactionRequest,
     ): Promise<PaykuCreateSubscriptionTransactionResponse> =>
       this.post(
         "/sutransaction/",
