@@ -18,18 +18,16 @@ export interface PaykuWalletPayoutRequest {
 }
 
 export interface PaykuWalletWithdrawRequest {
-  email: string;
   subject: string;
   currency: PaykuCurrency | string;
   order: string;
   amount: number;
-  accountbank_name: string;
-  accountbank_rut: string;
-  accountbank_sbif: string;
-  accountbank_type: string;
-  accountbank_num: string;
-  url_notify?: string;
-  additional_parameters?: Record<string, unknown>;
+}
+
+/** Respuesta 200 de `POST /api/wallet/withdraw` (retiro a cuenta del comercio). */
+export interface PaykuWalletWithdrawCreateResponse {
+  status: string;
+  identifier_wallet: string;
 }
 
 export interface PaykuWalletMovementPayout {
