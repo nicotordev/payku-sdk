@@ -2,6 +2,7 @@ import type {
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
 } from "../types/payku.transactions";
+import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
 import type { PaykuCurrency } from "../types/payku.common";
 import {
   PAYKU_PAYMENT_METHODS,
@@ -66,5 +67,39 @@ export function validateCreateTransactionRequest(
     if (!validGateways.includes(gateway as (typeof validGateways)[number])) {
       throw new PaykuError(`Unknown VES gateway: ${gateway}`);
     }
+  }
+}
+
+/** Construye pares `[clientId, percentage]` para `affiliation`. */
+export function buildMarketplaceAffiliation(
+  members: Array<{ clientId: string; percentage: string | number }>,
+): PaykuMarketplaceAffiliationPair[] {
+  return members.map((member) => [
+    member.clientId,
+    String(member.percentage),
+  ]);
+}
+
+/**
+ * Valida que % comercio + % clientes ≈ 100 (tolerancia 0.01).
+ * Docs: percentage es del comercio; affiliation[] son clientes.
+ */
+export function validateMarketplaceAffiliationPercentages(
+  merchantPercentage: string | number,
+  affiliation: PaykuMarketplaceAffiliationPair[],
+): void {
+  const merchant = Number(merchantPercentage);
+  const clients = affiliation.reduce(
+    (sum, [, pct]) => sum + Number(pct),
+    0,
+  );
+  const total = merchant + clients;
+
+  // Tolerancia documentada 0.01 + epsilon FP (p. ej. 20 + 79.99).
+  const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
+  if (Number.isNaN(total) || Math.abs(total - 100) > tolerance) {
+    throw new PaykuError(
+      `marketplace affiliation percentages must sum to 100 (got ${total})`,
+    );
   }
 }
