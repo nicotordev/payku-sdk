@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Tests de integración ya no usan `PAYKU_RUN_INTEGRATION_TESTS`; el opt-in es `bun run test:integration` con tokens + `PAYKU_ENVIRONMENT=sandbox`.
-- `bun run test` / `npm test` ejecutan solo la suite unitaria (`test:unit`).
+- `bun run test` ejecuta solo la suite unitaria (`test:unit`).
 
 ## [1.1.0] - 2026-08-30
 
