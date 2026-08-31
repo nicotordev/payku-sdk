@@ -50,6 +50,10 @@ export interface PaykuSuccessResponse {
 export type PaykuApiErrorResponse =
   PaykuFailedResponse | PaykuUnauthorizedResponse;
 
+/**
+ * Type guard para respuestas de negocio Payku con `{ status: "failed", … }`.
+ * Útil al inspeccionar JSON crudo (webhooks, proxies) sin pasar por `HttpClient`.
+ */
 export function isPaykuFailedResponse(
   data: unknown,
 ): data is PaykuFailedResponse {
@@ -60,6 +64,9 @@ export function isPaykuFailedResponse(
   );
 }
 
+/**
+ * Type guard para respuestas `{ type: "Unauthorized", message_error }`.
+ */
 export function isPaykuUnauthorizedResponse(
   data: unknown,
 ): data is PaykuUnauthorizedResponse {

@@ -111,6 +111,29 @@ if (result.valid) {
 }
 ```
 
+## Errores de negocio (`status: "failed"`)
+
+`HttpClient` ya lanza `PaykuError` cuando la API responde con `{ status: "failed" }` (incluso en HTTP 200). Si inspeccionas JSON crudo (webhook, proxy, log), usa los type guards públicos:
+
+```typescript
+import {
+  extractPaykuErrorMessage,
+  isPaykuFailedResponse,
+  isPaykuUnauthorizedResponse,
+} from "@nicotordev/payku";
+
+function handleRawPaykuJson(data: unknown) {
+  if (isPaykuFailedResponse(data)) {
+    console.error(extractPaykuErrorMessage(data), data.type);
+    return;
+  }
+
+  if (isPaykuUnauthorizedResponse(data)) {
+    console.error(extractPaykuErrorMessage(data));
+  }
+}
+```
+
 ## Wallet (Chile)
 
 ```typescript
