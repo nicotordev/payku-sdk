@@ -25,7 +25,7 @@
   "scripts": {
     "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && tsc",
     "test": "bun run test:unit",
-    "test:unit": "bun test src/__tests__/payku.unit.test.ts src/__tests__/payku.webhooks.test.ts src/__tests__/payku.transactions.test.ts src/__tests__/payku.subscriptions.test.ts src/__tests__/payku.wallet.test.ts src/__tests__/payku.nullification.test.ts src/http/sign.test.ts src/http/client.test.ts",
+    "test:unit": "bun test src/__tests__/payku.unit.test.ts src/__tests__/payku.webhooks.test.ts src/__tests__/payku.transactions.test.ts src/__tests__/payku.subscriptions.test.ts src/__tests__/payku.wallet.test.ts src/__tests__/payku.nullification.test.ts src/__tests__/payku.escrow.test.ts src/http/sign.test.ts src/http/client.test.ts",
     "test:integration": "bun test --path-ignore-patterns '' ./src/__tests__/payku.integration.test.ts",
     "docs:api": "typedoc",
     "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
