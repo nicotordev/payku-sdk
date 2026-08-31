@@ -23,8 +23,8 @@ export const hasPaykuIntegrationCredentials =
  * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
  *
  * Protecciones fuera de este helper:
- * - `bunfig.toml` excluye el smoke del discovery de `bun test`
- * - `bun run test` / `test:unit` no incluyen el archivo de integración
+ * - `bunfig.toml` excluye `**/payku.integration.test.ts` del discovery de `bun test`
+ * - `bun run test` / `test:unit` descubren `src/__tests__` + `src/http` (sin integración)
  * - `bun run test:integration` es el comando explícito para ejecutarlo
  */
 export const shouldRunIntegrationTests =

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `test:unit` usa globs `src/__tests__` + `src/http` (deja de listar archivos uno a uno); la integración sigue excluida vía `bunfig.toml`.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
