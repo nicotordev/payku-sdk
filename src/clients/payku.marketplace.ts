@@ -6,10 +6,12 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateMarketplaceClientRequest,
+  PaykuDeleteMarketplaceClientResponse,
   PaykuMarketplaceAffiliationRequest,
-  PaykuMarketplaceClientRequest,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
+  PaykuUpdateMarketplaceClientRequest,
 } from "../types/payku.marketplace";
 
 export default class PaykuMarketplace {
@@ -41,7 +43,7 @@ export default class PaykuMarketplace {
     });
   }
 
-  private createClient(params: PaykuMarketplaceClientRequest) {
+  private createClient(params: PaykuCreateMarketplaceClientRequest) {
     return this.wrap("marketplace.clients.create", () =>
       this.http.request<PaykuMarketplaceClientResponse>({
         method: "POST",
@@ -61,7 +63,10 @@ export default class PaykuMarketplace {
     );
   }
 
-  private updateClient(id: string, params: PaykuMarketplaceClientRequest) {
+  private updateClient(
+    id: string,
+    params: PaykuUpdateMarketplaceClientRequest,
+  ) {
     return this.wrap("marketplace.clients.update", () =>
       this.http.request<PaykuMarketplaceClientResponse>({
         method: "PUT",
@@ -74,7 +79,7 @@ export default class PaykuMarketplace {
 
   private deleteClient(id: string) {
     return this.wrap("marketplace.clients.delete", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuDeleteMarketplaceClientResponse>({
         method: "DELETE",
         path: `/maclient/${id}`,
         signed: true,
