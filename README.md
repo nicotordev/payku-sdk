@@ -113,7 +113,7 @@ if (result.valid) {
 
 ## Errores de negocio (`status: "failed"`)
 
-`HttpClient` ya lanza `PaykuError` cuando la API responde con `{ status: "failed" }` (incluso en HTTP 200). Si inspeccionas JSON crudo (webhook, proxy, log), usa los type guards públicos:
+`HttpClient` ya lanza `PaykuError` cuando la API responde con `{ status: "failed" }` (incluso en HTTP 200). Si inspeccionas JSON crudo de respuestas API (proxy, log), usa los type guards públicos:
 
 ```typescript
 import {
@@ -133,6 +133,8 @@ function handleRawPaykuJson(data: unknown) {
   }
 }
 ```
+
+> **Nota:** el payload de `urlnotify` es manipulable. Para decidir si un pago es válido usa `payku.webhooks.verifyNotify()`, que reconsulta la API.
 
 ## Wallet (Chile)
 

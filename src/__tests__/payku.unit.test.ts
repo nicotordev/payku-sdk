@@ -143,5 +143,6 @@ describe("public error response helpers", () => {
     }
 
     expect(isPaykuUnauthorizedResponse({ type: "Not Found" })).toBe(false);
+    expect(isPaykuUnauthorizedResponse({ type: "Unauthorized" })).toBe(false);
   });
 });
