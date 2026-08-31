@@ -126,6 +126,35 @@ const subscription = await payku.subscriptions.subscriptions.create({
   plan: "pl...",
   client: client.id as string,
 });
+
+## Eventos (Chile)
+
+Crear un evento y consultar su detalle:
+
+```typescript
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "production",
+});
+
+const created = await payku.events.create({
+  event: "98374",
+  name: "Event",
+  date_event: "2023-12-20",
+  date_closing_sales: "2023-12-19 23:59:00",
+  date_payment: "2023-12-22",
+  affiliation: [
+    ["a@x.com", 50],
+    ["b@x.com", 50],
+  ],
+});
+
+const detail = await payku.events.get(created.id);
+```
+
+> **Nota:** La respuesta de `events.create()` usa `affiliation`, mientras que el detalle obtenido con `events.get()` usa `affiliations`.
+
 ```
 
 ## Especificación del SDK
