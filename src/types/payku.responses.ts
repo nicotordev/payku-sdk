@@ -50,6 +50,12 @@ export interface PaykuSuccessResponse {
 export type PaykuApiErrorResponse =
   PaykuFailedResponse | PaykuUnauthorizedResponse;
 
+/**
+ * Type guard para respuestas de negocio Payku con `{ status: "failed", … }`.
+ * Útil al inspeccionar JSON crudo de respuestas API (proxy, logs) sin pasar por
+ * `HttpClient`. No uses el body de `urlnotify` como fuente de verdad del pago:
+ * valida con `payku.webhooks.verifyNotify()`.
+ */
 export function isPaykuFailedResponse(
   data: unknown,
 ): data is PaykuFailedResponse {
@@ -60,13 +66,26 @@ export function isPaykuFailedResponse(
   );
 }
 
+/**
+ * Type guard para respuestas `{ type: "Unauthorized", message_error }`.
+ * Exige `message_error` string u objeto no nulo para coincidir con el tipo.
+ */
 export function isPaykuUnauthorizedResponse(
   data: unknown,
 ): data is PaykuUnauthorizedResponse {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const payload = data as Record<string, unknown>;
+  if (payload.type !== "Unauthorized") {
+    return false;
+  }
+
+  const messageError = payload.message_error;
   return (
-    typeof data === "object" &&
-    data !== null &&
-    (data as PaykuUnauthorizedResponse).type === "Unauthorized"
+    typeof messageError === "string" ||
+    (typeof messageError === "object" && messageError !== null)
   );
 }
 

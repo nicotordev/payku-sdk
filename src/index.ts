@@ -28,6 +28,17 @@ export type {
   PaykuClientOptions,
   PaykuLogger,
 } from "./errors";
+export {
+  isPaykuFailedResponse,
+  isPaykuUnauthorizedResponse,
+} from "./types/payku.responses";
+export type {
+  PaykuApiErrorResponse,
+  PaykuFailedResponse,
+  PaykuMessageError,
+  PaykuUnauthorizedMessageError,
+  PaykuUnauthorizedResponse,
+} from "./types/payku.responses";
 export type * from "./types/payku";
 export {
   PAYKU_COUNTRY_CURRENCY,

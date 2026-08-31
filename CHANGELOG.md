@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Export público de `isPaykuFailedResponse`, `isPaykuUnauthorizedResponse` y tipos de error JSON (`PaykuFailedResponse`, etc.) para inspeccionar respuestas crudas.
+
 ### Changed
 
 - Tests de integración ya no usan `PAYKU_RUN_INTEGRATION_TESTS`; el opt-in es `bun run test:integration` con tokens + `PAYKU_ENVIRONMENT=sandbox`.

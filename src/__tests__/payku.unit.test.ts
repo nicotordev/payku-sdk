@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import Payku, { PaykuChile, PaykuPeru, PaykuVenezuela } from "../clients/payku";
 import { PaykuUnsupportedFeatureError } from "../errors";
+import {
+  extractPaykuErrorMessage,
+  isPaykuFailedResponse,
+  isPaykuUnauthorizedResponse,
+} from "../index";
 import { buildPaymentRedirectUrl } from "../utils/payku.utils";
 
 describe("Payku client", () => {
@@ -106,5 +111,38 @@ describe("payku.utils", () => {
     expect(
       buildPaymentRedirectUrl({ url: "https://payku.test/checkout" }),
     ).toBe("https://payku.test/checkout");
+  });
+});
+
+describe("public error response helpers", () => {
+  test("isPaykuFailedResponse narrows failed business payloads", () => {
+    const data = {
+      status: "failed",
+      type: "Not Found",
+      message_error: "Transaction not found",
+    };
+
+    expect(isPaykuFailedResponse(data)).toBe(true);
+    if (isPaykuFailedResponse(data)) {
+      expect(extractPaykuErrorMessage(data)).toBe("Transaction not found");
+      expect(data.type).toBe("Not Found");
+    }
+
+    expect(isPaykuFailedResponse({ status: "success" })).toBe(false);
+  });
+
+  test("isPaykuUnauthorizedResponse narrows unauthorized payloads", () => {
+    const data = {
+      type: "Unauthorized",
+      message_error: "Invalid token",
+    };
+
+    expect(isPaykuUnauthorizedResponse(data)).toBe(true);
+    if (isPaykuUnauthorizedResponse(data)) {
+      expect(extractPaykuErrorMessage(data)).toBe("Invalid token");
+    }
+
+    expect(isPaykuUnauthorizedResponse({ type: "Not Found" })).toBe(false);
+    expect(isPaykuUnauthorizedResponse({ type: "Unauthorized" })).toBe(false);
   });
 });
