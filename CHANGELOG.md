@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `wallet.balance` / `movements.list` / `movements.get`: `PaykuWalletFilter` tipado; list response alineada a balance (`current_id`, `amount_available`, `currency`, `filter`); JSDoc de typos API (`update_at`, “moviminto”).
 - `wallet.payouts.get` / `getV3`: response anidada `{ payout: … }` (`PaykuGetPayoutResponse` / `PaykuGetPayoutV3Response` con `reason_rejection`); statuses documentados.
 - `wallet.payouts.create` / `wallet.withdraw.create`: responses tipadas `PaykuCreateWalletPayoutResponse` (`identifier_wallet`, `identifier_payout`) y `PaykuCreateWalletWithdrawResponse` (`identifier_wallet`).
 - `wallet.withdraw.create`: request solo `subject`/`currency`/`order`/`amount`; response `{ status, identifier_wallet }` (ya no reutiliza campos de payout).

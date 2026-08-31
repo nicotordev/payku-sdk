@@ -211,3 +211,91 @@ describe("PaykuWallet payout get", () => {
     expect(response.payout.reason_rejection).toContain("error_creditor_account");
   });
 });
+
+describe("PaykuWallet balance and movements", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let wallet: PaykuWallet;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    wallet = new PaykuWallet(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  const walletEnvelope = {
+    status: "success",
+    current_id: "wa8a6171ab83323c37",
+    amount_available: 1766,
+    currency: "CLP",
+    filter: {
+      page: 1,
+      per_page: 1000,
+      currency: "CLP",
+      id: "wa8a6171ab83323c37",
+    },
+    wallet_movements: [
+      {
+        id: "wa8a6171ab83323c37",
+        order: "tme5",
+        subject: "tme5 asunto",
+        created_at: "2023-06-09 20:07:02",
+        income_expense: "expense",
+        status: "current",
+        amount: "3680",
+        actual_amount: "1766",
+        currency: "CLP",
+        payout: {
+          id: "war3999847529816f2",
+          status: "pending",
+          update_at: "2023-06-09 21:10:46",
+        },
+      },
+    ],
+  };
+
+  test("balance.get maps filter and wallet_movements.payout", async () => {
+    mock.onGet("/wallet").reply(200, walletEnvelope);
+
+    const response = await wallet.balance.get();
+
+    expect(response).toEqual(walletEnvelope);
+    expect(response.filter?.page).toBe(1);
+    expect(response.wallet_movements?.[0]?.payout?.update_at).toBe(
+      "2023-06-09 21:10:46",
+    );
+  });
+
+  test("movements.list maps shared envelope and forwards query", async () => {
+    mock.onGet("/wallet/list").reply((config) => {
+      expect(config.params).toMatchObject({ page: 1, per_page: 10, currency: "CLP" });
+      return [200, walletEnvelope];
+    });
+
+    const response = await wallet.movements.list({
+      page: 1,
+      per_page: 10,
+      currency: "CLP",
+    });
+
+    expect(response.current_id).toBe("wa8a6171ab83323c37");
+    expect(response.amount_available).toBe(1766);
+    expect(response.filter?.currency).toBe("CLP");
+  });
+});
