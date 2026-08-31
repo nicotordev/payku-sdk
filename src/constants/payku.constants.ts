@@ -32,6 +32,13 @@ export const PAYKU_PAYMENT_METHODS = {
   },
 } as const satisfies Record<PaykuCurrency, Record<string, number>>;
 
+/** Medios CLP que exigen `additional_parameters.payer_rut` al crear transacción. */
+export const PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT = [
+  PAYKU_PAYMENT_METHODS.CLP.ETPAY,
+  PAYKU_PAYMENT_METHODS.CLP.FINTOC,
+  PAYKU_PAYMENT_METHODS.CLP.FLOID,
+] as const;
+
 /** Gateways On-Site documentados para Venezuela. */
 export const PAYKU_VES_GATEWAYS = {
   VZLAVECAP2C: "VZLAVECAP2C",

@@ -16,7 +16,7 @@ import type PaykuPaymentMethods from "./payku.payment-methods";
 import type PaykuSubscriptions from "./payku.subscriptions";
 import type PaykuWallet from "./payku.wallet";
 import type PaykuWebhooks from "./payku.webhooks";
-import { PaykuScopedTransactions } from "./payku.transactions.scoped";
+import { PaykuChileTransactions } from "./payku.transactions.scoped";
 
 /** Cliente tipado para comercios en Chile (CLP). */
 export class PaykuChile implements PaykuCountryClient {
@@ -28,7 +28,7 @@ export class PaykuChile implements PaykuCountryClient {
   readonly environment: PaykuEnvironment;
   readonly options: PaykuClientOptions;
 
-  readonly transactions: PaykuScopedTransactions;
+  readonly transactions: PaykuChileTransactions;
   readonly wallet: PaykuWallet;
   readonly banks: PaykuBanks;
   readonly paymentMethods: PaykuPaymentMethods;
@@ -50,7 +50,7 @@ export class PaykuChile implements PaykuCountryClient {
     this.privateToken = core.privateToken;
     this.environment = core.environment;
     this.options = core.options;
-    this.transactions = new PaykuScopedTransactions(core.transactions, "CL");
+    this.transactions = new PaykuChileTransactions(core.transactions);
     this.wallet = core.wallet;
     this.banks = core.banks;
     this.paymentMethods = core.paymentMethods;

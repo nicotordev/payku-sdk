@@ -28,6 +28,22 @@ export interface PaykuCreateTransactionRequest {
   additional_parameters?: PaykuTransactionAdditionalParameters;
 }
 
+/**
+ * Create Chile (CLP) vía `Payku.forCountry("CL").transactions.create`.
+ * Docs: `email`, `order`, `subject`, `urlreturn`, `urlnotify` requeridos; `payment` opcional (99 = todos).
+ */
+export interface PaykuChileCreateTransactionRequest {
+  email: string;
+  order: string;
+  subject: string;
+  amount: number;
+  urlreturn: string;
+  urlnotify: string;
+  payment?: number;
+  expired?: string;
+  additional_parameters?: PaykuTransactionAdditionalParameters;
+}
+
 export interface PaykuOnSiteAccountService {
   bank_method?: string;
   bank_number?: string;

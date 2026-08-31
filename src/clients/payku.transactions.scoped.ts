@@ -1,4 +1,5 @@
 import type {
+  PaykuChileCreateTransactionRequest,
   PaykuConfirmOnSiteRequest,
   PaykuConfirmOnSiteResponse,
   PaykuCreateTransactionRequest,
@@ -12,6 +13,7 @@ import {
   type PaykuCountry,
 } from "../types/payku.common";
 import { assertFeature } from "../utils/payku.country";
+import { validateChileCreateTransactionRequest } from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
 export type PaykuScopedCreateTransactionRequest = Omit<
@@ -43,6 +45,25 @@ export class PaykuScopedTransactions {
 
   list(params: PaykuListTransactionsParams = {}): Promise<PaykuTransaction[]> {
     return this.inner.list(params);
+  }
+}
+
+/**
+ * Transacciones Chile: create con campos requeridos de docs CLP.
+ */
+export class PaykuChileTransactions extends PaykuScopedTransactions {
+  constructor(private readonly transactions: PaykuTransactions) {
+    super(transactions, "CL");
+  }
+
+  override async create(
+    params: PaykuChileCreateTransactionRequest,
+  ): Promise<PaykuCreateTransactionResponse> {
+    validateChileCreateTransactionRequest(params);
+    return this.transactions.create({
+      ...params,
+      currency: PAYKU_COUNTRY_CURRENCY.CL,
+    });
   }
 }
 
