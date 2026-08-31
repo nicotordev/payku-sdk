@@ -3,6 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuEvents from "../clients/payku.events";
 import { HttpClient } from "../http/client";
+import { buildEventAffiliation } from "../utils/payku.utils";
 
 const createFixture = {
   status: "success",
@@ -49,7 +50,7 @@ const getFixture = {
   ],
 };
 
-describe("PaykuEvents responses", () => {
+describe("PaykuEvents", () => {
   let mock: InstanceType<typeof MockAdapter>;
   let apiAxios: ReturnType<typeof axios.create>;
   let events: PaykuEvents;
@@ -76,8 +77,26 @@ describe("PaykuEvents responses", () => {
     mock.restore();
   });
 
-  test("create maps affiliation (singular) fixture", async () => {
-    mock.onPost("/event").reply(200, createFixture);
+  test("create posts documented event body and maps affiliation (singular) fixture", async () => {
+    mock.onPost("/event").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({
+        event: "98374",
+        name: "Event",
+        date_event: "2023-12-20",
+        date_closing_sales: "2023-12-19 23:59:00",
+        date_payment: "2023-12-22",
+        url_logo: "https://www.example.com/logo_event1.png",
+        url_event: "https://www.example.com/event1",
+        service_sale: 10,
+        affiliation: [
+          ["afiliate1@example.com", 50],
+          ["afiliate2@example.com", 50],
+        ],
+      });
+      expect(body).not.toHaveProperty("description");
+      return [200, createFixture];
+    });
 
     const response = await events.create({
       event: "98374",
@@ -85,6 +104,13 @@ describe("PaykuEvents responses", () => {
       date_event: "2023-12-20",
       date_closing_sales: "2023-12-19 23:59:00",
       date_payment: "2023-12-22",
+      url_logo: "https://www.example.com/logo_event1.png",
+      url_event: "https://www.example.com/event1",
+      service_sale: 10,
+      affiliation: buildEventAffiliation([
+        { email: "afiliate1@example.com", percent: 50 },
+        { email: "afiliate2@example.com", percent: 50 },
+      ]),
     });
 
     expect(response).toEqual(createFixture);
