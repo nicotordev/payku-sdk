@@ -25,10 +25,14 @@ export interface PaykuWalletWithdrawRequest {
 }
 
 /** Respuesta 200 de `POST /api/wallet/withdraw` (retiro a cuenta del comercio). */
-export interface PaykuWalletWithdrawCreateResponse {
+export interface PaykuCreateWalletWithdrawResponse {
   status: string;
   identifier_wallet: string;
 }
+
+/** @deprecated Preferir `PaykuCreateWalletWithdrawResponse`. */
+export type PaykuWalletWithdrawCreateResponse =
+  PaykuCreateWalletWithdrawResponse;
 
 export interface PaykuWalletMovementPayout {
   id?: string;
@@ -42,6 +46,7 @@ export interface PaykuWalletMovementPayout {
   accountbank_num?: number | string;
   accountbank_sbif?: string;
   status?: string;
+  /** Wire typo Payku: `update_at` (docs también escriben “moviminto”). */
   update_at?: string;
 }
 
@@ -51,6 +56,7 @@ export interface PaykuWalletMovement {
   subject?: string;
   created_at?: string;
   income_expense?: string;
+  /** Docs Payku: “Estatus del moviminto” (typo en documentación). */
   status?: string;
   amount?: string | number;
   actual_amount?: string | number;
@@ -59,11 +65,19 @@ export interface PaykuWalletMovement {
   payout?: PaykuWalletMovementPayout;
 }
 
+/** `filter` en responses de balance / list / movement get. */
+export interface PaykuWalletFilter {
+  page?: number;
+  per_page?: number;
+  currency?: PaykuCurrency | string;
+  id?: string;
+}
+
 export interface PaykuWalletBalanceResponse extends PaykuSuccessResponse {
   current_id?: string;
   amount_available?: number;
   currency?: PaykuCurrency | string;
-  filter?: Record<string, unknown>;
+  filter?: PaykuWalletFilter;
   wallet_movements?: PaykuWalletMovement[];
 }
 
@@ -71,11 +85,67 @@ export interface PaykuWalletListParams extends PaykuPaginationParams {
   currency?: PaykuCurrency | string;
 }
 
+/**
+ * Shape compartido por `GET /wallet`, `/wallet/list` y `/wallet/{id}`.
+ */
 export interface PaykuWalletListResponse extends PaykuSuccessResponse {
+  current_id?: string;
+  amount_available?: number;
+  currency?: PaykuCurrency | string;
+  filter?: PaykuWalletFilter;
   wallet_movements?: PaykuWalletMovement[];
-  [key: string]: unknown;
 }
 
+/** Estados documentados de payout GET / payoutv3. */
+export type PaykuPayoutStatus =
+  | "pending"
+  | "processing"
+  | "success"
+  | "banking_error"
+  | "fraud_prevention";
+
+/**
+ * Detalle anidado en `GET /api/payout/{id}` y `GET /api/payoutv3/{id}`.
+ * Wire typo: `update_at` (no `updated_at`).
+ */
+export interface PaykuPayoutDetail {
+  id?: string;
+  phone?: string;
+  email?: string;
+  subject?: string;
+  amount?: string | number;
+  accountbank_rut?: string;
+  accountbank_name?: string;
+  accountbank_type?: number | string;
+  accountbank_num?: number | string;
+  accountbank_sbif?: string;
+  status?: PaykuPayoutStatus;
+  /** Wire typo Payku: `update_at`. */
+  update_at?: string;
+  origin_wallet?: string;
+}
+
+/** Respuesta 200 de `GET /api/payout/{id}`. */
+export interface PaykuGetPayoutResponse {
+  payout: PaykuPayoutDetail;
+}
+
+/**
+ * Detalle v3: incluye `reason_rejection` cuando el payout fue rechazado.
+ */
+export interface PaykuPayoutDetailV3 extends PaykuPayoutDetail {
+  reason_rejection?: string;
+}
+
+/** Respuesta 200 de `GET /api/payoutv3/{id}`. */
+export interface PaykuGetPayoutV3Response {
+  payout: PaykuPayoutDetailV3;
+}
+
+/**
+ * Forma plana de callback `url_notify` (no es la response de GET).
+ * @deprecated Preferir `PaykuGetPayoutResponse` para GET payout.
+ */
 export interface PaykuPayoutResponse {
   status?: string;
   id?: string;
@@ -86,8 +156,12 @@ export interface PaykuPayoutResponse {
   [key: string]: unknown;
 }
 
-export interface PaykuWalletPayoutCreateResponse {
-  status?: string;
-  id?: string;
-  [key: string]: unknown;
+/** Respuesta 200 de `POST /api/wallet/payout` (pago a terceros). */
+export interface PaykuCreateWalletPayoutResponse {
+  status: string;
+  identifier_wallet: string;
+  identifier_payout: string;
 }
+
+/** @deprecated Preferir `PaykuCreateWalletPayoutResponse`. */
+export type PaykuWalletPayoutCreateResponse = PaykuCreateWalletPayoutResponse;
