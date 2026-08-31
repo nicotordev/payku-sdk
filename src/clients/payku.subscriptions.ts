@@ -8,6 +8,7 @@ import { bodyAsRecord } from "../utils/payku.utils";
 import type {
   PaykuCreateSubscriptionRequest,
   PaykuCreateSubscriptionTransactionRequest,
+  PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
   PaykuRegisterCardRequest,
   PaykuSubscriptionClientRequest,
@@ -191,7 +192,7 @@ export default class PaykuSubscriptions {
     params: PaykuCreateSubscriptionTransactionRequest,
   ) {
     return this.wrap("subscriptions.transactions.create", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuCreateSubscriptionTransactionResponse>({
         method: "POST",
         path: "/sutransaction",
         body: bodyAsRecord(params),
