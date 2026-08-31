@@ -1,3 +1,5 @@
+import type { PaykuRegisterResponse } from "./payku.responses";
+
 /** Tupla wire de un beneficiario Mall: [token|afiliación, amount, subject, eventId|null, individualOrder]. */
 export type PaykuMallMerchantTuple = [
   tokenOrAffiliationId: string,
@@ -19,9 +21,7 @@ export interface PaykuMallTransactionRequest {
   urlnotify?: string;
 }
 
-export interface PaykuMallTransactionResponse {
-  status?: string;
-  id?: string;
-  url?: string;
+/** Interim create response; #39 splits create vs get shapes. */
+export interface PaykuMallTransactionResponse extends PaykuRegisterResponse {
   [key: string]: unknown;
 }

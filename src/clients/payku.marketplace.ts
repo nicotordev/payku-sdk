@@ -6,11 +6,17 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
-  PaykuMarketplaceAffiliationRequest,
-  PaykuMarketplaceClientRequest,
+  PaykuCreateMarketplaceAffiliationRequest,
+  PaykuCreateMarketplaceClientRequest,
+  PaykuDeleteMarketplaceAffiliationResponse,
+  PaykuDeleteMarketplaceClientResponse,
+  PaykuMarketplaceAffiliationResponse,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
+  PaykuUpdateMarketplaceClientRequest,
+  PaykuUpdateMarketplaceClientResponse,
 } from "../types/payku.marketplace";
+import type { PaykuCreateTransactionResponse } from "../types/payku.transactions";
 
 export default class PaykuMarketplace {
   public clients = {
@@ -41,13 +47,12 @@ export default class PaykuMarketplace {
     });
   }
 
-  private createClient(params: PaykuMarketplaceClientRequest) {
+  private createClient(params: PaykuCreateMarketplaceClientRequest) {
     return this.wrap("marketplace.clients.create", () =>
       this.http.request<PaykuMarketplaceClientResponse>({
         method: "POST",
         path: "/maclient",
         body: bodyAsRecord(params),
-        signed: true,
       }),
     );
   }
@@ -61,9 +66,12 @@ export default class PaykuMarketplace {
     );
   }
 
-  private updateClient(id: string, params: PaykuMarketplaceClientRequest) {
+  private updateClient(
+    id: string,
+    params: PaykuUpdateMarketplaceClientRequest,
+  ) {
     return this.wrap("marketplace.clients.update", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuUpdateMarketplaceClientResponse>({
         method: "PUT",
         path: `/maclient/${id}`,
         body: bodyAsRecord(params),
@@ -74,17 +82,16 @@ export default class PaykuMarketplace {
 
   private deleteClient(id: string) {
     return this.wrap("marketplace.clients.delete", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuDeleteMarketplaceClientResponse>({
         method: "DELETE",
         path: `/maclient/${id}`,
-        signed: true,
       }),
     );
   }
 
-  private createAffiliation(params: PaykuMarketplaceAffiliationRequest) {
+  private createAffiliation(params: PaykuCreateMarketplaceAffiliationRequest) {
     return this.wrap("marketplace.affiliations.create", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceAffiliationResponse>({
         method: "POST",
         path: "/maaffiliation",
         body: bodyAsRecord(params),
@@ -94,7 +101,7 @@ export default class PaykuMarketplace {
 
   private getAffiliation(id: string) {
     return this.wrap("marketplace.affiliations.get", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuMarketplaceAffiliationResponse>({
         method: "GET",
         path: `/maaffiliation/${id}`,
       }),
@@ -103,16 +110,18 @@ export default class PaykuMarketplace {
 
   private deleteAffiliation(id: string) {
     return this.wrap("marketplace.affiliations.delete", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuDeleteMarketplaceAffiliationResponse>({
         method: "DELETE",
         path: `/maaffiliation/${id}`,
       }),
     );
   }
 
-  private createTransaction(params: PaykuMarketplaceTransactionRequest) {
+  private createTransaction(
+    params: PaykuMarketplaceTransactionRequest,
+  ): Promise<PaykuCreateTransactionResponse> {
     return this.wrap("marketplace.transactions.create", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+      this.http.request<PaykuCreateTransactionResponse>({
         method: "POST",
         path: "/transaction/",
         body: bodyAsRecord(params),
