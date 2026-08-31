@@ -25,8 +25,8 @@ export const hasPaykuIntegrationCredentials =
  * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
  *
  * Protecciones fuera de este helper:
- * - `bunfig.toml` excluye la carpeta `src/__tests__/integration` del discovery de `bun test`
- * - `bun run test` / `test:unit` no incluyen esa carpeta
+ * - `bunfig.toml` excluye `src/__tests__/integration` del discovery de `bun test`
+ * - `bun run test` / `test:unit` descubren `src/__tests__` + `src/http` (sin integración)
  * - `bun run test:integration` ejecuta `src/__tests__/integration`
  */
 export const shouldRunIntegrationTests =

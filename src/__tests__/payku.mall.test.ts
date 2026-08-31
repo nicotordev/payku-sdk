@@ -137,8 +137,12 @@ describe("PaykuMall", () => {
     expect(response.individual_orders[0]?.event).toBeNull();
   });
 
-  test("get maps merchant and payment fixture", async () => {
-    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+  test("get maps merchant and payment fixture without Sign", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer public-token");
+      expect(config.headers?.Sign).toBeUndefined();
+      return [200, getFixture];
+    });
 
     const response = await mall.get("malld200058ab44739ddee2adcd2f5");
 
