@@ -5,6 +5,7 @@ export type * from "./payku.escrow";
 export type * from "./payku.events";
 export type * from "./payku.mall";
 export type * from "./payku.marketplace";
+export type * from "./payku.nullification";
 export type * from "./payku.payment-methods";
 export type * from "./payku.responses";
 export type * from "./payku.subscriptions";
