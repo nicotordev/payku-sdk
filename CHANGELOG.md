@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `events.create` / `events.get`: responses tipadas (`affiliation` vs `affiliations`, `distribution`); request create alineado a docs.
+- `events.create`: request tipado (`event`, `name`, fechas, `affiliation` tuplas); sin `description` inventado.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
