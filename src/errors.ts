@@ -1,4 +1,5 @@
 import { isAxiosError } from "axios";
+import type { PaykuCountry, PaykuFeature } from "./types/payku.common";
 import {
   isPaykuFailedResponse,
   isPaykuUnauthorizedResponse,
@@ -45,6 +46,20 @@ export class PaykuAuthenticationError extends PaykuError {
   constructor(message = "Payku: publicToken and privateToken are required") {
     super(message, { type: "AuthenticationError" });
     this.name = "PaykuAuthenticationError";
+  }
+}
+
+export class PaykuUnsupportedFeatureError extends PaykuError {
+  readonly feature: PaykuFeature;
+  readonly country: PaykuCountry;
+
+  constructor(feature: PaykuFeature, country: PaykuCountry) {
+    super(`Feature "${feature}" is not supported for country ${country}`, {
+      type: "UnsupportedFeature",
+    });
+    this.name = "PaykuUnsupportedFeatureError";
+    this.feature = feature;
+    this.country = country;
   }
 }
 
