@@ -257,13 +257,9 @@ describe("PaykuSubscriptions suclient", () => {
       },
     };
 
-    mock
-      .onGet("/suclient/cl0be4c8e623c167bc8b777")
-      .reply(200, getFixture);
+    mock.onGet("/suclient/cl0be4c8e623c167bc8b777").reply(200, getFixture);
 
-    const response = await subscriptions.clients.get(
-      "cl0be4c8e623c167bc8b777",
-    );
+    const response = await subscriptions.clients.get("cl0be4c8e623c167bc8b777");
 
     expect(response).toEqual(getFixture);
     expect(response.active_cards?.[0]?.identifier).toBe(

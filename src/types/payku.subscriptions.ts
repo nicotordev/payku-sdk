@@ -45,18 +45,18 @@ export interface PaykuSubscriptionClientActiveCard {
   register?: string;
 }
 
-export interface PaykuSubscriptionClientSubcriptionPlan {
+export interface PaykuSubscriptionClientSubscriptionPlan {
   id?: string;
   name?: string;
   currency?: string;
 }
 
-export interface PaykuSubscriptionClientSubcriptionCard {
+export interface PaykuSubscriptionClientSubscriptionCard {
   last_4_digits?: string;
   card_type?: string;
 }
 
-export interface PaykuSubscriptionClientSubcriptionTransaction {
+export interface PaykuSubscriptionClientSubscriptionTransaction {
   created_at?: string;
   date_payment?: string;
   amount?: number;
@@ -69,21 +69,22 @@ export interface PaykuSubscriptionClientSubcriptionTransaction {
 
 /**
  * Nested bajo wire key `subcriptions` (typo Payku, sin segunda “c”).
- * En create puede venir `null`.
+ * En create puede venir `null`. El nombre del tipo usa `Subscription`;
+ * solo la propiedad JSON conserva el typo.
  */
-export interface PaykuSubscriptionClientSubcription {
+export interface PaykuSubscriptionClientSubscription {
   id?: string;
   created_at?: string;
   status?: string;
   amount?: string;
-  plan?: PaykuSubscriptionClientSubcriptionPlan[];
-  cards?: PaykuSubscriptionClientSubcriptionCard[];
-  transactions?: PaykuSubscriptionClientSubcriptionTransaction[];
+  plan?: PaykuSubscriptionClientSubscriptionPlan[];
+  cards?: PaykuSubscriptionClientSubscriptionCard[];
+  transactions?: PaykuSubscriptionClientSubscriptionTransaction[];
 }
 
 /**
  * Respuesta 200 de create/get/update cliente.
- * Conserva typos de la API: `update_at`, `subcriptions`.
+ * Conserva typos de la API en propiedades JSON: `update_at`, `subcriptions`.
  */
 export interface PaykuSubscriptionClientResponse {
   status?: string;
@@ -101,7 +102,7 @@ export interface PaykuSubscriptionClientResponse {
   /** Wire typo Payku: `update_at` (no `updated_at`). */
   update_at?: string | null;
   /** Wire typo Payku: `subcriptions`. */
-  subcriptions?: PaykuSubscriptionClientSubcription | null;
+  subcriptions?: PaykuSubscriptionClientSubscription | null;
   active_cards?: PaykuSubscriptionClientActiveCard[];
   additional_parameters?: Record<string, unknown>;
 }
