@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `mall.get`: se mantiene **sin** Sign — sandbox no exige firma (vs nullification); docs PHP/JS muestran Sign, cURL solo Bearer.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
