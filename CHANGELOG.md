@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Tests de integración ya no usan `PAYKU_RUN_INTEGRATION_TESTS`; el opt-in es `bun run test:integration` con tokens + `PAYKU_ENVIRONMENT=sandbox`.
+- `bun run test` / `npm test` ejecutan solo la suite unitaria (`test:unit`).
+
 ## [1.1.0] - 2026-08-30
 
 ### Added

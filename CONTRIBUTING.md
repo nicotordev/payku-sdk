@@ -45,7 +45,7 @@ The repo includes [`.devcontainer/devcontainer.json`](./.devcontainer/devcontain
 bun run lint && bun run build && bun run test:unit
 ```
 
-Integration tests stay off by default (`PAYKU_RUN_INTEGRATION_TESTS=false`). Edit `.env` locally in the codespace only if you add sandbox tokens.
+Default `bun test` runs unit tests only. Integration/smoke needs sandbox tokens in `.env` and `bun run test:integration`.
 
 ### Prebuilds (maintainers)
 
@@ -104,13 +104,13 @@ Unit tests must pass:
 bun run test:unit
 ```
 
-Integration tests hit Payku and are gated:
+Integration/smoke hits Payku sandbox when tokens are present:
 
 ```bash
-PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
+bun run test:integration
 ```
 
-Do not enable integration tests in CI PRs.
+CI only runs unit tests; keep production tokens out of `.env`.
 
 ## Pull requests
 

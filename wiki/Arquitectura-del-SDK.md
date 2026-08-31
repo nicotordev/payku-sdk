@@ -45,8 +45,8 @@ src/
 
 ## Tests
 
-- **Unit:** `bun run test:unit` (CI siempre)
-- **Integración:** gated con `PAYKU_RUN_INTEGRATION_TESTS=true`
+- **Unit:** `bun test` / `bun run test:unit` (CI siempre)
+- **Integración:** `bun run test:integration` (sandbox + tokens reales)
 
 ## TypeDoc
 

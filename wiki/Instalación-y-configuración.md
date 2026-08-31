@@ -69,8 +69,8 @@ bun run build
 bun run test:unit
 ```
 
-Integración (opcional, requiere tokens sandbox):
+Integración / smoke (opcional, requiere tokens sandbox en `.env`):
 
 ```bash
-PAYKU_RUN_INTEGRATION_TESTS=true bun run test:integration
+bun run test:integration
 ```

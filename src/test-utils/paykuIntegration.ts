@@ -20,11 +20,10 @@ export const hasPaykuIntegrationCredentials =
   hasRealCredential(paykuIntegrationConfig.privateToken);
 
 /**
- * Opt-in explícito + solo sandbox.
- * Requiere `PAYKU_RUN_INTEGRATION_TESTS=true` y `PAYKU_ENVIRONMENT=sandbox`.
+ * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
+ * El opt-in es el comando `bun run test:integration` (no una env flag extra).
  */
 export const shouldRunIntegrationTests =
-  process.env.PAYKU_RUN_INTEGRATION_TESTS === "true" &&
   paykuIntegrationConfig.environment === "sandbox" &&
   hasPaykuIntegrationCredentials;
 
