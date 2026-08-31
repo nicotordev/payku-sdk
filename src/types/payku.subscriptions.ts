@@ -47,15 +47,34 @@ export interface PaykuCreateSubscriptionTransactionResponse {
   verification_key?: string;
 }
 
+/**
+ * `POST /api/suinscriptionscards` — afiliar/renovar tarjeta.
+ * Payku espera el ID de suscripción en `suscription` (no `client`).
+ */
 export interface PaykuRegisterCardRequest {
-  client: string;
-  [key: string]: unknown;
+  suscription: string;
 }
 
+/** Respuesta 200 de afiliar tarjeta (`status`, `id`, `url`). */
+export interface PaykuRegisterCardResponse {
+  status: string;
+  id: string;
+  url?: string;
+}
+
+/**
+ * `POST /api/suscriptionsdeletecards` — eliminar tarjeta.
+ * Docs: la tabla nombra el campo `suscription` pero ejemplos/CURL/JS y el error
+ * sandbox (`type: "card"`) usan el wire key `card` (ID `sure…`).
+ */
 export interface PaykuDeleteCardRequest {
-  client: string;
-  card?: string;
-  [key: string]: unknown;
+  card: string;
+}
+
+/** Respuesta 200 de eliminar tarjeta. */
+export interface PaykuDeleteCardResponse {
+  status: string;
+  card: string;
 }
 
 export interface PaykuSubscriptionPlan {
