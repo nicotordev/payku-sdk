@@ -1,10 +1,11 @@
+import type { PaykuCurrency } from "../types/payku.common";
+import type { PaykuEventAffiliationTuple } from "../types/payku.events";
+import type { PaykuMallMerchantTuple } from "../types/payku.mall";
+import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
 import type {
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
 } from "../types/payku.transactions";
-import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
-import type { PaykuCurrency } from "../types/payku.common";
-import type { PaykuMallMerchantTuple } from "../types/payku.mall";
 import {
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
@@ -32,6 +33,13 @@ export function buildMallMerchant(params: {
     params.eventId ?? null,
     params.individualOrder,
   ];
+}
+
+/** Construye tuplas `[email, percent]` para `POST /api/event`. */
+export function buildEventAffiliation(
+  members: Array<{ email: string; percent: number | string }>,
+): PaykuEventAffiliationTuple[] {
+  return members.map((member) => [member.email, member.percent]);
 }
 
 export function toQueryRecord(
