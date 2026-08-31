@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `nullification.create`: body tipado `id`, `amount`, `subject` (eliminado `transaction`, que no existe en docs).
+- `nullification.create`: body tipado `id`, `amount`, `subject` (eliminado `transaction`, que no existe en docs); ejemplo README Chile.
 - `wallet.withdraw.create`: request solo `subject`/`currency`/`order`/`amount`; response `{ status, identifier_wallet }` (ya no reutiliza campos de payout).
 - `subscriptions.clients` (`suclient`): create exige `email`/`name`/`phone`; update parcial; response tipada con typos API (`update_at`, `subcriptions`); delete `{ status, id }`.
 - `subscriptions.cards.register`: body usa `suscription` (no `client`); response tipada (`status`, `id`, `url`).

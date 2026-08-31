@@ -257,6 +257,22 @@ const balance = await payku.wallet.balance.get();
 const movements = await payku.wallet.movements.list({ page: 1, per_page: 20 });
 ```
 
+## Anulación (Chile)
+
+```typescript
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+const nullify = await payku.nullification.create({
+  id: "trxpr2a45s1dytg1",
+  amount: 25000,
+  subject: "anulación transacción",
+});
+```
+
 ## Suscripciones (Chile)
 
 ```typescript
