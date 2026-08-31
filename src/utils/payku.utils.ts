@@ -95,7 +95,9 @@ export function validateMarketplaceAffiliationPercentages(
   );
   const total = merchant + clients;
 
-  if (Number.isNaN(total) || Math.abs(total - 100) > 0.01) {
+  // Tolerancia documentada 0.01 + epsilon FP (p. ej. 20 + 79.99).
+  const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
+  if (Number.isNaN(total) || Math.abs(total - 100) > tolerance) {
     throw new PaykuError(
       `marketplace affiliation percentages must sum to 100 (got ${total})`,
     );
