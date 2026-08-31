@@ -1,6 +1,9 @@
+/**
+ * `POST /api/escrow` — autorizar liquidación.
+ * Docs: array `transactions` (IDs `trx…`), no campo singular `transaction`.
+ */
 export interface PaykuEscrowAuthorizeRequest {
-  transaction?: string;
-  [key: string]: unknown;
+  transactions: string[];
 }
 
 /** Estados de liquidación documentados en authorize escrow. */
@@ -12,7 +15,8 @@ export type PaykuEscrowSettlementStatus =
   | "paid";
 
 export interface PaykuEscrowSettlementItem {
-  status: PaykuEscrowSettlementStatus;
+  /** Documentados + fallback `string` por valores futuros de Payku (#17). */
+  status: PaykuEscrowSettlementStatus | string;
   transaction_id: string;
   amount: number;
   availability_date?: string;

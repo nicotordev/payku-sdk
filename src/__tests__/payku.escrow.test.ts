@@ -23,7 +23,7 @@ const authorizeFixture = {
   ],
 };
 
-describe("PaykuEscrow authorize response", () => {
+describe("PaykuEscrow authorize", () => {
   let mock: InstanceType<typeof MockAdapter>;
   let apiAxios: ReturnType<typeof axios.create>;
   let escrow: PaykuEscrow;
@@ -48,6 +48,30 @@ describe("PaykuEscrow authorize response", () => {
 
   afterEach(() => {
     mock.restore();
+  });
+
+  test("authorize posts transactions array (not transaction)", async () => {
+    mock.onPost("/escrow").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer public-token");
+
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({
+        transactions: [
+          "trx3b4d77b43acd9a720",
+          "trx3b4d77b43acd9a385",
+        ],
+      });
+      expect(body).not.toHaveProperty("transaction");
+
+      return [200, authorizeFixture];
+    });
+
+    await escrow.authorize({
+      transactions: [
+        "trx3b4d77b43acd9a720",
+        "trx3b4d77b43acd9a385",
+      ],
+    });
   });
 
   test("authorize maps transactions settlement fixture", async () => {

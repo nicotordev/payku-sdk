@@ -273,6 +273,20 @@ const nullify = await payku.nullification.create({
 });
 ```
 
+## Escrow (Chile)
+
+```typescript
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+await payku.escrow.authorize({
+  transactions: ["trx3b4d77b43acd9a720", "trx3b4d77b43acd9a385"],
+});
+```
+
 ## Suscripciones (Chile)
 
 ```typescript
