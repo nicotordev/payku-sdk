@@ -40,8 +40,18 @@ describePaykuIntegration("integration / transactions", () => {
   test("throws PaykuError for missing transaction", async () => {
     const payku = createSandboxChileClient();
 
-    await expect(
-      payku.transactions.get("trx_does_not_exist_smoke"),
-    ).rejects.toBeInstanceOf(PaykuError);
+    try {
+      await payku.transactions.get("trx_does_not_exist_smoke");
+      expect.unreachable("should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PaykuError);
+      const err = error as PaykuError;
+      expect(
+        err.statusCode === 404 ||
+          err.statusCode === 400 ||
+          err.type === "Not Found" ||
+          err.type === "Unprocessable Entity",
+      ).toBe(true);
+    }
   });
 });

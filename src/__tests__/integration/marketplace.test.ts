@@ -24,10 +24,14 @@ describePaykuIntegration("integration / marketplace", () => {
       },
     });
 
-    expect(created.id).toBeTruthy();
-    expect(created.status).toBeTruthy();
-
-    const deleted = await payku.marketplace.clients.delete(created.id);
-    expect(deleted.id).toBe(created.id);
+    try {
+      expect(created.id).toBeTruthy();
+      expect(created.status).toBeTruthy();
+    } finally {
+      if (created?.id) {
+        const deleted = await payku.marketplace.clients.delete(created.id);
+        expect(deleted.id).toBe(created.id);
+      }
+    }
   });
 });

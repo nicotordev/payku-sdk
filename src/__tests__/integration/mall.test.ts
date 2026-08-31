@@ -9,8 +9,18 @@ describePaykuIntegration("integration / mall", () => {
   test("get missing id throws PaykuError", async () => {
     const payku = createSandboxChileClient();
 
-    await expect(payku.mall.get("mall_does_not_exist_smoke")).rejects.toBeInstanceOf(
-      PaykuError,
-    );
+    try {
+      await payku.mall.get("mall_does_not_exist_smoke");
+      expect.unreachable("should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PaykuError);
+      const err = error as PaykuError;
+      expect(
+        err.statusCode === 404 ||
+          err.statusCode === 400 ||
+          err.type === "Not Found" ||
+          err.type === "Unprocessable Entity",
+      ).toBe(true);
+    }
   });
 });

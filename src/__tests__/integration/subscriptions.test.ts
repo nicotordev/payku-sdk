@@ -15,6 +15,14 @@ describePaykuIntegration("integration / subscriptions", () => {
       expect(response.status).toBeTruthy();
     } catch (error) {
       expect(error).toBeInstanceOf(PaykuError);
+      const err = error as PaykuError;
+      expect(
+        err.statusCode === 404 ||
+          err.statusCode === 400 ||
+          err.type === "Not Found" ||
+          err.message.toLowerCase().includes("records") ||
+          err.message.toLowerCase().includes("plan"),
+      ).toBe(true);
     }
   });
 });
