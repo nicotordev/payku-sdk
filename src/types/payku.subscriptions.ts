@@ -120,6 +120,169 @@ export interface PaykuCreateSubscriptionRequest {
   coupon?: string;
 }
 
+/** Response 200 de `POST /api/sususcription` (activación 3DS). */
+export interface PaykuCreateSubscriptionResponse {
+  status: string;
+  id: string;
+  url: string;
+}
+
+export interface PaykuSubscriptionDetailClient {
+  id: string;
+  name: string;
+  email: string;
+  rut?: string;
+  phone?: string;
+  /** Wire typo Payku con tilde. */
+  "parámetros"?: unknown[];
+  additional_parameters?: unknown;
+}
+
+export interface PaykuSubscriptionDetailPlan {
+  id: string;
+  name: string;
+  currency: string;
+}
+
+export interface PaykuSubscriptionDetailCard {
+  last_4_digits?: string;
+  card_type?: string;
+}
+
+export interface PaykuSubscriptionDetailActiveCard {
+  last_4_digits?: string;
+  identifier?: string;
+  card_type?: string;
+  register?: string;
+}
+
+export interface PaykuSubscriptionDetailTransaction {
+  created_at?: string;
+  date_payment?: string;
+  amount?: number;
+  transaction?: number;
+  authorization_code?: string;
+  order?: string;
+  description?: string;
+  status?: string;
+}
+
+export interface PaykuSubscriptionStatusLog {
+  change_date?: string | null;
+  initial_status?: string | null;
+  final_status?: string | null;
+}
+
+/** Response 200 de `GET /api/sususcription/{id}`. */
+export interface PaykuGetSubscriptionResponse {
+  id: string;
+  status: string;
+  start?: string;
+  end?: string;
+  client: PaykuSubscriptionDetailClient;
+  plan: PaykuSubscriptionDetailPlan;
+  cards?: PaykuSubscriptionDetailCard;
+  active_cards?: PaykuSubscriptionDetailActiveCard[];
+  transactions?: PaykuSubscriptionDetailTransaction[];
+  logs?: { status?: PaykuSubscriptionStatusLog[] };
+}
+
+/** Ítem devuelto en `GET /api/sususcription` (incluye `last_status_current_payment`). */
+export interface PaykuSubscriptionListItem extends PaykuGetSubscriptionResponse {
+  last_status_current_payment?: string;
+}
+
+export interface PaykuListSubscriptionsQuery {
+  page?: number;
+  per_page?: number;
+  date_init?: string;
+  date_end?: string;
+  active?: boolean | string;
+  canceled?: boolean | string;
+  suspended?: boolean | string;
+  pending?: boolean | string;
+  expired?: boolean | string;
+  [key: string]: unknown;
+}
+
+/** Envelope de listado: `[{ subscriptions: [...] }]`. */
+export type PaykuListSubscriptionsResponse = Array<{
+  subscriptions: PaykuSubscriptionListItem[];
+}>;
+
+export interface PaykuListSubscriptionsV3Query {
+  page?: number;
+  per_page?: number;
+  date_init?: string;
+  date_end?: string;
+  active?: boolean | string;
+  canceled?: boolean | string;
+  suspended?: boolean | string;
+  pending?: boolean | string;
+  expired?: boolean | string;
+  [key: string]: unknown;
+}
+
+export interface PaykuSubscriptionV3PaidItem {
+  payment_cycle_day?: string;
+  payment_day?: string;
+  status?: string;
+  amount_paid?: number;
+  try_number?: number;
+  paid_number?: number;
+  transactions?: unknown[];
+}
+
+/** Ítem v3: usa `estatus` (typo API) en lugar de `status` y omite `cards`. */
+export interface PaykuSubscriptionV3Item
+  extends Omit<PaykuGetSubscriptionResponse, "status" | "active_cards" | "cards"> {
+  estatus: string;
+  active_cards?: PaykuSubscriptionDetailCard;
+  paid?: PaykuSubscriptionV3PaidItem[];
+}
+
+export type PaykuListSubscriptionsV3Response = Array<{
+  subscriptions: PaykuSubscriptionV3Item[];
+}>;
+
+/** Response 200 de `DELETE /api/sususcription/{id}`. */
+export interface PaykuDeleteSubscriptionResponse {
+  id: string;
+  status: string;
+}
+
+/** Cliente/Customer devuelto en `GET /api/suclient/customers`. */
+export interface PaykuSubscriptionCustomer {
+  last_4_digits?: string;
+  identifier?: string;
+  card_type?: string;
+  register?: string;
+  additional_parameters?: unknown;
+  subcriptions?: Array<{
+    id?: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
+/** Response 200 de `GET /api/suclient/customers`. */
+export type PaykuListSubscriptionClientsResponse = Array<{
+  Customers: PaykuSubscriptionCustomer[];
+}>;
+
+/** @deprecated Prefer create/get/delete específicos. */
+export type PaykuSubscriptionResponse =
+  | PaykuCreateSubscriptionResponse
+  | PaykuGetSubscriptionResponse
+  | PaykuDeleteSubscriptionResponse;
+
+/** @deprecated Prefer PaykuListSubscriptionsResponse / V3 / Clients. */
+export type PaykuSubscriptionsListResponse =
+  | PaykuListSubscriptionsResponse
+  | PaykuListSubscriptionsV3Response
+  | PaykuListSubscriptionClientsResponse
+  | PaykuSuccessResponse;
+
 export interface PaykuCreateSubscriptionTransactionRequest {
   /** Wire format Payku: `suscription` (ortografía de la API). */
   suscription: string;
@@ -171,27 +334,33 @@ export interface PaykuDeleteCardResponse {
   card: string;
 }
 
+/** Detalle de plan en get/list `suplan`. */
 export interface PaykuSubscriptionPlan {
-  id?: string;
-  name?: string;
-  amount?: number | string;
-  currency?: string;
-  [key: string]: unknown;
+  id: string;
+  status: string;
+  name: string;
+  code?: string;
+  description?: string;
+  url_notify_payment?: string;
+  /** Wire typo Payku: `url_notify_suscription`. */
+  url_notify_suscription?: string;
+  total_suscription?: number;
+  total_suscription_active?: number;
 }
 
-export interface PaykuSubscriptionPlansResponse extends PaykuSuccessResponse {
-  plans?: PaykuSubscriptionPlan[];
-  [key: string]: unknown;
+/** `GET /api/suplan/{id}` — `plans` es objeto. */
+export interface PaykuGetSubscriptionPlanResponse {
+  status: string;
+  plans: PaykuSubscriptionPlan;
 }
 
-export interface PaykuSubscriptionsListResponse extends PaykuSuccessResponse {
-  subscriptions?: Record<string, unknown>[];
-  [key: string]: unknown;
+/** `GET /api/suplan/plans` — `plans` es array. */
+export interface PaykuListSubscriptionPlansResponse {
+  status: string;
+  plans: PaykuSubscriptionPlan[];
 }
 
-export interface PaykuSubscriptionResponse {
-  status?: string;
-  id?: string;
-  url?: string;
-  [key: string]: unknown;
-}
+/** @deprecated Prefer get/list específicos. */
+export type PaykuSubscriptionPlansResponse =
+  | PaykuGetSubscriptionPlanResponse
+  | PaykuListSubscriptionPlansResponse;

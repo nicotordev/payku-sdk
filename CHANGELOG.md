@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `subscriptions` (`sususcription`): create/get/list/listV3/delete tipados; query params en list/v3; v3 usa `estatus`.
+- `subscriptions.plans`: get (`plans` objeto) vs list (`plans` array) con `url_notify_*`.
 - `events.create` / `events.get`: responses tipadas (`affiliation` vs `affiliations`, `distribution`); request create alineado a docs.
 - `events.create`: request tipado (`event`, `name`, fechas, `affiliation` tuplas); sin `description` inventado.
 - `mall.get`: se mantiene **sin** Sign — sandbox no exige firma (vs nullification); docs PHP/JS muestran Sign, cURL solo Bearer.
