@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import Payku from "../clients/payku";
+import Payku, { PaykuChile, PaykuPeru, PaykuVenezuela } from "../clients/payku";
+import { PaykuUnsupportedFeatureError } from "../errors";
 import { buildPaymentRedirectUrl } from "../utils/payku.utils";
 
 describe("Payku client", () => {
@@ -39,6 +40,64 @@ describe("Payku client", () => {
     expect(payku.escrow).toBeDefined();
     expect(payku.nullification).toBeDefined();
     expect(payku.conciliation).toBeDefined();
+  });
+});
+
+describe("Payku.forCountry", () => {
+  const config = {
+    publicToken: "public",
+    privateToken: "private",
+    environment: "sandbox" as const,
+  };
+
+  test("returns Chile client with CLP and Chile-only modules", () => {
+    const payku = Payku.forCountry("CL", config);
+
+    expect(payku).toBeInstanceOf(PaykuChile);
+    expect(payku.country).toBe("CL");
+    expect(payku.currency).toBe("CLP");
+    expect(payku.subscriptions).toBeDefined();
+    expect(payku.marketplace).toBeDefined();
+    expect(payku.wallet.withdraw).toBeDefined();
+  });
+
+  test("returns Peru client without Chile-only modules", () => {
+    const payku = Payku.forCountry("PE", config);
+
+    expect(payku).toBeInstanceOf(PaykuPeru);
+    expect(payku.country).toBe("PE");
+    expect(payku.currency).toBe("PEN");
+    expect(payku.transactions).toBeDefined();
+    expect(payku.wallet).toBeDefined();
+    expect("subscriptions" in payku).toBe(false);
+  });
+
+  test("returns Venezuela client with On-Site confirm", () => {
+    const payku = Payku.forCountry("VE", config);
+
+    expect(payku).toBeInstanceOf(PaykuVenezuela);
+    expect(payku.country).toBe("VE");
+    expect(payku.currency).toBe("VES");
+    expect(payku.transactions.confirmOnSite).toBeDefined();
+    expect("subscriptions" in payku).toBe(false);
+  });
+
+  test("Peru wallet.withdraw throws UnsupportedFeature", () => {
+    const payku = Payku.forCountry("PE", config);
+
+    expect(() => payku.wallet.withdraw).toThrow(PaykuUnsupportedFeatureError);
+    expect(() => payku.wallet.withdraw).toThrow(/wallet\.withdraw/);
+  });
+
+  test("fromEnvForCountry reads credentials", () => {
+    const payku = Payku.fromEnvForCountry("CL", {
+      PAYKU_PUBLIC_TOKEN: "public",
+      PAYKU_PRIVATE_TOKEN: "private",
+      PAYKU_ENVIRONMENT: "production",
+    });
+
+    expect(payku).toBeInstanceOf(PaykuChile);
+    expect(payku.environment).toBe("production");
   });
 });
 
