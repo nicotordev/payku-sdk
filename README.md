@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/logo-nicotordev-payku.png" alt="@nicotordev/payku" width="480" />
+</p>
+
 # Payku — Cliente API para TypeScript
 
 [![npm](https://img.shields.io/npm/v/@nicotordev/payku.svg)](https://www.npmjs.com/package/@nicotordev/payku)
