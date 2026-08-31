@@ -7,7 +7,8 @@ import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
   PaykuCreateEventRequest,
-  PaykuEventResponse,
+  PaykuCreateEventResponse,
+  PaykuGetEventResponse,
 } from "../types/payku.events";
 
 export default class PaykuEvents {
@@ -19,9 +20,11 @@ export default class PaykuEvents {
     private readonly options?: PaykuClientOptions,
   ) {}
 
-  private createEvent(params: PaykuCreateEventRequest) {
+  private createEvent(
+    params: PaykuCreateEventRequest,
+  ): Promise<PaykuCreateEventResponse> {
     return this.http
-      .request<PaykuEventResponse>({
+      .request<PaykuCreateEventResponse>({
         method: "POST",
         path: "/event",
         body: bodyAsRecord(params),
@@ -36,9 +39,9 @@ export default class PaykuEvents {
       });
   }
 
-  private getEvent(id: string) {
+  private getEvent(id: string): Promise<PaykuGetEventResponse> {
     return this.http
-      .request<PaykuEventResponse>({
+      .request<PaykuGetEventResponse>({
         method: "GET",
         path: `/event/${id}`,
       })

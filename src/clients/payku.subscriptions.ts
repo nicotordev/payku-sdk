@@ -8,17 +8,24 @@ import { bodyAsRecord } from "../utils/payku.utils";
 import type {
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
+  PaykuCreateSubscriptionResponse,
   PaykuCreateSubscriptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
   PaykuDeleteCardResponse,
   PaykuDeleteSubscriptionClientResponse,
+  PaykuDeleteSubscriptionResponse,
+  PaykuGetSubscriptionPlanResponse,
+  PaykuGetSubscriptionResponse,
+  PaykuListSubscriptionClientsResponse,
+  PaykuListSubscriptionPlansResponse,
+  PaykuListSubscriptionsQuery,
+  PaykuListSubscriptionsResponse,
+  PaykuListSubscriptionsV3Query,
+  PaykuListSubscriptionsV3Response,
   PaykuRegisterCardRequest,
   PaykuRegisterCardResponse,
   PaykuSubscriptionClientResponse,
-  PaykuSubscriptionPlansResponse,
-  PaykuSubscriptionResponse,
-  PaykuSubscriptionsListResponse,
   PaykuUpdateSubscriptionClientRequest,
 } from "../types/payku.subscriptions";
 
@@ -114,11 +121,12 @@ export default class PaykuSubscriptions {
     );
   }
 
-  private listClients() {
+  private listClients(query?: Record<string, unknown>) {
     return this.wrap("subscriptions.clients.list", () =>
-      this.http.request<PaykuSubscriptionsListResponse>({
+      this.http.request<PaykuListSubscriptionClientsResponse>({
         method: "GET",
         path: "/suclient/customers",
+        query,
         signed: true,
       }),
     );
@@ -126,7 +134,7 @@ export default class PaykuSubscriptions {
 
   private getPlan(id: string) {
     return this.wrap("subscriptions.plans.get", () =>
-      this.http.request<PaykuSubscriptionPlansResponse>({
+      this.http.request<PaykuGetSubscriptionPlanResponse>({
         method: "GET",
         path: `/suplan/${id}`,
         signed: true,
@@ -136,7 +144,7 @@ export default class PaykuSubscriptions {
 
   private listPlans() {
     return this.wrap("subscriptions.plans.list", () =>
-      this.http.request<PaykuSubscriptionPlansResponse>({
+      this.http.request<PaykuListSubscriptionPlansResponse>({
         method: "GET",
         path: "/suplan/plans",
         signed: true,
@@ -146,7 +154,7 @@ export default class PaykuSubscriptions {
 
   private createSubscription(params: PaykuCreateSubscriptionRequest) {
     return this.wrap("subscriptions.create", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuCreateSubscriptionResponse>({
         method: "POST",
         path: "/sususcription",
         body: bodyAsRecord(params),
@@ -157,7 +165,7 @@ export default class PaykuSubscriptions {
 
   private getSubscription(id: string) {
     return this.wrap("subscriptions.get", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuGetSubscriptionResponse>({
         method: "GET",
         path: `/sususcription/${id}`,
         signed: true,
@@ -165,21 +173,23 @@ export default class PaykuSubscriptions {
     );
   }
 
-  private listSubscriptions() {
+  private listSubscriptions(query?: PaykuListSubscriptionsQuery) {
     return this.wrap("subscriptions.list", () =>
-      this.http.request<PaykuSubscriptionsListResponse>({
+      this.http.request<PaykuListSubscriptionsResponse>({
         method: "GET",
         path: "/sususcription",
+        query: query as Record<string, unknown> | undefined,
         signed: true,
       }),
     );
   }
 
-  private listSubscriptionsV3() {
+  private listSubscriptionsV3(query?: PaykuListSubscriptionsV3Query) {
     return this.wrap("subscriptions.listV3", () =>
-      this.http.request<PaykuSubscriptionsListResponse>({
+      this.http.request<PaykuListSubscriptionsV3Response>({
         method: "GET",
         path: "/sususcriptionv3",
+        query: query as Record<string, unknown> | undefined,
         signed: true,
       }),
     );
@@ -187,7 +197,7 @@ export default class PaykuSubscriptions {
 
   private deleteSubscription(id: string) {
     return this.wrap("subscriptions.delete", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuDeleteSubscriptionResponse>({
         method: "DELETE",
         path: `/sususcription/${id}`,
         signed: true,
