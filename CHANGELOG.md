@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `nullification.get`: se mantiene `signed: true` — sandbox exige Sign (`401 waiting sign` sin header); docs incompletas. Test unitario + nota en README/sdk-spec.
 - `nullification.create` / `get`: responses tipadas (`nullify`, `gateway_response` en create; get solo `{ nullify }`); unions `type` y `status_nullify`.
 - `nullification.create`: body tipado `id`, `amount`, `subject` (eliminado `transaction`, que no existe en docs); ejemplo README Chile.
 - `wallet.balance` / `movements.list` / `movements.get`: `PaykuWalletFilter` tipado; list response alineada a balance (`current_id`, `amount_available`, `currency`, `filter`); JSDoc de typos API (`update_at`, “moviminto”).

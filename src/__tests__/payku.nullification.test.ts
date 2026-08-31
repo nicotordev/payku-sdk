@@ -111,3 +111,49 @@ describe("PaykuNullification", () => {
     expect(response.nullify.payment?.gateway).toBe("webpay");
   });
 });
+
+describe("PaykuNullification get Sign", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let nullification: PaykuNullification;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    nullification = new PaykuNullification(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("get sends Sign header (sandbox requires it despite docs)", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer public-token");
+      expect(config.headers?.Sign).toMatch(/^[a-f0-9]{64}$/);
+      return [
+        200,
+        {
+          nullify: {
+            id: "trxpr2a45s1dytg1",
+            status_nullify: "complete",
+          },
+        },
+      ];
+    });
+
+    await nullification.get("trxpr2a45s1dytg1");
+  });
+});

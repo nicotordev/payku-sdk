@@ -135,7 +135,7 @@ const sign = buildSign(
 | `escrow` / `events`                          | No      |                                                                   |
 | `wallet`                                     | Sí      | payout, withdraw, balance, movements, get payout                  |
 | `subscriptions` / `consumptionSubscriptions` | Sí      | CRUD clientes, planes, tarjetas, txs                              |
-| `nullification`                              | Sí      | create y get                                                      |
+| `nullification`                              | Sí      | create y get (GET también: docs omiten Sign, sandbox responde `waiting sign`) |
 | `mall`                                       | Parcial | create sí; get no                                                 |
 | `marketplace`                                | Parcial | `maclient` create/update/delete sí; get y `maaffiliation` / tx no |
 
