@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Export público de `isPaykuFailedResponse`, `isPaykuUnauthorizedResponse` y tipos de error JSON (`PaykuFailedResponse`, etc.) para inspeccionar respuestas crudas.
 - Sección README **Errores y respuestas** (HTTP 200 + `status: "failed"`, try/catch con `PaykuAPIError`).
+- Sección README **Autenticación y firma** (Bearer, `buildSign`, matriz Sign, links Postman).
 
 ### Changed
 
