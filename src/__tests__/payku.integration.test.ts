@@ -59,7 +59,6 @@ describePaykuIntegration("Payku sandbox smoke", () => {
       order,
       subject: "SDK smoke test",
       amount: 1000,
-      currency: "CLP",
       payment: 1,
       urlreturn: "https://example.com/return",
       urlnotify: "https://example.com/notify",

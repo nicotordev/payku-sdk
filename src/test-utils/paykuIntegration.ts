@@ -19,9 +19,13 @@ export const hasPaykuIntegrationCredentials =
   hasRealCredential(paykuIntegrationConfig.publicToken) &&
   hasRealCredential(paykuIntegrationConfig.privateToken);
 
-/** Desactiva integración con `PAYKU_RUN_INTEGRATION_TESTS=false`. */
+/**
+ * Opt-in explícito + solo sandbox.
+ * Requiere `PAYKU_RUN_INTEGRATION_TESTS=true` y `PAYKU_ENVIRONMENT=sandbox`.
+ */
 export const shouldRunIntegrationTests =
-  process.env.PAYKU_RUN_INTEGRATION_TESTS !== "false" &&
+  process.env.PAYKU_RUN_INTEGRATION_TESTS === "true" &&
+  paykuIntegrationConfig.environment === "sandbox" &&
   hasPaykuIntegrationCredentials;
 
 export const describePaykuIntegration = shouldRunIntegrationTests
