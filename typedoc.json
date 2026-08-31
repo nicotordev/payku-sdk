@@ -1,0 +1,10 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "exclude": ["**/*.test.ts", "src/__tests__/**", "src/test-utils/**"],
+  "readme": "none",
+  "name": "@nicotordev/payku API",
+  "excludePrivate": true,
+  "excludeInternal": true
+}

@@ -1,28 +1,33 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "lib": ["ES2020"],
-    "rootDir": "src",
-    "outDir": "dist",
+    "target": "ESNext",
+    "module": "Preserve",
+    "lib": ["ESNext"],
+    "types": ["bun"],
+
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+
+    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist",
+
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "incremental": true
+
+    "isolatedModules": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "src/__tests__",
+    "src/test-utils"
+  ]
 }
