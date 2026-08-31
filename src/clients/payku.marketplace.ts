@@ -13,10 +13,10 @@ import type {
   PaykuMarketplaceAffiliationResponse,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
-  PaykuMarketplaceUntypedResponse,
   PaykuUpdateMarketplaceClientRequest,
   PaykuUpdateMarketplaceClientResponse,
 } from "../types/payku.marketplace";
+import type { PaykuCreateTransactionResponse } from "../types/payku.transactions";
 
 export default class PaykuMarketplace {
   public clients = {
@@ -119,9 +119,11 @@ export default class PaykuMarketplace {
     );
   }
 
-  private createTransaction(params: PaykuMarketplaceTransactionRequest) {
+  private createTransaction(
+    params: PaykuMarketplaceTransactionRequest,
+  ): Promise<PaykuCreateTransactionResponse> {
     return this.wrap("marketplace.transactions.create", () =>
-      this.http.request<PaykuMarketplaceUntypedResponse>({
+      this.http.request<PaykuCreateTransactionResponse>({
         method: "POST",
         path: "/transaction/",
         body: bodyAsRecord(params),

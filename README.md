@@ -137,7 +137,7 @@ const sign = buildSign(
 | `subscriptions` / `consumptionSubscriptions` | Sí      | CRUD clientes, planes, tarjetas, txs                              |
 | `nullification`                              | Sí      | create y get (GET también: docs omiten Sign, sandbox responde `waiting sign`) |
 | `mall`                                       | Parcial | create sí; get no                                                 |
-| `marketplace`                                | Parcial | `maclient` create/update/delete sí; get y `maaffiliation` / tx no |
+| `marketplace`                                | Parcial | Sign en `maclient` create/update/delete; get, `maaffiliation` y `transactions.create` sin Sign |
 
 Referencia oficial y colección Postman: [docs.payku.com](https://docs.payku.com/) · [colección CL](https://docs.payku.com/postman/payku-cl-es.postman_collection.json) · [environment](https://docs.payku.com/postman/payku-environment.postman_environment.json).
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `marketplace.transactions.create`: requiere `marketplace` (token afiliación); response `{ status, id, url }` vía path `/transaction/`.
 - `marketplace.affiliations` (`maaffiliation`): request `name`/`percentage`/`affiliation[][]`; response tipada + delete `{ status, id }`; helpers `buildMarketplaceAffiliation` / `validateMarketplaceAffiliationPercentages`.
 - `marketplace.clients` (`maclient`): create con `bank` tipado; update parcial; response sin `url` falso (`update_at` typo API); delete `{ status, id }`.
 - `escrow.authorize`: response tipada `{ transactions: PaykuEscrowSettlementItem[] }` con statuses documentados; `deposit_date` puede ser `"N/D"`.
