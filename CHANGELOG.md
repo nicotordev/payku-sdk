@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-31
+
+Fase 2 (P0 módulos Chile) completada.
+
 ### Added
 
 - `PaykuCreateConsumptionPlanRequest` / `PaykuCreateConsumptionPlanResponse` para `consumptionSubscriptions.plans.create`.
 - Return types explícitos en `consumptionSubscriptions.clients.create` y `subscriptions.create`.
 - `PaykuConciliationItem`, `PaykuConciliationTransaction`, `PaykuListConciliationsResponse` para `conciliation.create`.
-- Tests unitarios consumption (Sign `/api/suplan/`, fixtures create) y conciliation; smoke integración consumption/conciliation.
+- Smoke integración sandbox por módulo (`consumption`, `conciliation`, `marketplace`, `transactions`, etc.).
 
 ### Changed
 
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `consumptionSubscriptions.transactions.create`: wire `suscription` + opcionales `marketplace`/`card` en `/sutransaction/`; alias `PaykuCreateConsumptionTransactionRequest`.
 - `consumptionSubscriptions.cards.delete`: body `{ card }` en `/suscriptionsdeletecards/`.
+- `consumptionSubscriptions.plans.create`: tipado request/response; Sign con trailing slash (`/api/suplan/`).
 - `subscriptions` (`sususcription`): create/get/list/listV3/delete tipados; query params en list/v3; v3 usa `estatus`.
 - `subscriptions.plans`: get (`plans` objeto) vs list (`plans` array) con `url_notify_*`.
 - `events.create` / `events.get`: responses tipadas (`affiliation` vs `affiliations`, `distribution`); request create alineado a docs.
@@ -74,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Estructura del SDK migrada de `src/resources/` a `src/clients/`.
 - Entry point unificado en `src/index.ts`.
 
-[Unreleased]: https://github.com/nicotordev/payku-sdk/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/nicotordev/payku-sdk/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/nicotordev/payku-sdk/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nicotordev/payku-sdk/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nicotordev/payku-sdk/releases/tag/v1.0.0
