@@ -87,12 +87,16 @@ El SDK lo inyecta automáticamente con `publicToken` (constructor, `forCountry` 
 
 ### Sign (HMAC-SHA256)
 
-Endpoints sensibles envían además el header `Sign`, calculado con el **token privado**:
+Endpoints sensibles envían además el header `Sign`, calculado con el **token privado** (misma lógica que `buildSign` / `HttpClient`):
 
 1. `encodeURIComponent("/api/...")` del path
-2. Parámetros del body (POST/PUT) o query (GET), ordenados por key, excluyendo `null`/`undefined` y **objetos/arrays**
-3. Concatenar `pathCodificado&key=value&...` (o solo el path si no hay params)
-4. `HMAC-SHA256(concat, privateToken)` en hex
+2. Parámetros a firmar:
+   - **GET** → query
+   - **POST / PUT / DELETE** → body (si no hay body, solo el path)
+3. Keys ordenadas alfabéticamente; se omiten `null`/`undefined` y **objetos/arrays**
+4. Cada key/valor se serializa vía `URLSearchParams` (percent-encoding, p. ej. espacios → `+`, `@` → `%40`)
+5. Concatenar `pathCodificado&key=value&...` (o solo el path si no hay params)
+6. `HMAC-SHA256(concat, privateToken)` en hex
 
 El SDK firma solo donde corresponde (`signed: true`). Para integraciones custom exporta `buildSign`:
 
@@ -123,17 +127,17 @@ const sign = buildSign(
 
 ### Matriz Sign por módulo (SDK)
 
-| Módulo | Sign | Notas |
-| ------ | ---- | ----- |
-| `transactions` | No | create/get/list (y On-Site VE) |
-| `banks` / `paymentMethods` | No | Catálogo |
-| `conciliation` | No | |
-| `escrow` / `events` | No | |
-| `wallet` | Sí | payout, withdraw, balance, movements, get payout |
-| `subscriptions` / `consumptionSubscriptions` | Sí | CRUD clientes, planes, tarjetas, txs |
-| `nullification` | Sí | create y get |
-| `mall` | Parcial | create sí; get no |
-| `marketplace` | Parcial | `maclient` create/update/delete sí; get y `maaffiliation` / tx no |
+| Módulo                                       | Sign    | Notas                                                             |
+| -------------------------------------------- | ------- | ----------------------------------------------------------------- |
+| `transactions`                               | No      | create/get/list (y On-Site VE)                                    |
+| `banks` / `paymentMethods`                   | No      | Catálogo                                                          |
+| `conciliation`                               | No      |                                                                   |
+| `escrow` / `events`                          | No      |                                                                   |
+| `wallet`                                     | Sí      | payout, withdraw, balance, movements, get payout                  |
+| `subscriptions` / `consumptionSubscriptions` | Sí      | CRUD clientes, planes, tarjetas, txs                              |
+| `nullification`                              | Sí      | create y get                                                      |
+| `mall`                                       | Parcial | create sí; get no                                                 |
+| `marketplace`                                | Parcial | `maclient` create/update/delete sí; get y `maaffiliation` / tx no |
 
 Referencia oficial y colección Postman: [docs.payku.com](https://docs.payku.com/) · [colección CL](https://docs.payku.com/postman/payku-cl-es.postman_collection.json) · [environment](https://docs.payku.com/postman/payku-environment.postman_environment.json).
 
