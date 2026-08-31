@@ -10,6 +10,44 @@ bun add @nicotordev/payku
 
 ## Configuración
 
+### Por país (recomendado)
+
+Fija la moneda y expone solo los módulos soportados por ese mercado:
+
+```typescript
+import Payku from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "production",
+});
+
+// currency implícita: CLP — no hace falta pasarla
+await payku.transactions.create({
+  amount: 1000,
+  payment: 1,
+  order: "orden-001",
+  email: "cliente@example.com",
+  subject: "Compra test",
+  urlreturn: "https://tu-sitio.com/return",
+  urlnotify: "https://tu-sitio.com/notify",
+});
+
+// También desde .env
+const fromEnv = Payku.fromEnvForCountry("CL");
+```
+
+| País | Cliente          | Moneda | Extra                                               |
+| ---- | ---------------- | ------ | --------------------------------------------------- |
+| `CL` | `PaykuChile`     | CLP    | suscripciones, marketplace, mall, escrow, withdraw… |
+| `PE` | `PaykuPeru`      | PEN    | core compartido                                     |
+| `VE` | `PaykuVenezuela` | VES    | `transactions.confirmOnSite`                        |
+
+Si llamás un módulo no soportado (p. ej. `wallet.withdraw` en Perú), el SDK lanza `PaykuUnsupportedFeatureError`.
+
+### Modo global (multi-país)
+
 ```typescript
 import Payku from "@nicotordev/payku";
 
@@ -23,15 +61,17 @@ const payku = new Payku(
 const paykuFromEnv = Payku.fromEnv();
 ```
 
+En modo global pasás `currency` en cada request (`CLP` | `PEN` | `VES`).
+
 ## Transacciones
 
 ```typescript
+// Con forCountry("CL") — currency ya fijada
 const order = await payku.transactions.create({
   email: "cliente@example.com",
   order: "orden-001",
   subject: "Compra test",
   amount: 1000,
-  currency: "CLP",
   payment: 1,
   urlreturn: "https://tu-sitio.com/return",
   urlnotify: "https://tu-sitio.com/notify",

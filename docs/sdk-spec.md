@@ -9,6 +9,7 @@ Guía de desarrollo para `@nicotordev/payku`. Define arquitectura, convenciones 
 - **HTTP compartido**: `HttpClient` centralizado (axios + Bearer + header `Sign` opcional).
 - **Firma HMAC**: utilidad en `src/http/sign.ts`; endpoints sensibles usan `signed: true`.
 - **Moneda/país por request**: misma base URL (`app.payku.cl` / `des.payku.cl`); el mercado se elige con `currency` y métodos habilitados del comercio.
+- **Cliente por país**: `Payku.forCountry("CL" | "PE" | "VE")` fija currency y tipa solo los módulos soportados; el modo global `new Payku()` sigue disponible.
 - **Errores de negocio**: inspeccionar siempre el JSON (`status: "failed"`), no solo el código HTTP.
 - **Build**: Bun empaqueta JS; `tsc` emite `.d.ts` (`emitDeclarationOnly`).
 
