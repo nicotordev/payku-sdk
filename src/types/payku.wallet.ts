@@ -42,6 +42,7 @@ export interface PaykuWalletMovementPayout {
   accountbank_num?: number | string;
   accountbank_sbif?: string;
   status?: string;
+  /** Wire typo Payku: `update_at` (docs también escriben “moviminto”). */
   update_at?: string;
 }
 
@@ -51,6 +52,7 @@ export interface PaykuWalletMovement {
   subject?: string;
   created_at?: string;
   income_expense?: string;
+  /** Docs Payku: “Estatus del moviminto” (typo en documentación). */
   status?: string;
   amount?: string | number;
   actual_amount?: string | number;
@@ -59,11 +61,19 @@ export interface PaykuWalletMovement {
   payout?: PaykuWalletMovementPayout;
 }
 
+/** `filter` en responses de balance / list / movement get. */
+export interface PaykuWalletFilter {
+  page?: number;
+  per_page?: number;
+  currency?: PaykuCurrency | string;
+  id?: string;
+}
+
 export interface PaykuWalletBalanceResponse extends PaykuSuccessResponse {
   current_id?: string;
   amount_available?: number;
   currency?: PaykuCurrency | string;
-  filter?: Record<string, unknown>;
+  filter?: PaykuWalletFilter;
   wallet_movements?: PaykuWalletMovement[];
 }
 
@@ -71,9 +81,15 @@ export interface PaykuWalletListParams extends PaykuPaginationParams {
   currency?: PaykuCurrency | string;
 }
 
+/**
+ * Shape compartido por `GET /wallet`, `/wallet/list` y `/wallet/{id}`.
+ */
 export interface PaykuWalletListResponse extends PaykuSuccessResponse {
+  current_id?: string;
+  amount_available?: number;
+  currency?: PaykuCurrency | string;
+  filter?: PaykuWalletFilter;
   wallet_movements?: PaykuWalletMovement[];
-  [key: string]: unknown;
 }
 
 export interface PaykuPayoutResponse {
