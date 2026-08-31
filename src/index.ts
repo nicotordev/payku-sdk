@@ -53,6 +53,7 @@ export {
 export {
   buildPaymentRedirectUrl,
   buildMallMerchant,
+  buildEventAffiliation,
   buildMarketplaceAffiliation,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
