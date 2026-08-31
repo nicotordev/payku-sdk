@@ -6,7 +6,11 @@
       "version": "1.4.0"
     }
   },
-  "postCreateCommand": "bun install",
+  "updateContentCommand": "bun install --frozen-lockfile",
+  "postCreateCommand": "test -f .env || cp .env.example .env",
+  "remoteEnv": {
+    "PAYKU_RUN_INTEGRATION_TESTS": "false"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
