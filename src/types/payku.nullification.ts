@@ -1,7 +1,11 @@
+/**
+ * `POST /api/nullification` — crear anulación.
+ * Docs: `id` (trx), `amount`, `subject` (no existe campo `transaction`).
+ */
 export interface PaykuNullificationCreateRequest {
-  transaction?: string;
-  amount?: number | string;
-  [key: string]: unknown;
+  id: string;
+  amount: number;
+  subject: string;
 }
 
 export interface PaykuNullificationResponse {
