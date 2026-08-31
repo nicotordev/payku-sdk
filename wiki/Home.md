@@ -6,16 +6,16 @@ Documentación complementaria de [`@nicotordev/payku`](https://www.npmjs.com/pac
 
 ## Empezar
 
-| Página | Contenido |
-| ------ | --------- |
-| [Instalación y configuración](Instalación-y-configuración) | Bun, tokens, `Payku.forCountry()` |
-| [Chile (CL)](Chile-CL) | Módulos CLP, transacciones, wallet, suscripciones |
-| [Perú y Venezuela](Perú-y-Venezuela) | PEN, VES, On-Site VE |
-| [Webhooks y seguridad](Webhooks-y-seguridad) | `verifyNotify`, tokens, Sign |
-| [Arquitectura del SDK](Arquitectura-del-SDK) | Facade, clientes, tipos, convenciones |
-| [Roadmap Chile](Roadmap-Chile) | Auditoría CL, project board, milestones |
-| [Contribuir](Contribuir) | PRs, tests, Codespaces |
-| [Soporte](Soporte) | Issues, Discussions, Payku Docs |
+| Página                                                     | Contenido                                         |
+| ---------------------------------------------------------- | ------------------------------------------------- |
+| [Instalación y configuración](Instalación-y-configuración) | Bun, tokens, `Payku.forCountry()`                 |
+| [Chile (CL)](Chile-CL)                                     | Módulos CLP, transacciones, wallet, suscripciones |
+| [Perú y Venezuela](Perú-y-Venezuela)                       | PEN, VES, On-Site VE                              |
+| [Webhooks y seguridad](Webhooks-y-seguridad)               | `verifyNotify`, tokens, Sign                      |
+| [Arquitectura del SDK](Arquitectura-del-SDK)               | Facade, clientes, tipos, convenciones             |
+| [Roadmap Chile](Roadmap-Chile)                             | Auditoría CL, project board, milestones           |
+| [Contribuir](Contribuir)                                   | PRs, tests, Codespaces                            |
+| [Soporte](Soporte)                                         | Issues, Discussions, Payku Docs                   |
 
 ## Enlaces rápidos
 

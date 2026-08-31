@@ -3,7 +3,7 @@
 ## Perú (`PE`)
 
 ```typescript
-const payku = Payku.forCountry("PE", { /* tokens */ });
+const payku = Payku.forCountry("PE", {/* tokens */});
 ```
 
 - Moneda: **PEN**
@@ -13,7 +13,7 @@ const payku = Payku.forCountry("PE", { /* tokens */ });
 ## Venezuela (`VE`)
 
 ```typescript
-const payku = Payku.forCountry("VE", { /* tokens */ });
+const payku = Payku.forCountry("VE", {/* tokens */});
 ```
 
 - Moneda: **VES**

@@ -35,11 +35,11 @@ const payku = Payku.forCountry("CL", {
 const fromEnv = Payku.fromEnvForCountry("CL");
 ```
 
-| País | Cliente | Moneda | Notas |
-| ---- | ------- | ------ | ----- |
-| `CL` | `PaykuChile` | CLP | Suscripciones, marketplace, mall, escrow, withdraw… |
-| `PE` | `PaykuPeru` | PEN | Core compartido |
-| `VE` | `PaykuVenezuela` | VES | `transactions.confirmOnSite` |
+| País | Cliente          | Moneda | Notas                                               |
+| ---- | ---------------- | ------ | --------------------------------------------------- |
+| `CL` | `PaykuChile`     | CLP    | Suscripciones, marketplace, mall, escrow, withdraw… |
+| `PE` | `PaykuPeru`      | PEN    | Core compartido                                     |
+| `VE` | `PaykuVenezuela` | VES    | `transactions.confirmOnSite`                        |
 
 Si llamas un módulo no soportado en ese país, el SDK lanza `PaykuUnsupportedFeatureError`.
 
@@ -54,10 +54,10 @@ En modo global debes pasar `currency: "CLP" | "PEN" | "VES"` en cada request.
 
 ## Entornos Payku
 
-| SDK `environment` | Chile |
-| ----------------- | ----- |
-| `sandbox` | `https://des.payku.cl/` |
-| `production` | `https://app.payku.cl/` |
+| SDK `environment` | Chile                   |
+| ----------------- | ----------------------- |
+| `sandbox`         | `https://des.payku.cl/` |
+| `production`      | `https://app.payku.cl/` |
 
 Perú y Venezuela comparten la misma base URL documentada por Payku.
 

@@ -2,12 +2,12 @@
 
 ## SDK (@nicotordev/payku)
 
-| Necesidad | Dónde |
-| --------- | ----- |
-| Bug | [Issues → Bug report](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml) |
-| Paridad docs/API | [Docs / API parity](https://github.com/nicotordev/payku-sdk/issues/new?template=docs_parity.yml) |
-| Preguntas de uso | [Discussions](https://github.com/nicotordev/payku-sdk/discussions) |
-| Vulnerabilidad | [Security Advisories](https://github.com/nicotordev/payku-sdk/security/advisories/new) — no issues públicos |
+| Necesidad        | Dónde                                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| Bug              | [Issues → Bug report](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml)           |
+| Paridad docs/API | [Docs / API parity](https://github.com/nicotordev/payku-sdk/issues/new?template=docs_parity.yml)            |
+| Preguntas de uso | [Discussions](https://github.com/nicotordev/payku-sdk/discussions)                                          |
+| Vulnerabilidad   | [Security Advisories](https://github.com/nicotordev/payku-sdk/security/advisories/new) — no issues públicos |
 
 Antes de abrir un issue:
 

@@ -13,12 +13,12 @@ bun run lint && bun run build && bun run test:unit
 
 ## Issues
 
-| Tipo | Template |
-| ---- | -------- |
-| Bug | [bug_report.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml) |
-| Docs vs API | [docs_parity.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=docs_parity.yml) |
-| Feature | [feature_request.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=feature_request.yml) |
-| Documentación | [documentation.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=documentation.yml) |
+| Tipo          | Template                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| Bug           | [bug_report.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml)           |
+| Docs vs API   | [docs_parity.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=docs_parity.yml)         |
+| Feature       | [feature_request.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=feature_request.yml) |
+| Documentación | [documentation.yml](https://github.com/nicotordev/payku-sdk/issues/new?template=documentation.yml)     |
 
 ## Pull requests
 

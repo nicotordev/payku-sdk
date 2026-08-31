@@ -24,24 +24,24 @@ src/
 
 ## Convenciones de nombres
 
-| Capa | Convención | Ejemplo |
-| ---- | ---------- | ------- |
-| Tipos | `Payku{Action}{Entity}{Request\|Response}` | `PaykuCreateTransactionRequest` |
-| Métodos | verbos `create`, `get`, `list` | `transactions.create` |
-| Errores | `{Operation}Error` extends `PaykuAPIError` | (roadmap F7) |
+| Capa    | Convención                                 | Ejemplo                         |
+| ------- | ------------------------------------------ | ------------------------------- |
+| Tipos   | `Payku{Action}{Entity}{Request\|Response}` | `PaykuCreateTransactionRequest` |
+| Métodos | verbos `create`, `get`, `list`             | `transactions.create`           |
+| Errores | `{Operation}Error` extends `PaykuAPIError` | (roadmap F7)                    |
 
 ## Módulos por país
 
-| Módulo | CL | PE | VE |
-| ------ | -- | -- | -- |
-| Transacción | ✓ | ✓ | ✓ |
-| On-Site confirm | — | — | ✓ |
-| Bancos / métodos pago | ✓ | ✓ | ✓ |
-| Wallet | full | partial | partial |
-| Escrow, anulación, marketplace, mall, evento | ✓ | — | — |
-| Suscripción / consumo | ✓ | — | — |
-| Conciliación | ✓ | — | — |
-| Webhooks | ✓ | ✓ | ✓ |
+| Módulo                                       | CL   | PE      | VE      |
+| -------------------------------------------- | ---- | ------- | ------- |
+| Transacción                                  | ✓    | ✓       | ✓       |
+| On-Site confirm                              | —    | —       | ✓       |
+| Bancos / métodos pago                        | ✓    | ✓       | ✓       |
+| Wallet                                       | full | partial | partial |
+| Escrow, anulación, marketplace, mall, evento | ✓    | —       | —       |
+| Suscripción / consumo                        | ✓    | —       | —       |
+| Conciliación                                 | ✓    | —       | —       |
+| Webhooks                                     | ✓    | ✓       | ✓       |
 
 ## Tests
 

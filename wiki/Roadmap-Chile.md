@@ -6,23 +6,23 @@ Tracker meta: [#101](https://github.com/nicotordev/payku-sdk/issues/101)
 
 ## Seguimiento
 
-| Recurso | Enlace |
-| ------- | ------ |
-| Project board | [Auditoría Chile (CL)](https://github.com/users/nicotordev/projects/4) |
-| Tablero por Fase | [View 2](https://github.com/users/nicotordev/projects/4/views/2) |
-| P0 bugs | [View 4](https://github.com/nicotordev/payku-sdk/issues?q=label%3Abug+label%3Achile) |
-| Milestones | [CL F0 … CL F9](https://github.com/nicotordev/payku-sdk/milestones) |
+| Recurso          | Enlace                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| Project board    | [Auditoría Chile (CL)](https://github.com/users/nicotordev/projects/4)               |
+| Tablero por Fase | [View 2](https://github.com/users/nicotordev/projects/4/views/2)                     |
+| P0 bugs          | [View 4](https://github.com/nicotordev/payku-sdk/issues?q=label%3Abug+label%3Achile) |
+| Milestones       | [CL F0 … CL F9](https://github.com/nicotordev/payku-sdk/milestones)                  |
 
 ## Fases (resumen)
 
-| Fase | Enfoque |
-| ---- | ------- |
-| F0 | Fundamentos HTTP, errores, Sign README |
-| F1 | Suscripciones — tipos compartidos (`suscription`, cards) |
-| F2 | **P0 wire format** — wallet, anulación, escrow, marketplace, consumo… |
-| F3 | Transacciones CL — validación, `payer_rut`, expired |
-| F4–F7 | Validación runtime, tests, webhooks, errores tipados |
-| F8–F9 | DX, documentación |
+| Fase  | Enfoque                                                               |
+| ----- | --------------------------------------------------------------------- |
+| F0    | Fundamentos HTTP, errores, Sign README                                |
+| F1    | Suscripciones — tipos compartidos (`suscription`, cards)              |
+| F2    | **P0 wire format** — wallet, anulación, escrow, marketplace, consumo… |
+| F3    | Transacciones CL — validación, `payer_rut`, expired                   |
+| F4–F7 | Validación runtime, tests, webhooks, errores tipados                  |
+| F8–F9 | DX, documentación                                                     |
 
 ## MVP P0 (bugs de wire format)
 

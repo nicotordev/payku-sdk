@@ -19,10 +19,10 @@ if (result.valid) {
 
 ## Estados notify vs API
 
-| Origen | Valores típicos |
-| ------ | --------------- |
-| Payload `urlnotify` | `success` \| `failed` |
-| GET transacción | `register` \| `pending` \| `success` \| `rejected` |
+| Origen              | Valores típicos                                    |
+| ------------------- | -------------------------------------------------- |
+| Payload `urlnotify` | `success` \| `failed`                              |
+| GET transacción     | `register` \| `pending` \| `success` \| `rejected` |
 
 Ten cuidado al comparar `failed` (notify) con `rejected` (API). Ver issues #8–#10 en el roadmap CL.
 
