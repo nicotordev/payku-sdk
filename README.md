@@ -115,10 +115,10 @@ if (result.valid) {
 
 Según la [introducción de la API Payku](https://docs.payku.com/), **no confíes solo en el código HTTP** (p. ej. 200). Muchas respuestas de error llegan con HTTP 200 y un JSON de negocio:
 
-| `status` en el JSON | Significado |
-| ------------------- | ----------- |
-| `"success"` / `"pending"` / `"register"` | Flujo OK (según endpoint) |
-| `"failed"` | Error de negocio (`type`, `message_error`) |
+| `status` en el JSON                      | Significado                                |
+| ---------------------------------------- | ------------------------------------------ |
+| `"success"` / `"pending"` / `"register"` | Flujo OK (según endpoint)                  |
+| `"failed"`                               | Error de negocio (`type`, `message_error`) |
 
 Este SDK ya inspecciona el body en `HttpClient`: si `status === "failed"` (o `type === "Unauthorized"`), lanza un error tipado en lugar de devolver el JSON.
 
@@ -150,7 +150,10 @@ try {
 
   if (isPaykuError(error)) {
     console.error(error.message, error.statusCode, error.type);
+    return;
   }
+
+  throw error;
 }
 ```
 
