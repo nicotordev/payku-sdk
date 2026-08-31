@@ -310,3 +310,211 @@ describe("PaykuSubscriptions suclient", () => {
     expect(response.update_at).toBe("2023-10-2 08:32:52");
   });
 });
+
+describe("PaykuSubscriptions sususcription", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let subscriptions: PaykuSubscriptions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({ baseURL: "https://des.payku.cl/api" });
+    mock = new MockAdapter(apiAxios);
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+    subscriptions = new PaykuSubscriptions(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("create maps register url fixture", async () => {
+    mock.onPost("/sususcription").reply(200, {
+      status: "register",
+      id: "sucaab7865dceaff49d8b3",
+      url: "http://des.payku.cl/gateway/registrosuscripcion",
+    });
+
+    const response = await subscriptions.subscriptions.create({
+      plan: "pl9697fb170834ad42dd00",
+      client: "cl9b1e1dd988694f30fa30",
+    });
+
+    expect(response.status).toBe("register");
+    expect(response.url).toContain("registrosuscripcion");
+  });
+
+  test("get maps nested client/plan/active_cards", async () => {
+    mock.onGet("/sususcription/suc1").reply(200, {
+      id: "suc1",
+      status: "active",
+      start: "2019-07-22 18:34:49",
+      end: "2023-06-12 00:00:00",
+      client: {
+        id: "cld1",
+        name: "name",
+        email: "joedoe@example.com",
+      },
+      plan: { id: "pl1", name: "test plan", currency: "CLP" },
+      active_cards: [
+        {
+          last_4_digits: "6622",
+          identifier: "sure1",
+          card_type: "Visa",
+          register: "2023-07-26 08:00:19",
+        },
+      ],
+      transactions: [],
+      logs: { status: [] },
+    });
+
+    const response = await subscriptions.subscriptions.get("suc1");
+    expect(response.status).toBe("active");
+    expect(response.client.email).toBe("joedoe@example.com");
+    expect(response.active_cards?.[0]?.identifier).toBe("sure1");
+  });
+
+  test("list forwards page query and maps envelope", async () => {
+    mock.onGet("/sususcription").reply((config) => {
+      expect(config.params).toEqual({ page: 1, per_page: 100 });
+      return [
+        200,
+        [
+          {
+            subscriptions: [
+              {
+                id: "suc1",
+                status: "active",
+                client: { id: "c1", name: "n", email: "a@b.com" },
+                plan: { id: "p1", name: "plan", currency: "CLP" },
+              },
+            ],
+          },
+        ],
+      ];
+    });
+
+    const response = await subscriptions.subscriptions.list({
+      page: 1,
+      per_page: 100,
+    });
+    expect(response[0]?.subscriptions[0]?.id).toBe("suc1");
+  });
+
+  test("listV3 maps estatus and paid", async () => {
+    mock.onGet("/sususcriptionv3").reply((config) => {
+      expect(config.params).toEqual({
+        date_init: "2021-09-01",
+        date_end: "2021-09-15",
+        active: true,
+      });
+      return [
+        200,
+        [
+          {
+            subscriptions: [
+              {
+                id: "suc1",
+                estatus: "active",
+                client: { id: "c1", name: "n", email: "a@b.com" },
+                plan: { id: "p1", name: "plan", currency: "CLP" },
+                paid: [{ status: "success", amount_paid: 2500 }],
+              },
+            ],
+          },
+        ],
+      ];
+    });
+
+    const response = await subscriptions.subscriptions.listV3({
+      date_init: "2021-09-01",
+      date_end: "2021-09-15",
+      active: true,
+    });
+    expect(response[0]?.subscriptions[0]?.estatus).toBe("active");
+    expect(response[0]?.subscriptions[0]?.paid?.[0]?.amount_paid).toBe(2500);
+  });
+
+  test("delete returns id and status", async () => {
+    mock.onDelete("/sususcription/suc1").reply(200, {
+      id: "suc1",
+      status: "success",
+    });
+    const response = await subscriptions.subscriptions.delete("suc1");
+    expect(response).toEqual({ id: "suc1", status: "success" });
+  });
+});
+
+describe("PaykuSubscriptions plans", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let subscriptions: PaykuSubscriptions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({ baseURL: "https://des.payku.cl/api" });
+    mock = new MockAdapter(apiAxios);
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+    subscriptions = new PaykuSubscriptions(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("get maps plans object", async () => {
+    mock.onGet("/suplan/pl1").reply(200, {
+      status: "success",
+      plans: {
+        id: "pl1",
+        status: "active",
+        name: "Test plan",
+        code: "001",
+        description: "Test Plan",
+        url_notify_payment: "",
+        url_notify_suscription: "",
+        total_suscription: 0,
+        total_suscription_active: 0,
+      },
+    });
+
+    const response = await subscriptions.plans.get("pl1");
+    expect(response.plans.id).toBe("pl1");
+    expect(response.plans.url_notify_suscription).toBe("");
+  });
+
+  test("list maps plans array", async () => {
+    mock.onGet("/suplan/plans").reply(200, {
+      status: "success",
+      plans: [
+        {
+          id: "pl1",
+          status: "active",
+          name: "Test plan",
+          code: "001",
+          description: "Test Plan",
+          url_notify_payment: "",
+          url_notify_suscription: "",
+          total_suscription: 0,
+          total_suscription_active: 0,
+        },
+      ],
+    });
+
+    const response = await subscriptions.plans.list();
+    expect(Array.isArray(response.plans)).toBe(true);
+    expect(response.plans[0]?.name).toBe("Test plan");
+  });
+});

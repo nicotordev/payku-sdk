@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `subscriptions` (`sususcription`): create/get/list/listV3/delete tipados; query params en list/v3; v3 usa `estatus`.
+- `subscriptions.plans`: get (`plans` objeto) vs list (`plans` array) con `url_notify_*`.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
