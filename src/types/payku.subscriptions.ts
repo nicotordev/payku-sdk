@@ -1,10 +1,28 @@
-import type {
-  PaykuRegisterResponse,
-  PaykuSuccessResponse,
-} from "./payku.responses";
+import type { PaykuSuccessResponse } from "./payku.responses";
 
-export interface PaykuSubscriptionClientRequest {
+/**
+ * `POST /api/suclient` — crear cliente.
+ * Docs: `email`, `name`, `phone` requeridos; `rut` y dirección opcionales.
+ */
+export interface PaykuCreateSubscriptionClientRequest {
   email: string;
+  name: string;
+  phone: string;
+  rut?: string;
+  address?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  postal_code?: string;
+  additional_parameters?: Record<string, unknown>;
+}
+
+/**
+ * `PUT /api/suclient/{id}` — actualización parcial (todos opcionales).
+ * Docs no incluyen `rut` en el body de update.
+ */
+export interface PaykuUpdateSubscriptionClientRequest {
+  email?: string;
   name?: string;
   phone?: string;
   address?: string;
@@ -15,8 +33,84 @@ export interface PaykuSubscriptionClientRequest {
   additional_parameters?: Record<string, unknown>;
 }
 
-export interface PaykuSubscriptionClientResponse extends PaykuRegisterResponse {
-  [key: string]: unknown;
+/** @deprecated Preferir `PaykuCreateSubscriptionClientRequest`. */
+export type PaykuSubscriptionClientRequest =
+  PaykuCreateSubscriptionClientRequest;
+
+/** Tarjeta activa en `GET /api/suclient/{id}` (`active_cards`). */
+export interface PaykuSubscriptionClientActiveCard {
+  last_4_digits?: string;
+  identifier?: string;
+  card_type?: string;
+  register?: string;
+}
+
+export interface PaykuSubscriptionClientSubscriptionPlan {
+  id?: string;
+  name?: string;
+  currency?: string;
+}
+
+export interface PaykuSubscriptionClientSubscriptionCard {
+  last_4_digits?: string;
+  card_type?: string;
+}
+
+export interface PaykuSubscriptionClientSubscriptionTransaction {
+  created_at?: string;
+  date_payment?: string;
+  amount?: number;
+  transaction?: number;
+  authorization_code?: string;
+  order?: string;
+  description?: string;
+  status?: string;
+}
+
+/**
+ * Nested bajo wire key `subcriptions` (typo Payku, sin segunda “c”).
+ * En create puede venir `null`. El nombre del tipo usa `Subscription`;
+ * solo la propiedad JSON conserva el typo.
+ */
+export interface PaykuSubscriptionClientSubscription {
+  id?: string;
+  created_at?: string;
+  status?: string;
+  amount?: string;
+  plan?: PaykuSubscriptionClientSubscriptionPlan[];
+  cards?: PaykuSubscriptionClientSubscriptionCard[];
+  transactions?: PaykuSubscriptionClientSubscriptionTransaction[];
+}
+
+/**
+ * Respuesta 200 de create/get/update cliente.
+ * Conserva typos de la API en propiedades JSON: `update_at`, `subcriptions`.
+ */
+export interface PaykuSubscriptionClientResponse {
+  status?: string;
+  id?: string;
+  rut?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  postal_code?: string;
+  created_at?: string;
+  /** Wire typo Payku: `update_at` (no `updated_at`). */
+  update_at?: string | null;
+  /** Wire typo Payku: `subcriptions`. */
+  subcriptions?: PaykuSubscriptionClientSubscription | null;
+  active_cards?: PaykuSubscriptionClientActiveCard[];
+  additional_parameters?: Record<string, unknown>;
+}
+
+/** Respuesta 200 de `DELETE /api/suclient/{id}`. */
+export interface PaykuDeleteSubscriptionClientResponse {
+  status: string;
+  id: string;
 }
 
 export interface PaykuCreateSubscriptionRequest {
