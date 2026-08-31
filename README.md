@@ -111,9 +111,55 @@ if (result.valid) {
 }
 ```
 
-## Errores de negocio (`status: "failed"`)
+## Errores y respuestas
 
-`HttpClient` ya lanza `PaykuError` cuando la API responde con `{ status: "failed" }` (incluso en HTTP 200). Si inspeccionas JSON crudo de respuestas API (proxy, log), usa los type guards públicos:
+Según la [introducción de la API Payku](https://docs.payku.com/), **no confíes solo en el código HTTP** (p. ej. 200). Muchas respuestas de error llegan con HTTP 200 y un JSON de negocio:
+
+| `status` en el JSON                      | Significado                                |
+| ---------------------------------------- | ------------------------------------------ |
+| `"success"` / `"pending"` / `"register"` | Flujo OK (según endpoint)                  |
+| `"failed"`                               | Error de negocio (`type`, `message_error`) |
+
+Este SDK ya inspecciona el body en `HttpClient`: si `status === "failed"` (o `type === "Unauthorized"`), lanza un error tipado en lugar de devolver el JSON.
+
+### try / catch con el SDK
+
+```typescript
+import Payku, { PaykuAPIError, isPaykuError } from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+try {
+  await payku.transactions.create({
+    amount: 1000,
+    payment: 1,
+    order: "orden-001",
+    email: "cliente@example.com",
+    subject: "Compra test",
+  });
+} catch (error) {
+  if (error instanceof PaykuAPIError) {
+    console.error(error.message, error.statusCode, error.type);
+    console.error(error.response); // JSON original de Payku
+    return;
+  }
+
+  if (isPaykuError(error)) {
+    console.error(error.message, error.statusCode, error.type);
+    return;
+  }
+
+  throw error;
+}
+```
+
+### Inspeccionar JSON crudo
+
+Si lees respuestas API fuera del cliente (proxy, log), usa los type guards públicos:
 
 ```typescript
 import {
