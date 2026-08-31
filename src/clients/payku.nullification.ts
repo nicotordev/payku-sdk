@@ -6,8 +6,9 @@ import {
 import type { HttpClient } from "../http/client";
 import { bodyAsRecord } from "../utils/payku.utils";
 import type {
+  PaykuCreateNullificationResponse,
+  PaykuGetNullificationResponse,
   PaykuNullificationCreateRequest,
-  PaykuNullificationResponse,
 } from "../types/payku.nullification";
 
 export default class PaykuNullification {
@@ -19,9 +20,11 @@ export default class PaykuNullification {
     private readonly options?: PaykuClientOptions,
   ) {}
 
-  private createNullification(params: PaykuNullificationCreateRequest) {
+  private createNullification(
+    params: PaykuNullificationCreateRequest,
+  ): Promise<PaykuCreateNullificationResponse> {
     return this.http
-      .request<PaykuNullificationResponse>({
+      .request<PaykuCreateNullificationResponse>({
         method: "POST",
         path: "/nullification",
         body: bodyAsRecord(params),
@@ -37,9 +40,9 @@ export default class PaykuNullification {
       });
   }
 
-  private getNullification(id: string) {
+  private getNullification(id: string): Promise<PaykuGetNullificationResponse> {
     return this.http
-      .request<PaykuNullificationResponse>({
+      .request<PaykuGetNullificationResponse>({
         method: "GET",
         path: `/nullification/${id}`,
         signed: true,
