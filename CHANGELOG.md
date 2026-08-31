@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `marketplace.affiliations` (`maaffiliation`): request `name`/`percentage`/`affiliation[][]`; response tipada + delete `{ status, id }`; helpers `buildMarketplaceAffiliation` / `validateMarketplaceAffiliationPercentages`.
 - `escrow.authorize`: response tipada `{ transactions: PaykuEscrowSettlementItem[] }` con statuses documentados; `deposit_date` puede ser `"N/D"`.
 - `escrow.authorize`: request usa `transactions: string[]` (eliminado `transaction` singular); ejemplo README Chile.
 - `nullification.get`: se mantiene `signed: true` — sandbox exige Sign (`401 waiting sign` sin header); docs incompletas. Test unitario + nota en README/sdk-spec.
