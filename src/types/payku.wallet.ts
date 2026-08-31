@@ -99,7 +99,7 @@ export interface PaykuPayoutDetail {
   accountbank_type?: number | string;
   accountbank_num?: number | string;
   accountbank_sbif?: string;
-  status?: PaykuPayoutStatus | string;
+  status?: PaykuPayoutStatus;
   /** Wire typo Payku: `update_at`. */
   update_at?: string;
   origin_wallet?: string;
