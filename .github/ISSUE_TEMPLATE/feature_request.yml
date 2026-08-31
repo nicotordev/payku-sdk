@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an enhancement for the SDK
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API / behavior
+      description: Sketch of the public API or behavior you want.
+      render: typescript
+    validations:
+      required: true
+  - type: dropdown
+    id: country
+    attributes:
+      label: Relevant market
+      options:
+        - Chile (CL)
+        - Peru (PE)
+        - Venezuela (VE)
+        - Shared / all markets
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked docs/sdk-spec.md and existing issues
+          required: true

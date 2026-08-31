@@ -1,0 +1,73 @@
+name: Bug report
+description: Report a problem with @nicotordev/payku
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Never paste live Payku tokens.**
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Bun
+        - Node.js
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: country
+    attributes:
+      label: Country / currency mode
+      options:
+        - CL / CLP (Payku.forCountry or currency CLP)
+        - PE / PEN
+        - VE / VES
+        - Global (new Payku)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Minimal code sample (sanitize secrets).
+      render: typescript
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error / logs
+      render: shell
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: I am not including real tokens or Sign payloads
+          required: true

@@ -1,27 +1,46 @@
-# Seguridad
+# Security Policy
 
-## Versiones soportadas
+## Supported versions
 
-| Versión | Soportada          |
+| Version | Supported          |
 | ------- | ------------------ |
 | 1.x     | :white_check_mark: |
 
-## Alcance
+## Reporting a vulnerability
 
-En scope:
+Please **do not** open a public GitHub issue for security problems.
 
-- Manejo de tokens público/privado en el SDK
-- Firma HMAC (`Sign`) en endpoints sensibles
-- Verificación de callbacks `urlnotify`
-- Logging sanitizado opcional (`options.logging`)
+Prefer one of:
+
+1. [GitHub Security Advisories](https://github.com/nicotordev/payku-sdk/security/advisories/new) (private)
+2. Email **nicotordev@gmail.com** with subject `[payku-sdk] Security report`
+
+Include:
+
+- Affected package version
+- Description and impact
+- Steps to reproduce (PoC if possible)
+- Whether the issue is already public elsewhere
+
+We aim to acknowledge reports within **72 hours** and to share a remediation plan when confirmed.
+
+## Scope
+
+In scope:
+
+- Credential handling in the SDK
+- HMAC signing (`Sign`) correctness
+- Webhook / `urlnotify` verification logic
+- Accidental secret logging
 
 Out of scope:
 
-- Configuración del servidor del comercio
-- Exposición de tokens en repositorios o logs del usuario
+- Merchant server misconfiguration
+- Compromised Payku account credentials
+- Issues in Payku’s hosted API itself (report those to Payku)
 
-## Reportar vulnerabilidades
+## Safe development practices
 
-Reporta problemas de seguridad vía [GitHub Security Advisories](https://github.com/nicotordev/payku-sdk/security/advisories) o escribiendo a **nicotordev@gmail.com**.
-
-No publiques tokens reales en issues públicos.
+- Never commit `.env` or live tokens
+- Prefer `Payku.forCountry(...)` / env-based config without hardcoding secrets
+- Keep `options.logging` off in production unless you sanitize payloads

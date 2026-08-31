@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Payku API / account support
+    url: https://ayuda.payku.com
+    about: Questions about Payku accounts, tokens, or the hosted API itself.
+  - name: Ask a question
+    url: https://github.com/nicotordev/payku-sdk/discussions/new?category=q-a
+    about: Usage questions and design discussions for the SDK.
+  - name: Security report
+    url: https://github.com/nicotordev/payku-sdk/security/advisories/new
+    about: Privately report a vulnerability. Do not open a public issue.
