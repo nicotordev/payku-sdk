@@ -71,3 +71,58 @@ describe("PaykuWallet withdraw", () => {
     expect(response).not.toHaveProperty("identifier_payout");
   });
 });
+
+describe("PaykuWallet payout create", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let wallet: PaykuWallet;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    wallet = new PaykuWallet(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("create maps identifier_wallet and identifier_payout fixture", async () => {
+    const createFixture = {
+      status: "success",
+      identifier_wallet: "wab5f7232dafff18f9",
+      identifier_payout: "mor33e36b01e8a11b9ee",
+    };
+
+    mock.onPost("/wallet/payout").reply(200, createFixture);
+
+    const response = await wallet.payouts.create({
+      email: "test@test.com",
+      subject: "payout order",
+      currency: "CLP",
+      order: "367734544",
+      amount: 1000,
+      accountbank_name: "test",
+      accountbank_rut: "111111111",
+      accountbank_sbif: "0001",
+      accountbank_type: "1",
+      accountbank_num: "123123123",
+    });
+
+    expect(response).toEqual(createFixture);
+    expect(response.identifier_wallet).toBe("wab5f7232dafff18f9");
+    expect(response.identifier_payout).toBe("mor33e36b01e8a11b9ee");
+  });
+});
