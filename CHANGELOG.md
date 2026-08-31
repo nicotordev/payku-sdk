@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `consumptionSubscriptions.transactions.create`: wire `suscription` + opcionales `marketplace`/`card` en `/sutransaction/`; alias `PaykuCreateConsumptionTransactionRequest`.
+- `consumptionSubscriptions.cards.delete`: body `{ card }` en `/suscriptionsdeletecards/`.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added

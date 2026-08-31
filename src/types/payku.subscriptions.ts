@@ -132,7 +132,15 @@ export interface PaykuCreateSubscriptionTransactionRequest {
   card?: string;
 }
 
-/** Respuesta 200 de `POST /api/sutransaction`. */
+/**
+ * Alias explícito para `consumptionSubscriptions.transactions.create`
+ * (`POST /api/sutransaction/`). Mismo wire que suscripción; docs de consumo
+ * documentan `marketplace` y `card`.
+ */
+export type PaykuCreateConsumptionTransactionRequest =
+  PaykuCreateSubscriptionTransactionRequest;
+
+/** Respuesta 200 de `POST /api/sutransaction` / `sutransaction/`. */
 export interface PaykuCreateSubscriptionTransactionResponse {
   status: string;
   order?: string;
