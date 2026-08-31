@@ -17,6 +17,7 @@ import type {
   PaykuDeleteSubscriptionResponse,
   PaykuGetSubscriptionPlanResponse,
   PaykuGetSubscriptionResponse,
+  PaykuListSubscriptionClientsResponse,
   PaykuListSubscriptionPlansResponse,
   PaykuListSubscriptionsQuery,
   PaykuListSubscriptionsResponse,
@@ -25,7 +26,6 @@ import type {
   PaykuRegisterCardRequest,
   PaykuRegisterCardResponse,
   PaykuSubscriptionClientResponse,
-  PaykuSubscriptionsListResponse,
   PaykuUpdateSubscriptionClientRequest,
 } from "../types/payku.subscriptions";
 
@@ -121,11 +121,12 @@ export default class PaykuSubscriptions {
     );
   }
 
-  private listClients() {
+  private listClients(query?: Record<string, unknown>) {
     return this.wrap("subscriptions.clients.list", () =>
-      this.http.request<PaykuSubscriptionsListResponse>({
+      this.http.request<PaykuListSubscriptionClientsResponse>({
         method: "GET",
         path: "/suclient/customers",
+        query,
         signed: true,
       }),
     );

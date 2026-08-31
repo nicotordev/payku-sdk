@@ -309,6 +309,29 @@ describe("PaykuSubscriptions suclient", () => {
     expect(response.name).toBe("John Doe Doe");
     expect(response.update_at).toBe("2023-10-2 08:32:52");
   });
+
+  test("list clients maps Customers envelope", async () => {
+    const listFixture = [
+      {
+        Customers: [
+          {
+            last_4_digits: "XXXXXXXXXXXX6622",
+            identifier: "surec804a8ed60c747cb8839",
+            card_type: "Visa",
+            register: "2023-07-26 08:00:19",
+          },
+        ],
+      },
+    ];
+
+    mock.onGet("/suclient/customers").reply(200, listFixture);
+
+    const response = await subscriptions.clients.list();
+    expect(response).toEqual(listFixture);
+    expect(response[0]?.Customers[0]?.identifier).toBe(
+      "surec804a8ed60c747cb8839",
+    );
+  });
 });
 
 describe("PaykuSubscriptions sususcription", () => {
@@ -380,9 +403,14 @@ describe("PaykuSubscriptions sususcription", () => {
     expect(response.active_cards?.[0]?.identifier).toBe("sure1");
   });
 
-  test("list forwards page query and maps envelope", async () => {
+  test("list forwards page and filter query and maps envelope", async () => {
     mock.onGet("/sususcription").reply((config) => {
-      expect(config.params).toEqual({ page: 1, per_page: 100 });
+      expect(config.params).toEqual({
+        page: 1,
+        per_page: 100,
+        date_init: "2023-01-01",
+        active: true,
+      });
       return [
         200,
         [
@@ -391,6 +419,7 @@ describe("PaykuSubscriptions sususcription", () => {
               {
                 id: "suc1",
                 status: "active",
+                last_status_current_payment: "pending",
                 client: { id: "c1", name: "n", email: "a@b.com" },
                 plan: { id: "p1", name: "plan", currency: "CLP" },
               },
@@ -403,8 +432,13 @@ describe("PaykuSubscriptions sususcription", () => {
     const response = await subscriptions.subscriptions.list({
       page: 1,
       per_page: 100,
+      date_init: "2023-01-01",
+      active: true,
     });
     expect(response[0]?.subscriptions[0]?.id).toBe("suc1");
+    expect(response[0]?.subscriptions[0]?.last_status_current_payment).toBe(
+      "pending",
+    );
   });
 
   test("listV3 maps estatus and paid", async () => {
