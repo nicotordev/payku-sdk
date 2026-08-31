@@ -1,5 +1,5 @@
 /** Tupla wire de afiliado: `[email, percent]` (forma de los ejemplos CURL/JS). */
-export type PaykuEventAffiliationTuple = [email: string, percent: number | string];
+export type PaykuEventAffiliationTuple = [email: string, percent: number];
 
 /**
  * `POST /api/event` — crear evento.
@@ -20,8 +20,8 @@ export interface PaykuCreateEventRequest {
 
 /** Interim response hasta tipar create vs get (#47). */
 export interface PaykuEventResponse {
-  status?: string;
-  id?: string;
+  status: string;
+  id: string;
   event?: string;
   [key: string]: unknown;
 }

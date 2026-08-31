@@ -37,7 +37,7 @@ export function buildMallMerchant(params: {
 
 /** Construye tuplas `[email, percent]` para `POST /api/event`. */
 export function buildEventAffiliation(
-  members: Array<{ email: string; percent: number | string }>,
+  members: Array<{ email: string; percent: number }>,
 ): PaykuEventAffiliationTuple[] {
   return members.map((member) => [member.email, member.percent]);
 }
