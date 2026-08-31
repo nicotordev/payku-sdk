@@ -8,8 +8,10 @@ By participating, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md
 
 ## Ways to contribute
 
-- Report bugs via [Issues](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml)
-- Request features via [Issues](https://github.com/nicotordev/payku-sdk/issues/new?template=feature_request.yml)
+- Report bugs via [Bug report](https://github.com/nicotordev/payku-sdk/issues/new?template=bug_report.yml)
+- Report Payku Docs vs SDK mismatches via [Docs / API parity](https://github.com/nicotordev/payku-sdk/issues/new?template=docs_parity.yml)
+- Request features via [Feature request](https://github.com/nicotordev/payku-sdk/issues/new?template=feature_request.yml)
+- Improve docs via [Documentation](https://github.com/nicotordev/payku-sdk/issues/new?template=documentation.yml)
 - Improve docs (`README.md`, `docs/`, examples)
 - Fix bugs or implement features with a pull request
 - Join [Discussions](https://github.com/nicotordev/payku-sdk/discussions) for questions and ideas

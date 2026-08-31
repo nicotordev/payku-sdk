@@ -9,6 +9,20 @@ Orden recomendado para implementar los tickets abiertos del SDK (`nicotordev/pay
 
 Referencia meta: [#101](https://github.com/nicotordev/payku-sdk/issues/101) (tracker auditoría Chile).
 
+### Seguimiento en GitHub
+
+| Recurso           | Enlace                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| **Project board** | [Payku SDK — Auditoría Chile (CL)](https://github.com/users/nicotordev/projects/4) |
+| Vista principal   | [Tablero por Fase](https://github.com/users/nicotordev/projects/4/views/2)         |
+| P0 bugs           | [P0 — Bugs wire format](https://github.com/users/nicotordev/projects/4/views/4)    |
+| Good first issues | [Good first issues](https://github.com/users/nicotordev/projects/4/views/3)        |
+| Milestones        | [Issues por milestone](https://github.com/nicotordev/payku-sdk/milestones)         |
+
+**Milestones** (uno por fase): `CL F0 — Fundamentos` … `CL F9 — Documentación`, más `CL — Meta / tracker` (#101).
+
+Campos del project: **Fase** (F0–F9), **Prioridad** (P0 bug / P1 tipos / P2 enhancement / Meta), **Status** (Todo / In Progress / Done).
+
 ### Qué incluye / qué no
 
 | Incluido en este roadmap                                                                                                                                | Fuera de alcance (CL doc)                  |

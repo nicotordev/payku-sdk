@@ -36,6 +36,22 @@ body:
         - Not sure
     validations:
       required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: SDK module (if known)
+      options:
+        - transactions
+        - subscriptions
+        - wallet
+        - consumption
+        - conciliation
+        - banks
+        - payment-methods
+        - marketplace / mall / events
+        - escrow / nullification
+        - webhooks / core-api
+        - Not sure
   - type: textarea
     id: description
     attributes:

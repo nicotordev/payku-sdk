@@ -1,0 +1,99 @@
+name: Docs / API parity
+description: Report a mismatch between Payku Docs and the SDK
+title: "[Chile][module]: "
+labels: ["enhancement", "triage", "chile"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the SDK types, wire format, validation, or docs do not match [Payku Docs](https://docs.payku.com).
+        Check [open Chile issues](https://github.com/nicotordev/payku-sdk/issues?q=is%3Aissue+is%3Aopen+label%3Achile) first.
+  - type: dropdown
+    id: country
+    attributes:
+      label: Country / market
+      options:
+        - Chile (CL)
+        - Peru (PE)
+        - Venezuela (VE)
+        - Shared / all markets
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: SDK module
+      options:
+        - transactions
+        - subscriptions
+        - wallet
+        - consumption
+        - conciliation
+        - banks
+        - payment-methods
+        - marketplace
+        - mall
+        - events
+        - escrow
+        - nullification
+        - core-api
+        - webhooks
+        - other
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Impact
+      description: P0 = wrong HTTP body/path breaks real API calls
+      options:
+        - P0 — wire format bug (breaks API calls)
+        - P1 — incomplete types / DX
+        - P2 — docs or enhancement only
+    validations:
+      required: true
+  - type: input
+    id: docs_url
+    attributes:
+      label: Payku Docs URL or section
+      placeholder: "https://docs.payku.com/... or section name"
+    validations:
+      required: true
+  - type: textarea
+    id: docs_behavior
+    attributes:
+      label: What Payku Docs say
+      description: Quote fields, paths, or response shapes (no secrets).
+    validations:
+      required: true
+  - type: textarea
+    id: sdk_behavior
+    attributes:
+      label: What the SDK does today
+      description: File paths, types, or method names if known.
+      render: typescript
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected SDK behavior
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Bullet list of done conditions (tests, types, docs).
+      placeholder: |
+        - [ ] Fix request/response types
+        - [ ] Unit test with fixture
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and the CL roadmap project
+          required: true
+        - label: I am not including real tokens or Sign payloads
+          required: true

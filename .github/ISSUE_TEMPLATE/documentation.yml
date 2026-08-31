@@ -1,0 +1,53 @@
+name: Documentation
+description: Improve README, examples, or docs/
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For SDK bugs or API mismatches, use **Bug report** or **Docs / API parity** instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Documentation area
+      options:
+        - README.md
+        - docs/sdk-spec.md
+        - docs/CL-development-roadmap.md
+        - docs/payku.md
+        - Examples / snippets
+        - SECURITY.md / CONTRIBUTING
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing or unclear?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested change
+      description: Outline or draft text if you have it.
+  - type: dropdown
+    id: country
+    attributes:
+      label: Relevant market (if any)
+      options:
+        - Chile (CL)
+        - Peru (PE)
+        - Venezuela (VE)
+        - Shared / all markets
+        - Not applicable
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked existing docs and issues
+          required: true
