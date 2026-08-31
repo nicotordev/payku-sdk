@@ -36,12 +36,18 @@ describe("HttpClient business error handling", () => {
       message_error: "Transaction not found",
     });
 
-    await expect(
-      http.request({
+    let error: unknown;
+    try {
+      await http.request({
         method: "GET",
         path: "/transaction/tx-404",
-      }),
-    ).rejects.toMatchObject({
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(PaykuError);
+    expect(error).toMatchObject({
       name: "PaykuError",
       message: "Transaction not found",
       statusCode: 200,
@@ -56,15 +62,21 @@ describe("HttpClient business error handling", () => {
       message_error: "Validation failed",
     });
 
-    await expect(
-      http.request({
+    let error: unknown;
+    try {
+      await http.request({
         method: "POST",
         path: "/transaction",
         body: {
           amount: 0,
         },
-      }),
-    ).rejects.toMatchObject({
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(PaykuError);
+    expect(error).toMatchObject({
       name: "PaykuError",
       message: "Validation failed",
       statusCode: 200,
