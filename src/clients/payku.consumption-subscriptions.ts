@@ -10,6 +10,7 @@ import type {
   PaykuCreateSubscriptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
+  PaykuDeleteCardResponse,
   PaykuSubscriptionClientRequest,
 } from "../types/payku.subscriptions";
 
@@ -50,7 +51,9 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public cards = {
-    delete: (params: PaykuDeleteCardRequest) =>
+    delete: (
+      params: PaykuDeleteCardRequest,
+    ): Promise<PaykuDeleteCardResponse> =>
       this.post(
         "/suscriptionsdeletecards/",
         bodyAsRecord(params),

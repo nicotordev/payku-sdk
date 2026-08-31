@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `subscriptions.cards.register`: body usa `suscription` (no `client`); response tipada (`status`, `id`, `url`).
+- `subscriptions.cards.delete` / consumo: body usa `card` (wire Payku; ejemplos docs); response tipada (`status`, `card`).
 - `subscriptions.transactions.create` / consumo: body usa `suscription` (wire Payku) y response tipada (`transaction_id`, `verification_key`, …).
 
 ### Added

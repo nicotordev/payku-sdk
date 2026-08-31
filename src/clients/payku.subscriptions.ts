@@ -10,7 +10,9 @@ import type {
   PaykuCreateSubscriptionTransactionRequest,
   PaykuCreateSubscriptionTransactionResponse,
   PaykuDeleteCardRequest,
+  PaykuDeleteCardResponse,
   PaykuRegisterCardRequest,
+  PaykuRegisterCardResponse,
   PaykuSubscriptionClientRequest,
   PaykuSubscriptionClientResponse,
   PaykuSubscriptionPlansResponse,
@@ -203,7 +205,7 @@ export default class PaykuSubscriptions {
 
   private registerCard(params: PaykuRegisterCardRequest) {
     return this.wrap("subscriptions.cards.register", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuRegisterCardResponse>({
         method: "POST",
         path: "/suinscriptionscards",
         body: bodyAsRecord(params),
@@ -214,7 +216,7 @@ export default class PaykuSubscriptions {
 
   private deleteCard(params: PaykuDeleteCardRequest) {
     return this.wrap("subscriptions.cards.delete", () =>
-      this.http.request<PaykuSubscriptionResponse>({
+      this.http.request<PaykuDeleteCardResponse>({
         method: "POST",
         path: "/suscriptionsdeletecards",
         body: bodyAsRecord(params),

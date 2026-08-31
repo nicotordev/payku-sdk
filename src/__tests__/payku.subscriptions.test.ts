@@ -69,4 +69,45 @@ describe("PaykuSubscriptions sutransaction", () => {
     expect(response.transaction_id).toBe("204444");
     expect(response.verification_key).toBeTruthy();
   });
+
+  test("cards.register posts suscription key on /suinscriptionscards", async () => {
+    mock.onPost("/suinscriptionscards").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({ suscription: "sucaab7865dceaff49d8b3" });
+      expect(body).not.toHaveProperty("client");
+
+      return [
+        200,
+        {
+          status: "success",
+          id: "surec123",
+          url: "https://des.payku.cl/gateway/registercard",
+        },
+      ];
+    });
+
+    const response = await subscriptions.cards.register({
+      suscription: "sucaab7865dceaff49d8b3",
+    });
+
+    expect(response.status).toBe("success");
+    expect(response.id).toBe("surec123");
+    expect(response.url).toContain("registercard");
+  });
+
+  test("cards.delete posts card key on /suscriptionsdeletecards", async () => {
+    mock.onPost("/suscriptionsdeletecards").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({ card: "surec123" });
+      expect(body).not.toHaveProperty("client");
+      expect(body).not.toHaveProperty("suscription");
+
+      return [200, { status: "Delete", card: "surec123" }];
+    });
+
+    const response = await subscriptions.cards.delete({ card: "surec123" });
+
+    expect(response.status).toBe("Delete");
+    expect(response.card).toBe("surec123");
+  });
 });
