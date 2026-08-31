@@ -72,7 +72,7 @@ src/
 ## 4. Autenticación y firma
 
 - **Todas las requests**: `Authorization: Bearer {TOKEN_PÚBLICO}`.
-- **Requests firmadas** (`Sign`): wallet payout/withdraw, suscripciones, anulación (**create y get**; sandbox exige Sign en GET aunque los ejemplos de docs solo muestren Bearer), mall, marketplace writes, etc.
+- **Requests firmadas** (`Sign`): wallet payout/withdraw, suscripciones, anulación (**create y get**; sandbox exige Sign en GET aunque los ejemplos de docs solo muestren Bearer), mall create, marketplace **solo** `PUT /maclient` (create/delete maclient y maaffiliation/tx van solo con Bearer; verificado en sandbox).
 - **Algoritmo**: `HMAC-SHA256(urlencode('/api/path') + '&' + params_ordenados)`.
 
 ## 5. Módulos por país

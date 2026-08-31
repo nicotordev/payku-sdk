@@ -53,7 +53,6 @@ export default class PaykuMarketplace {
         method: "POST",
         path: "/maclient",
         body: bodyAsRecord(params),
-        signed: true,
       }),
     );
   }
@@ -86,7 +85,6 @@ export default class PaykuMarketplace {
       this.http.request<PaykuDeleteMarketplaceClientResponse>({
         method: "DELETE",
         path: `/maclient/${id}`,
-        signed: true,
       }),
     );
   }
