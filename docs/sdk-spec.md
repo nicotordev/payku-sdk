@@ -100,6 +100,18 @@ src/
 
 `PaykuWebhooks` recibe el payload de `urlnotify`, re-consulta la transacción vía API y valida estado/orden/monto. No confía ciegamente en el POST entrante.
 
+Notify `status: "failed"` corresponde a API `rejected`. El helper `mapNotifyStatusToTransactionStatus` (y el default de `verifyNotify`) hace ese mapeo.
+
+## 7.1 Códigos `payment` CLP
+
+- `PAYKU_PAYMENT_METHODS.CLP` — catálogo / cuenta (incluye Full `14`, Klap `18`, Granve `30`, Apple/Google Pay `31`). Es el set que valida create por defecto.
+- `PAYKU_CLP_CREATE_PAYMENT_CODES` — solo los de docs Chile → Crear (`99, 1, 4, 6, 9, 19, 23, 26, 100–102`).
+- Opción `clpPaymentCodes: "create-docs"` en `validateCreateTransactionRequest` / Chile create para restringir al set de docs.
+
+## 7.2 List transactions
+
+`per_page` máximo documentado: `PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE` (4000). El cliente rechaza valores fuera de `1…4000`.
+
 ## 8. Testing
 
 - **Unit** (`bun run test` / `test:unit`): firma, errores, webhooks con mock, guards de auth. Bare `bun test` también es unit-only gracias a `bunfig.toml`.

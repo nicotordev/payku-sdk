@@ -4,6 +4,7 @@ import type {
   PaykuVerifyNotifyOptions,
   PaykuVerifyNotifyResult,
 } from "../types/payku.webhooks";
+import { mapNotifyStatusToTransactionStatus } from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
@@ -16,6 +17,9 @@ export default class PaykuWebhooks {
 
   /**
    * Verifica un callback de urlnotify consultando la transacción en Payku.
+   *
+   * Si no pasas `expectedStatus`, se deriva del `payload.status` mapeando
+   * notify `failed` → API `rejected`.
    */
   public async verifyNotification(
     payload: PaykuNotifyPayload,
@@ -27,7 +31,9 @@ export default class PaykuWebhooks {
 
     try {
       const transaction = await this.transactions.get(payload.payment_key);
-      const expectedStatus = options.expectedStatus ?? "success";
+      const expectedStatus = mapNotifyStatusToTransactionStatus(
+        options.expectedStatus ?? payload.status,
+      );
 
       if (transaction.status !== expectedStatus) {
         return {
