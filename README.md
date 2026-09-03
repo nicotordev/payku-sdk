@@ -127,16 +127,16 @@ const sign = buildSign(
 
 ### Matriz Sign por módulo (SDK)
 
-| Módulo                                       | Sign    | Notas                                                             |
-| -------------------------------------------- | ------- | ----------------------------------------------------------------- |
-| `transactions`                               | No      | create/get/list (y On-Site VE)                                    |
-| `banks` / `paymentMethods`                   | No      | Catálogo                                                          |
-| `conciliation`                               | No      |                                                                   |
-| `escrow` / `events`                          | No      |                                                                   |
-| `wallet`                                     | Sí      | payout, withdraw, balance, movements, get payout                  |
-| `subscriptions` / `consumptionSubscriptions` | Sí      | CRUD clientes, planes, tarjetas, txs                              |
-| `nullification`                              | Sí      | create y get (GET también: docs omiten Sign, sandbox responde `waiting sign`) |
-| `mall`                                       | Parcial | create sí; get no (sandbox: sin Sign; docs PHP/JS muestran Sign opcional) |
+| Módulo                                       | Sign    | Notas                                                                                       |
+| -------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| `transactions`                               | No      | create/get/list (y On-Site VE)                                                              |
+| `banks` / `paymentMethods`                   | No      | Catálogo                                                                                    |
+| `conciliation`                               | No      |                                                                                             |
+| `escrow` / `events`                          | No      |                                                                                             |
+| `wallet`                                     | Sí      | payout, withdraw, balance, movements, get payout                                            |
+| `subscriptions` / `consumptionSubscriptions` | Sí      | CRUD clientes, planes, tarjetas, txs                                                        |
+| `nullification`                              | Sí      | create y get (GET también: docs omiten Sign, sandbox responde `waiting sign`)               |
+| `mall`                                       | Parcial | create sí; get no (sandbox: sin Sign; docs PHP/JS muestran Sign opcional)                   |
 | `marketplace`                                | Parcial | Solo `maclient` update (`PUT`); create/delete/get y `maaffiliation` / tx sin Sign (sandbox) |
 
 Referencia oficial y colección Postman: [docs.payku.com](https://docs.payku.com/) · [colección CL](https://docs.payku.com/postman/payku-cl-es.postman_collection.json) · [environment](https://docs.payku.com/postman/payku-environment.postman_environment.json).
@@ -158,6 +158,8 @@ const order = await payku.transactions.create({
 // Redirigir al pagador
 console.log(order.url);
 ```
+
+`expired` es opcional (`YYYY-MM-DD HH:mm:ss`, hora Santiago). Si se envía, el SDK exige `urlreturn` y que la fecha sea **más de 5 minutos** después de ahora (`America/Santiago`, vía `Intl`). Si la transacción expira, Payku redirige a `urlreturn?message_error=expired&id=…`.
 
 ## Catálogo
 

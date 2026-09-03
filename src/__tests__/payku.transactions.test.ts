@@ -7,6 +7,7 @@ import { PaykuChileTransactions } from "../clients/payku.transactions.scoped";
 import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
 import {
+  parsePaykuExpiredInSantiago,
   validateChileCreateTransactionRequest,
   validateCreateTransactionRequest,
 } from "../utils/payku.utils";
@@ -19,6 +20,25 @@ const chileCreateBase = {
   urlreturn: "https://example.com/return",
   urlnotify: "https://example.com/notify",
 };
+
+/** Formatea un instante como wall-clock America/Santiago (`YYYY-MM-DD HH:mm:ss`). */
+function formatSantiagoWallClock(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+}
 
 describe("validateCreateTransactionRequest", () => {
   test("rejects non-positive amounts", () => {
@@ -72,6 +92,88 @@ describe("validateCreateTransactionRequest", () => {
       }),
     ).toThrow("Unknown VES gateway: INVALID");
   });
+
+  test("rejects expired without urlreturn", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        expired: "2099-01-01 12:00:00",
+      }),
+    ).toThrow("urlreturn is required when expired is set");
+  });
+
+  test("rejects expired with invalid format", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        expired: "2099-01-01T12:00:00",
+        urlreturn: "https://example.com/return",
+      }),
+    ).toThrow("expired must use format YYYY-MM-DD HH:mm:ss");
+  });
+
+  test("rejects blank or whitespace expired as invalid (not omitted)", () => {
+    for (const expired of ["", "   "]) {
+      expect(() =>
+        validateCreateTransactionRequest({
+          amount: 1000,
+          currency: "CLP",
+          expired,
+          urlreturn: "https://example.com/return",
+        }),
+      ).toThrow("expired must use format YYYY-MM-DD HH:mm:ss");
+    }
+  });
+
+  test("rejects expired within 5 minutes of now (Santiago)", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const tooSoon = formatSantiagoWallClock(
+      new Date(now.getTime() + 2 * 60 * 1000),
+    );
+
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: tooSoon,
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).toThrow(
+      "expired must be more than 5 minutes after the current time (America/Santiago)",
+    );
+  });
+
+  test("accepts expired more than 5 minutes ahead with urlreturn", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const ok = formatSantiagoWallClock(
+      new Date(now.getTime() + 10 * 60 * 1000),
+    );
+
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: ok,
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).not.toThrow();
+  });
+});
+
+describe("parsePaykuExpiredInSantiago", () => {
+  test("round-trips a Santiago wall-clock instant", () => {
+    const expired = "2023-10-19 13:05:10";
+    const parsed = parsePaykuExpiredInSantiago(expired);
+    expect(formatSantiagoWallClock(parsed)).toBe(expired);
+  });
 });
 
 describe("validateChileCreateTransactionRequest", () => {
@@ -91,6 +193,25 @@ describe("validateChileCreateTransactionRequest", () => {
         payment: 1,
       }),
     ).not.toThrow();
+  });
+
+  test("rejects Chile create when expired is too soon", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const tooSoon = formatSantiagoWallClock(
+      new Date(now.getTime() + 60 * 1000),
+    );
+
+    expect(() =>
+      validateChileCreateTransactionRequest(
+        {
+          ...chileCreateBase,
+          expired: tooSoon,
+        },
+        { now },
+      ),
+    ).toThrow(
+      "expired must be more than 5 minutes after the current time (America/Santiago)",
+    );
   });
 });
 
