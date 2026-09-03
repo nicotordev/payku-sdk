@@ -179,6 +179,15 @@ if (result.valid) {
 }
 ```
 
+Payku usa nombres distintos para el mismo rechazo:
+
+| Origen                         | Valores                                              |
+| ------------------------------ | ---------------------------------------------------- |
+| Payload `urlnotify`            | `success` \| `failed`                                |
+| `GET /api/transaction` (API)   | `register` \| `pending` \| `success` \| `rejected`   |
+
+`verifyNotify` reconsulta la API. Si no pasas `expectedStatus`, deriva el esperado del `payload.status` (`failed` → `rejected`). También puedes usar `mapNotifyStatusToTransactionStatus`.
+
 ## Errores y respuestas
 
 Según la [introducción de la API Payku](https://docs.payku.com/), **no confíes solo en el código HTTP** (p. ej. 200). Muchas respuestas de error llegan con HTTP 200 y un JSON de negocio:

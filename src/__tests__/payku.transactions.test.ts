@@ -72,6 +72,29 @@ describe("validateCreateTransactionRequest", () => {
       }),
     ).toThrow("Unknown VES gateway: INVALID");
   });
+
+  test("accepts catalog-only CLP codes by default (Full/Klap)", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: 14,
+      }),
+    ).not.toThrow();
+  });
+
+  test("rejects catalog-only CLP codes when clpPaymentCodes is create-docs", () => {
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).toThrow("payment 14 is not valid for currency CLP");
+  });
 });
 
 describe("validateChileCreateTransactionRequest", () => {
@@ -235,6 +258,39 @@ describe("PaykuTransactions HTTP", () => {
 
     expect(items).toHaveLength(1);
     expect(items[0]?.id).toBe("tx-1");
+  });
+
+  test("list forwards filters and rejects per_page above 4000", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      expect(config.params).toMatchObject({
+        page: 1,
+        per_page: 100,
+        date_init: "2021-09-01",
+        date_end: "2021-09-15",
+        success: true,
+      });
+      return [
+        200,
+        {
+          transaction: [{ id: "tx-ok", status: "success", amount: 500 }],
+        },
+      ];
+    });
+
+    const items = await transactions.list({
+      page: 1,
+      per_page: 100,
+      date_init: "2021-09-01",
+      date_end: "2021-09-15",
+      success: true,
+    });
+
+    expect(items[0]?.id).toBe("tx-ok");
+
+    await expect(transactions.list({ per_page: 4001 })).rejects.toThrow(
+      "per_page must be between 1 and 4000",
+    );
+    expect(mock.history.get).toHaveLength(1);
   });
 
   test("get throws PaykuError on failed business response", async () => {

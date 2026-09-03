@@ -22,6 +22,7 @@ import {
   isNoRecordsErrorMessage,
   toQueryRecord,
   validateCreateTransactionRequest,
+  validateListTransactionsParams,
 } from "../utils/payku.utils";
 
 export default class PaykuTransactions {
@@ -92,6 +93,8 @@ export default class PaykuTransactions {
   private async listTransactions(
     params: PaykuListTransactionsParams = {},
   ): Promise<PaykuTransaction[]> {
+    validateListTransactionsParams(params);
+
     try {
       const response = await this.http.request<PaykuListTransactionsResponse>({
         method: "GET",

@@ -6,13 +6,17 @@ import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
+  PaykuListTransactionsParams,
 } from "../types/payku.transactions";
 import {
+  PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
+  PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
 import { PaykuError } from "../errors";
+import type { PaykuTransactionStatus } from "../types/payku.responses";
 
 export function buildPaymentRedirectUrl(
   response: Pick<PaykuCreateTransactionResponse, "url">,
@@ -97,17 +101,73 @@ function validateClpPayerRutRequirement(
   }
 }
 
+/**
+ * Set de códigos CLP al validar `payment` en create.
+ * - `catalog` (default): `PAYKU_PAYMENT_METHODS.CLP` (catálogo / cuenta)
+ * - `create-docs`: solo `PAYKU_CLP_CREATE_PAYMENT_CODES`
+ */
+export type ClpPaymentCodeSet = "catalog" | "create-docs";
+
+export type ValidateCreateTransactionOptions = {
+  clpPaymentCodes?: ClpPaymentCodeSet;
+};
+
+function resolveClpPaymentCodes(
+  set: ClpPaymentCodeSet = "catalog",
+): readonly number[] {
+  if (set === "create-docs") {
+    return PAYKU_CLP_CREATE_PAYMENT_CODES;
+  }
+
+  return Object.values(PAYKU_PAYMENT_METHODS.CLP);
+}
+
+/**
+ * Mapea `status` del payload `urlnotify` al status de `GET /transaction`.
+ * Docs: notify usa `failed`; la API usa `rejected`.
+ */
+export function mapNotifyStatusToTransactionStatus(
+  status: "success" | "failed" | string,
+): PaykuTransactionStatus | string {
+  if (status === "failed") {
+    return "rejected";
+  }
+
+  return status;
+}
+
+/** Validación runtime de filtros `GET /api/transaction`. */
+export function validateListTransactionsParams(
+  params: PaykuListTransactionsParams,
+): void {
+  if (params.per_page === undefined) {
+    return;
+  }
+
+  if (
+    !Number.isFinite(params.per_page) ||
+    params.per_page < 1 ||
+    params.per_page > PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE
+  ) {
+    throw new PaykuError(
+      `per_page must be between 1 and ${PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE}`,
+    );
+  }
+}
+
 export function validateCreateTransactionRequest(
   params: PaykuCreateTransactionRequest,
+  options: ValidateCreateTransactionOptions = {},
 ): void {
   if (params.amount <= 0) {
     throw new PaykuError("amount must be greater than 0");
   }
 
   if (params.payment !== undefined) {
-    const validCodes: number[] = Object.values(
-      PAYKU_PAYMENT_METHODS[params.currency as PaykuCurrency],
-    );
+    const validCodes: readonly number[] =
+      params.currency === "CLP"
+        ? resolveClpPaymentCodes(options.clpPaymentCodes)
+        : Object.values(PAYKU_PAYMENT_METHODS[params.currency as PaykuCurrency]);
 
     if (!validCodes.includes(params.payment)) {
       throw new PaykuError(
@@ -137,6 +197,7 @@ export function validateCreateTransactionRequest(
 /** Validación runtime para `Payku.forCountry("CL").transactions.create`. */
 export function validateChileCreateTransactionRequest(
   params: PaykuChileCreateTransactionRequest,
+  options: ValidateCreateTransactionOptions = {},
 ): void {
   for (const field of [
     "email",
@@ -148,10 +209,13 @@ export function validateChileCreateTransactionRequest(
     requireNonEmptyField(params[field], field);
   }
 
-  validateCreateTransactionRequest({
-    ...params,
-    currency: "CLP",
-  });
+  validateCreateTransactionRequest(
+    {
+      ...params,
+      currency: "CLP",
+    },
+    options,
+  );
 }
 
 /** Construye pares `[clientId, percentage]` para `affiliation`. */
