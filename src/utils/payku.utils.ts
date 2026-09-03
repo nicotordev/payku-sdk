@@ -177,15 +177,16 @@ function validateExpiredField(
   urlreturn: string | undefined,
   now: Date,
 ): void {
-  if (expired === undefined || String(expired).trim() === "") {
+  // Solo `undefined` omite el campo; "" / whitespace son valores explícitos inválidos.
+  if (expired === undefined) {
     return;
   }
-
-  const expiredValue = String(expired).trim();
 
   if (urlreturn === undefined || String(urlreturn).trim() === "") {
     throw new PaykuError("urlreturn is required when expired is set");
   }
+
+  const expiredValue = String(expired).trim();
 
   if (!PAYKU_EXPIRED_FORMAT.test(expiredValue)) {
     throw new PaykuError("expired must use format YYYY-MM-DD HH:mm:ss");

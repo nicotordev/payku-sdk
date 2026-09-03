@@ -114,6 +114,19 @@ describe("validateCreateTransactionRequest", () => {
     ).toThrow("expired must use format YYYY-MM-DD HH:mm:ss");
   });
 
+  test("rejects blank or whitespace expired as invalid (not omitted)", () => {
+    for (const expired of ["", "   "]) {
+      expect(() =>
+        validateCreateTransactionRequest({
+          amount: 1000,
+          currency: "CLP",
+          expired,
+          urlreturn: "https://example.com/return",
+        }),
+      ).toThrow("expired must use format YYYY-MM-DD HH:mm:ss");
+    }
+  });
+
   test("rejects expired within 5 minutes of now (Santiago)", () => {
     const now = new Date("2024-06-15T15:00:00.000Z");
     const tooSoon = formatSantiagoWallClock(
