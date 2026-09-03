@@ -48,6 +48,8 @@ export {
 export { assertFeature, isFeatureSupported } from "./utils/payku.country";
 export {
   PAYKU_BANK_ACCOUNT_TYPES,
+  PAYKU_CLP_CREATE_PAYMENT_CODES,
+  PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "./constants/payku.constants";
@@ -56,5 +58,10 @@ export {
   buildMallMerchant,
   buildEventAffiliation,
   buildMarketplaceAffiliation,
+  mapNotifyStatusToTransactionStatus,
   validateMarketplaceAffiliationPercentages,
+} from "./utils/payku.utils";
+export type {
+  ClpPaymentCodeSet,
+  ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
