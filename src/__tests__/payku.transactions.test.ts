@@ -6,6 +6,8 @@ import PaykuTransactions from "../clients/payku.transactions";
 import { PaykuChileTransactions } from "../clients/payku.transactions.scoped";
 import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
+import { PAYKU_PAYMENT_METHODS } from "../constants/payku.constants";
+import * as PaykuSDK from "../index";
 import {
   parsePaykuExpiredInSantiago,
   validateChileCreateTransactionRequest,
@@ -91,6 +93,29 @@ describe("validateCreateTransactionRequest", () => {
         additional_parameters: { gateway: "INVALID" },
       }),
     ).toThrow("Unknown VES gateway: INVALID");
+  });
+
+  test("accepts catalog-only CLP codes by default (Full/Klap)", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: 14,
+      }),
+    ).not.toThrow();
+  });
+
+  test("rejects catalog-only CLP codes when clpPaymentCodes is create-docs", () => {
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).toThrow("payment 14 is not valid for currency CLP");
   });
 
   test("rejects expired without urlreturn", () => {
@@ -278,6 +303,33 @@ describe("PaykuChileTransactions", () => {
 
     expect(response.id).toBe("tx-cl");
   });
+
+  test("create respects clpPaymentCodes option when set to create-docs", async () => {
+    await expect(
+      chileTransactions.create(
+        {
+          ...chileCreateBase,
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).rejects.toThrow("payment 14 is not valid for currency CLP");
+    expect(mock.history.post).toHaveLength(0);
+  });
+
+  test("create accepts catalog CLP code by default", async () => {
+    mock.onPost("/transaction").reply(200, {
+      status: "pending",
+      id: "tx-cl-14",
+    });
+
+    const response = await chileTransactions.create({
+      ...chileCreateBase,
+      payment: 14,
+    });
+    expect(response.id).toBe("tx-cl-14");
+    expect(mock.history.post).toHaveLength(1);
+  });
 });
 
 describe("Payku.forCountry CL transactions", () => {
@@ -358,6 +410,56 @@ describe("PaykuTransactions HTTP", () => {
     expect(items[0]?.id).toBe("tx-1");
   });
 
+  test("list forwards filters and rejects per_page above 4000", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      expect(config.params).toMatchObject({
+        page: 1,
+        per_page: 100,
+        date_init: "2021-09-01",
+        date_end: "2021-09-15",
+        success: true,
+      });
+      return [
+        200,
+        {
+          transaction: [{ id: "tx-ok", status: "success", amount: 500 }],
+        },
+      ];
+    });
+
+    const items = await transactions.list({
+      page: 1,
+      per_page: 100,
+      date_init: "2021-09-01",
+      date_end: "2021-09-15",
+      success: true,
+    });
+
+    expect(items[0]?.id).toBe("tx-ok");
+
+    await expect(transactions.list({ per_page: 4001 })).rejects.toThrow(
+      "per_page must be between 1 and 4000",
+    );
+    expect(mock.history.get).toHaveLength(1);
+  });
+
+  test("create respects clpPaymentCodes option when set to create-docs", async () => {
+    await expect(
+      transactions.create(
+        {
+          email: "cliente@example.com",
+          order: "orden-001",
+          subject: "Test",
+          amount: 1000,
+          currency: "CLP",
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).rejects.toThrow("payment 14 is not valid for currency CLP");
+    expect(mock.history.post).toHaveLength(0);
+  });
+
   test("get throws PaykuError on failed business response", async () => {
     mock.onGet("/transaction/missing").reply(404, {
       status: "failed",
@@ -368,5 +470,19 @@ describe("PaykuTransactions HTTP", () => {
     await expect(transactions.get("missing")).rejects.toBeInstanceOf(
       PaykuError,
     );
+  });
+});
+
+describe("PAYKU_PAYMENT_METHODS PEN aliases", () => {
+  test("defines ALIX and deprecated ATIX alias with the same code", () => {
+    expect(PAYKU_PAYMENT_METHODS.PEN.ALIX).toBe(29);
+    expect(PAYKU_PAYMENT_METHODS.PEN.ATIX).toBe(29);
+  });
+});
+
+describe("SDK entrypoint exports", () => {
+  test("exports validation functions", () => {
+    expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
+    expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
   });
 });
