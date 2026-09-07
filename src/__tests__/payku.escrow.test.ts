@@ -2,6 +2,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuEscrow from "../clients/payku.escrow";
+import { PaykuEscrowError } from "../errors";
 import { HttpClient } from "../http/client";
 
 const authorizeFixture = {
@@ -87,5 +88,27 @@ describe("PaykuEscrow authorize", () => {
     expect(response).toEqual(authorizeFixture);
     expect(response.transactions[0]?.status).toBe("liquidate");
     expect(response.transactions[1]?.deposit_date).toBe("N/D");
+  });
+
+  describe("validations", () => {
+    test("authorize throws PaykuEscrowError when transactions is empty or not an array", () => {
+      expect(
+        escrow.authorize({ transactions: [] }),
+      ).rejects.toThrow(PaykuEscrowError);
+
+      expect(
+        escrow.authorize({ transactions: null as unknown as string[] }),
+      ).rejects.toThrow(PaykuEscrowError);
+
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("authorize throws PaykuEscrowError when transaction id is empty", () => {
+      expect(
+        escrow.authorize({ transactions: ["trx1", "  "] }),
+      ).rejects.toThrow(PaykuEscrowError);
+
+      expect(mock.history.post.length).toBe(0);
+    });
   });
 });

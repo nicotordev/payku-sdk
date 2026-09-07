@@ -1,10 +1,13 @@
 import {
   createPaykuAPIError,
-  PaykuAPIError,
+  PaykuEscrowError,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  validateEscrowAuthorizeRequest,
+} from "../utils/payku.utils";
 import type {
   PaykuEscrowAuthorizeRequest,
   PaykuEscrowAuthorizeResponse,
@@ -18,20 +21,25 @@ export default class PaykuEscrow {
     private readonly options?: PaykuClientOptions,
   ) {}
 
+  private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    return fn().catch((error) => {
+      throw createPaykuAPIError(
+        error,
+        operation,
+        PaykuEscrowError,
+        this.options,
+      );
+    });
+  }
+
   private authorizeSettlement(params: PaykuEscrowAuthorizeRequest) {
-    return this.http
-      .request<PaykuEscrowAuthorizeResponse>({
+    return this.wrap("escrow.authorize", async () => {
+      validateEscrowAuthorizeRequest(params);
+      return this.http.request<PaykuEscrowAuthorizeResponse>({
         method: "POST",
         path: "/escrow",
         body: bodyAsRecord(params),
-      })
-      .catch((error) => {
-        throw createPaykuAPIError(
-          error,
-          "escrow.authorize",
-          PaykuAPIError,
-          this.options,
-        );
       });
+    });
   }
 }

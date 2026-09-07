@@ -2,6 +2,7 @@ import type { PaykuCurrency } from "../types/payku.common";
 import type { PaykuEventAffiliationTuple } from "../types/payku.events";
 import type { PaykuMallMerchantTuple } from "../types/payku.mall";
 import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
+import type { PaykuEscrowAuthorizeRequest } from "../types/payku.escrow";
 import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
@@ -451,4 +452,23 @@ export function parsePaymentReturnQuery(
     expired: isExpired,
   };
 }
+
+export function validateEscrowAuthorizeRequest(
+  params: PaykuEscrowAuthorizeRequest,
+): void {
+  if (
+    !params ||
+    !Array.isArray(params.transactions) ||
+    params.transactions.length === 0
+  ) {
+    throw new PaykuError("transactions must be a non-empty array");
+  }
+
+  for (const trxId of params.transactions) {
+    if (trxId === undefined || trxId === null || String(trxId).trim() === "") {
+      throw new PaykuError("each transaction id must be a non-empty string");
+    }
+  }
+}
+
 
