@@ -68,7 +68,7 @@ export const PaykuTransactionNotifyRawSchema = z
     currency: z.string().optional(),
     payment: z.union([z.number(), z.string()]).optional(),
   })
-  .passthrough();
+  .loose();
 
 /**
  * Esquema de validación Zod para el cuerpo POST de urlnotify (webhook de Payku).
@@ -105,7 +105,7 @@ export const PaykuPaymentReturnRawQuerySchema = z
     message_error: z.string().optional(),
     messageError: z.string().optional(),
   })
-  .passthrough();
+  .loose();
 
 /**
  * Esquema de validación Zod para los parámetros recibidos en urlreturn.
