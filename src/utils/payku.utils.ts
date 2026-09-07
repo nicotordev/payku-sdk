@@ -1,5 +1,8 @@
 import type { PaykuCurrency } from "../types/payku.common";
-import type { PaykuEventAffiliationTuple } from "../types/payku.events";
+import type {
+  PaykuCreateEventRequest,
+  PaykuEventAffiliationTuple,
+} from "../types/payku.events";
 import type {
   PaykuMallMerchantTuple,
   PaykuMallTransactionRequest,
@@ -503,6 +506,47 @@ export function parsePaymentReturnQuery(
     messageError,
     expired: isExpired,
   };
+}
+
+export function validateCreateEventRequest(
+  params: PaykuCreateEventRequest,
+): void {
+  for (const field of [
+    "event",
+    "name",
+    "date_event",
+    "date_closing_sales",
+    "date_payment",
+  ] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (params.affiliation !== undefined) {
+    if (!Array.isArray(params.affiliation)) {
+      throw new PaykuError("affiliation must be an array");
+    }
+
+    for (let i = 0; i < params.affiliation.length; i++) {
+      const item = params.affiliation[i];
+      if (!Array.isArray(item) || item.length !== 2) {
+        throw new PaykuError(
+          `affiliation[${i}] must be a 2-element tuple [email, percent]`,
+        );
+      }
+      const [email, percent] = item;
+      requireNonEmptyField(email, `affiliation[${i}].email`);
+      const numPercent = Number(percent);
+      if (!Number.isFinite(numPercent) || numPercent <= 0 || numPercent > 100) {
+        throw new PaykuError(
+          `affiliation[${i}].percent must be a finite number between 0 and 100`,
+        );
+      }
+    }
+  }
+}
+
+export function validateGetEventParams(id: string): void {
+  requireNonEmptyField(id, "id");
 }
 
 export function validateCreateMallTransactionRequest(

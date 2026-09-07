@@ -3,6 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuEvents from "../clients/payku.events";
 import { HttpClient } from "../http/client";
+import { PaykuEventsError } from "../errors";
 import { buildEventAffiliation } from "../utils/payku.utils";
 
 const createFixture = {
@@ -127,5 +128,59 @@ describe("PaykuEvents", () => {
     expect(response).not.toHaveProperty("status");
     expect(response.affiliations).toHaveLength(1);
     expect(response.distribution.service_sale).toBe("10.00");
+  });
+
+  describe("validations", () => {
+    test("create throws PaykuEventsError when required fields or affiliation items are invalid", async () => {
+      await expect(
+        events.create({
+          event: "",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+        }),
+      ).rejects.toThrow(PaykuEventsError);
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [["", 50]],
+        }),
+      ).rejects.toThrow(PaykuEventsError);
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [["a@b.com", 50, "extra"] as unknown as [string, number]],
+        }),
+      ).rejects.toThrow(PaykuEventsError);
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [["a@b.com", "Infinity" as unknown as number]],
+        }),
+      ).rejects.toThrow(PaykuEventsError);
+
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("get throws PaykuEventsError when id is missing/empty", async () => {
+      await expect(events.get("")).rejects.toThrow(PaykuEventsError);
+      expect(mock.history.get.length).toBe(0);
+    });
   });
 });
