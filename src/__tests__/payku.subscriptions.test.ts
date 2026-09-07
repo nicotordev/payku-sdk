@@ -387,8 +387,11 @@ describe("PaykuSubscriptions suclient", () => {
     ).rejects.toThrow("phone is required");
   });
 
-  test("clients.list rejects per_page above 100", async () => {
+  test("clients.list rejects per_page above 100 or non-integer", async () => {
     await expect(subscriptions.clients.list({ per_page: 101 })).rejects.toThrow(
+      "per_page must be between 1 and 100",
+    );
+    await expect(subscriptions.clients.list({ per_page: 1.5 })).rejects.toThrow(
       "per_page must be between 1 and 100",
     );
   });
@@ -449,12 +452,20 @@ describe("PaykuSubscriptions sususcription", () => {
     ).rejects.toThrow("client is required");
   });
 
-  test("create rejects non-positive amount", async () => {
+  test("create rejects non-positive or non-finite amount", async () => {
     await expect(
       subscriptions.subscriptions.create({
         plan: "pl1",
         client: "cl1",
         amount: "0",
+      }),
+    ).rejects.toThrow("amount must be greater than 0");
+
+    await expect(
+      subscriptions.subscriptions.create({
+        plan: "pl1",
+        client: "cl1",
+        amount: "Infinity",
       }),
     ).rejects.toThrow("amount must be greater than 0");
   });

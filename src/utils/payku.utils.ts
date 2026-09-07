@@ -475,7 +475,7 @@ export function validateCreateSubscriptionRequest(
 
   if (params.amount !== undefined) {
     const numAmount = Number(params.amount);
-    if (Number.isNaN(numAmount) || numAmount <= 0) {
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
       throw new PaykuError("amount must be greater than 0");
     }
   }
@@ -488,7 +488,7 @@ export function validateCreateSubscriptionTransactionRequest(
 
   if (params.amount !== undefined) {
     const numAmount = Number(params.amount);
-    if (Number.isNaN(numAmount) || numAmount <= 0) {
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
       throw new PaykuError("amount must be greater than 0");
     }
   }
@@ -502,7 +502,7 @@ export function validateListSubscriptionClientsParams(
   }
 
   if (
-    !Number.isFinite(params.per_page) ||
+    !Number.isInteger(params.per_page) ||
     params.per_page < 1 ||
     params.per_page > 100
   ) {
