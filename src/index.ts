@@ -13,6 +13,7 @@ export {
 export {
   PaykuAPIError,
   PaykuAuthenticationError,
+  PaykuConciliationError,
   PaykuCreateTransactionError,
   PaykuError,
   PaykuEscrowError,
@@ -66,6 +67,7 @@ export {
   mapNotifyStatusToTransactionStatus,
   parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
+  validateConciliationRequest,
   validateCreateEventRequest,
   validateCreateMallTransactionRequest,
   validateCreateMarketplaceAffiliationRequest,
@@ -86,6 +88,7 @@ export {
 export type {
   ClpPaymentCodeSet,
   PaykuPaymentReturnResult,
+  ValidateConciliationOptions,
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
 export type { PaykuListSubscriptionClientsParams } from "./types/payku.subscriptions";

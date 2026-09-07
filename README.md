@@ -48,11 +48,11 @@ await payku.transactions.create({
 const fromEnv = Payku.fromEnvForCountry("CL");
 ```
 
-| País | Cliente          | Moneda | Extra                                               |
-| ---- | ---------------- | ------ | --------------------------------------------------- |
-| `CL` | `PaykuChile`     | CLP    | suscripciones, marketplace, mall, escrow, withdraw… |
-| `PE` | `PaykuPeru`      | PEN    | core compartido                                     |
-| `VE` | `PaykuVenezuela` | VES    | `transactions.confirmOnSite`                        |
+| País | Cliente          | Moneda | Extra                                                             |
+| ---- | ---------------- | ------ | ----------------------------------------------------------------- |
+| `CL` | `PaykuChile`     | CLP    | suscripciones, marketplace, mall, escrow, withdraw, conciliación… |
+| `PE` | `PaykuPeru`      | PEN    | core compartido                                                   |
+| `VE` | `PaykuVenezuela` | VES    | `transactions.confirmOnSite`                                      |
 
 Si llamás un módulo no soportado (p. ej. `wallet.withdraw` en Perú), el SDK lanza `PaykuUnsupportedFeatureError`.
 
@@ -357,6 +357,50 @@ const detail = await payku.events.get(created.id);
 ```
 
 > **Nota:** La respuesta de `events.create()` usa `affiliation`, mientras que el detalle obtenido con `events.get()` usa `affiliations`.
+ 
+## Conciliación (Chile)
+
+El módulo de conciliación permite consultar depósitos y liquidaciones bancarias realizadas por Payku para una cuenta en un rango de fechas.
+
+Disponible únicamente para Chile (`PaykuChile` o cliente global con cuenta chilena).
+
+```typescript
+import Payku, { PaykuConciliationError } from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "production",
+});
+
+try {
+  const result = await payku.conciliation.list({
+    date_init: "2024-05-01",
+    date_end: "2024-05-15",
+  });
+
+  for (const item of result.conciliation) {
+    console.log(`Conciliación #${item.id} (${item.status}): $${item.amount_deposit} transferido a ${item.destiny}`);
+    for (const trx of item.transaction ?? []) {
+      console.log(`  - Trx ${trx.transaction_id} (Orden: ${trx.order}): Monto $${trx.amount}, Comisión $${trx.fee}`);
+    }
+  }
+} catch (error) {
+  if (error instanceof PaykuConciliationError) {
+    console.error(`Error de conciliación: ${error.message} (HTTP ${error.statusCode})`);
+  } else {
+    throw error;
+  }
+}
+```
+
+### Reglas y validaciones
+
+- **Método principal:** `payku.conciliation.list(params)`. El método `create()` continúa disponible como alias marcado como `@deprecated` por retrocompatibilidad.
+- **Rango de fechas:** Requiere `date_init` y `date_end` en formato `YYYY-MM-DD`.
+- **Límite:** El rango entre `date_init` y `date_end` no puede superar **30 días**, y ninguna fecha puede estar en el futuro.
+- **Autenticación:** Requiere únicamente autenticación `Bearer` (token público). **No utiliza firma HMAC `Sign`**.
+- **Manejo de errores:** Lanza `PaykuConciliationError` ante respuestas de error de la API (401, 500, etc.) y `PaykuError` si la validación de fechas falla antes de enviar la petición.
 
 ## Validación con Zod (opcional)
 

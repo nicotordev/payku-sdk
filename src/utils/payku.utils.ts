@@ -1,4 +1,5 @@
 import type { PaykuCurrency } from "../types/payku.common";
+import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
   PaykuCreateEventRequest,
   PaykuEventAffiliationTuple,
@@ -741,5 +742,72 @@ export function validateListSubscriptionClientsParams(
     params.per_page > 100
   ) {
     throw new PaykuError("per_page must be between 1 and 100");
+  }
+}
+
+const PAYKU_DATE_ONLY_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseValidDateOnly(value: unknown, field: string): Date {
+  requireNonEmptyField(value, field);
+  const trimmed = String(value).trim();
+  if (!PAYKU_DATE_ONLY_FORMAT.test(trimmed)) {
+    throw new PaykuError(`${field} must use format YYYY-MM-DD`);
+  }
+
+  const [year, month, day] = trimmed.split("-").map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day!));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month! - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new PaykuError(`${field} is not a valid date`);
+  }
+
+  return date;
+}
+
+export interface ValidateConciliationOptions {
+  now?: Date;
+}
+
+/**
+ * Valida parámetros de `POST /api/conciliation`:
+ * - date_init y date_end requeridos en formato YYYY-MM-DD.
+ * - Fechas válidas en calendario.
+ * - No futuras respecto a hoy.
+ * - date_init <= date_end.
+ * - Rango máximo entre date_init y date_end <= 30 días.
+ */
+export function validateConciliationRequest(
+  params: PaykuConciliationRequest,
+  options: ValidateConciliationOptions = {},
+): void {
+  const initDate = parseValidDateOnly(params?.date_init, "date_init");
+  const endDate = parseValidDateOnly(params?.date_end, "date_end");
+
+  const now = options.now ?? new Date();
+  const todayUtc = Date.UTC(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+
+  if (initDate.getTime() > todayUtc) {
+    throw new PaykuError("date_init cannot be in the future");
+  }
+
+  if (endDate.getTime() > todayUtc) {
+    throw new PaykuError("date_end cannot be in the future");
+  }
+
+  if (initDate.getTime() > endDate.getTime()) {
+    throw new PaykuError("date_init must be less than or equal to date_end");
+  }
+
+  const diffMs = endDate.getTime() - initDate.getTime();
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+  if (diffDays > 30) {
+    throw new PaykuError("date range must not exceed 30 days");
   }
 }

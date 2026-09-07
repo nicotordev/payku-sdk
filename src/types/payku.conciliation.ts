@@ -4,6 +4,9 @@ export interface PaykuConciliationRequest {
   [key: string]: unknown;
 }
 
+export type PaykuListConciliationsRequest = PaykuConciliationRequest;
+export type PaykuListConciliationsParams = PaykuConciliationRequest;
+
 /** Estatus documentado por Payku (incluye typo API `deteined`). */
 export type PaykuConciliationStatus =
   "pending" | "paid_out" | "deteined" | "returned";
