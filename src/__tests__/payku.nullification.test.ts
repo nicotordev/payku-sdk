@@ -276,6 +276,65 @@ describe("PaykuNullification verifyCallback", () => {
     }
   });
 
+  test("returns id_mismatch when API response contains different nullify.id", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, {
+      nullify: {
+        ...getFixture.nullify,
+        id: "different_id_999",
+      },
+    });
+
+    const result = await nullification.verifyCallback(callbackFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("id_mismatch");
+    }
+  });
+
+  test("returns missing_amount when payload monto is missing or not finite", async () => {
+    const invalidPayload = {
+      id: "trxpr2a45s1dytg1",
+      status: "complete",
+    } as unknown as PaykuNullificationCallbackPayload;
+
+    const result = await nullification.verifyCallback(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_amount");
+    }
+
+    const invalidAmountPayload = {
+      id: "trxpr2a45s1dytg1",
+      status: "complete",
+      monto: NaN,
+    } as unknown as PaykuNullificationCallbackPayload;
+
+    const result2 = await nullification.verifyCallback(invalidAmountPayload);
+    expect(result2.valid).toBe(false);
+    if (!result2.valid) {
+      expect(result2.reason).toBe("missing_amount");
+    }
+  });
+
+  test("handles non-string status in payload gracefully without throw", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, getFixture);
+
+    const nonStringStatusPayload = {
+      id: "trxpr2a45s1dytg1",
+      monto: 25000,
+      status: 12345 as unknown as string,
+    };
+
+    const result = await nullification.verifyCallback(nonStringStatusPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+    }
+  });
+
   test("returns missing_status when payload status is missing and expectedStatus is omitted", async () => {
     const invalidPayload = {
       id: "trxpr2a45s1dytg1",

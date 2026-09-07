@@ -527,8 +527,11 @@ try {
 Payku envía un POST a la URL de callback configurada en tu panel con los datos de la reversa. Para evitar confiar ciegamente en datos externos no firmados, `nullification.verifyCallback` reconsulta directamente la API de Payku:
 
 ```typescript
-// En tu endpoint /api/nullification-callback (Express, Next.js, etc.)
+// En tu endpoint de callback (Next.js App Router / Web API):
 const callbackPayload = await req.json();
+
+// O en Express:
+// const callbackPayload = req.body;
 
 const result = await payku.nullification.verifyCallback(callbackPayload, {
   expectedStatus: "complete", // opcional: exige estado específico
@@ -544,12 +547,16 @@ if (result.valid) {
 
 ### Estados de anulación (`status_nullify`)
 
+Los estados devueltos en `nullify.status_nullify` corresponden al tipo `PaykuNullifyStatus`:
+
 | Estado | Descripción |
 | --- | --- |
 | `complete` | Anulación procesada y ejecutada exitosamente. |
-| `success` | Solicitud aceptada por la pasarela. |
-| `pending` | Anulación en proceso o a la espera de fondos en la próxima liquidación. |
-| `failed` / `rejected` | Anulación rechazada por la pasarela o comercio. |
+| `pending` | Anulación en proceso de registro. |
+| `awaiting_funds` | En espera de fondos en la próxima liquidación del comercio para procesar la reversa. |
+| `waiting_bank_details` | En espera de datos bancarios para efectuar la devolución al cliente. |
+| `reverse_completed` | Reversa bancaria completada exitosamente. |
+| `reverse_deleted` | Solicitud de reversa o anulación cancelada / eliminada. |
 
 ## Escrow (Chile)
 

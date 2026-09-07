@@ -87,17 +87,43 @@ export default class PaykuNullification {
 
     const nullifyId = rawId || rawIdTx;
 
-    const expectedStatus = options.expectedStatus ?? payload?.status;
-    if (!expectedStatus || String(expectedStatus).trim() === "") {
+    const rawStatus = options.expectedStatus ?? payload?.status;
+    if (
+      rawStatus === undefined ||
+      rawStatus === null ||
+      String(rawStatus).trim() === ""
+    ) {
       return { valid: false, reason: "missing_status", callback: payload };
     }
+    const targetStatus = String(rawStatus).toLowerCase().trim();
+
+    const rawAmount = options.expectedAmount ?? payload?.monto;
+    if (
+      rawAmount === undefined ||
+      rawAmount === null ||
+      !Number.isFinite(Number(rawAmount))
+    ) {
+      return { valid: false, reason: "missing_amount", callback: payload };
+    }
+    const expectedAmount = Number(rawAmount);
 
     try {
       const detailResponse = await this.get(nullifyId);
       const nullify = detailResponse.nullify;
 
-      const currentStatus = (nullify.status_nullify ?? "").toLowerCase().trim();
-      const targetStatus = expectedStatus.toLowerCase().trim();
+      const queriedId = String(nullify?.id ?? "").trim();
+      if (!queriedId || queriedId !== nullifyId) {
+        return {
+          valid: false,
+          reason: "id_mismatch",
+          callback: payload,
+          nullify,
+        };
+      }
+
+      const currentStatus = String(nullify.status_nullify ?? "")
+        .toLowerCase()
+        .trim();
 
       if (currentStatus !== targetStatus) {
         return {
@@ -108,16 +134,18 @@ export default class PaykuNullification {
         };
       }
 
-      const expectedAmount = options.expectedAmount ?? payload?.monto;
-      if (expectedAmount !== undefined && nullify.amount !== undefined) {
-        if (Number(nullify.amount) !== Number(expectedAmount)) {
-          return {
-            valid: false,
-            reason: "amount_mismatch",
-            callback: payload,
-            nullify,
-          };
-        }
+      if (
+        nullify.amount === undefined ||
+        nullify.amount === null ||
+        !Number.isFinite(Number(nullify.amount)) ||
+        Number(nullify.amount) !== expectedAmount
+      ) {
+        return {
+          valid: false,
+          reason: "amount_mismatch",
+          callback: payload,
+          nullify,
+        };
       }
 
       return { valid: true, nullify, callback: payload };

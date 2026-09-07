@@ -75,6 +75,7 @@ export type PaykuVerifyNullificationCallbackFailureReason =
   | "missing_id"
   | "id_mismatch"
   | "missing_status"
+  | "missing_amount"
   | "status_mismatch"
   | "amount_mismatch"
   | "payku_api_error";
