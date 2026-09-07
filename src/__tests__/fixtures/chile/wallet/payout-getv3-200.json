@@ -1,0 +1,18 @@
+{
+  "payout": {
+    "id": "war3999847529816f2",
+    "phone": "111111111",
+    "email": "test@test.com",
+    "subject": "subject order",
+    "amount": "3680",
+    "accountbank_rut": "111111111",
+    "accountbank_name": "test",
+    "accountbank_type": 1,
+    "accountbank_num": 123123123,
+    "accountbank_sbif": "0001",
+    "status": "banking_error",
+    "update_at": "2023-06-09 21:10:46",
+    "origin_wallet": "wa1933f37cdaf7d1c6",
+    "reason_rejection": " Error CCA 51. Cuenta Beneficiario no Existe, error_creditor_account_not_found"
+  }
+}

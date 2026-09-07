@@ -22,6 +22,7 @@ import type {
   PaykuListTransactionsParams,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
+import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
 import type {
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
@@ -820,3 +821,28 @@ export function validateConciliationRequest(
     throw new PaykuError("date range must not exceed 30 days");
   }
 }
+
+/**
+ * Valida un request de pago a terceros (`POST /api/wallet/payout`).
+ * Reglas de documentación de Payku:
+ * - Para Banco Estado (SBIF `0012` o `12`), `accountbank_num` no debe exceder 12 dígitos,
+ *   evitando que los usuarios ingresen el número de su tarjeta de débito (16 dígitos).
+ */
+export function validateWalletPayoutRequest(
+  params: PaykuWalletPayoutRequest,
+): void {
+  if (!params) {
+    throw new PaykuError("Payout request params are required");
+  }
+
+  const sbif = String(params.accountbank_sbif ?? "").trim();
+  if (sbif === "0012" || sbif === "12") {
+    const num = String(params.accountbank_num ?? "").trim();
+    if (num.length > 12) {
+      throw new PaykuError(
+        "accountbank_num for Banco Estado (SBIF 0012) must not exceed 12 digits",
+      );
+    }
+  }
+}
+

@@ -1,6 +1,14 @@
 import type { PaykuCurrency, PaykuPaginationParams } from "./payku.common";
 import type { PaykuSuccessResponse } from "./payku.responses";
 
+/**
+ * Tipo de cuenta bancaria para payouts en Payku Wallet:
+ * - `1`: Cuenta Corriente
+ * - `2`: Cuenta Vista / Cuenta RUT
+ * - `3`: Cuenta de Ahorro
+ */
+export type PaykuWalletAccountBankType = "1" | "2" | "3" | (string & {});
+
 export interface PaykuWalletPayoutRequest {
   email: string;
   phone?: string;
@@ -11,10 +19,20 @@ export interface PaykuWalletPayoutRequest {
   accountbank_name: string;
   accountbank_rut: string;
   accountbank_sbif: string;
-  accountbank_type: string;
+  accountbank_type: PaykuWalletAccountBankType;
+  /**
+   * Número de cuenta bancaria.
+   * Para Banco Estado (SBIF `0012`), el máximo es 12 dígitos (evita ingresar tarjeta de débito).
+   */
   accountbank_num: string;
   url_notify?: string;
-  additional_parameters?: Record<string, unknown>;
+  /**
+   * Orden externa opcional (docs la listan top-level o en additional_parameters).
+   */
+  order_ext?: string;
+  additional_parameters?: Record<string, unknown> & {
+    order_ext?: string;
+  };
 }
 
 export interface PaykuWalletWithdrawRequest {
@@ -142,9 +160,72 @@ export interface PaykuGetPayoutV3Response {
   payout: PaykuPayoutDetailV3;
 }
 
+/** Cliente / destinatario en el callback de payout. */
+export interface PaykuPayoutCustomer {
+  name?: string;
+  phone?: string;
+  document?: string;
+  number?: string;
+}
+
+/**
+ * Payload enviado por Payku al endpoint `url_notify` configurado en el payout.
+ * Nota: Es distinto al webhook `urlnotify` de transacciones estándar.
+ */
+export interface PaykuPayoutNotifyPayload {
+  id: string;
+  identifier_payout?: string;
+  order: string;
+  status: PaykuPayoutStatus | string;
+  /** Wire typo Payku: `update_at`. */
+  update_at?: string;
+  customer?: PaykuPayoutCustomer;
+  [key: string]: unknown;
+}
+
+export type PaykuVerifyPayoutNotifyFailureReason =
+  | "missing_id"
+  | "status_mismatch"
+  | "order_mismatch"
+  | "payku_api_error";
+
+export interface PaykuVerifyPayoutNotifyOptions {
+  /**
+   * Si es `true`, reconsulta `GET /api/payoutv3/{id}` (que incluye `reason_rejection`).
+   * Por defecto usa `GET /api/payout/{id}`.
+   */
+  useV3?: boolean;
+  expectedOrder?: string;
+  expectedStatus?: PaykuPayoutStatus | string;
+}
+
+export type PaykuVerifyPayoutNotifyResult =
+  | {
+      valid: true;
+      payout: PaykuPayoutDetail | PaykuPayoutDetailV3;
+      notify: PaykuPayoutNotifyPayload;
+    }
+  | {
+      valid: false;
+      reason: PaykuVerifyPayoutNotifyFailureReason;
+      notify?: PaykuPayoutNotifyPayload;
+      payout?: PaykuPayoutDetail | PaykuPayoutDetailV3;
+      error?: unknown;
+    };
+
+/**
+ * Montos especiales para ambiente de prueba (sandbox / desarrollo: `des.payku.cl`):
+ * - Montos 1000, 2000, 3000: Se marcan automáticamente como **aprobados** (`success`).
+ * - Montos 1500, 2500, 3500: Se marcan automáticamente como **rechazados** (`banking_error`).
+ */
+export const PAYKU_WALLET_SANDBOX_AMOUNTS = {
+  APPROVED: [1000, 2000, 3000] as const,
+  REJECTED: [1500, 2500, 3500] as const,
+} as const;
+
 /**
  * Forma plana de callback `url_notify` (no es la response de GET).
- * @deprecated Preferir `PaykuGetPayoutResponse` para GET payout.
+ * @deprecated Preferir `PaykuPayoutNotifyPayload` para el callback o `PaykuGetPayoutResponse` para GET payout.
  */
 export interface PaykuPayoutResponse {
   status?: string;
@@ -165,3 +246,4 @@ export interface PaykuCreateWalletPayoutResponse {
 
 /** @deprecated Preferir `PaykuCreateWalletPayoutResponse`. */
 export type PaykuWalletPayoutCreateResponse = PaykuCreateWalletPayoutResponse;
+

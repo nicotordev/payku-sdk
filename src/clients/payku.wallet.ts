@@ -1,15 +1,23 @@
 import {
   createPaykuAPIError,
+  PaykuAPIError,
   PaykuWalletError,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord, toQueryRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  toQueryRecord,
+  validateWalletPayoutRequest,
+} from "../utils/payku.utils";
 import type {
   PaykuCreateWalletPayoutResponse,
   PaykuCreateWalletWithdrawResponse,
   PaykuGetPayoutResponse,
   PaykuGetPayoutV3Response,
+  PaykuPayoutNotifyPayload,
+  PaykuVerifyPayoutNotifyOptions,
+  PaykuVerifyPayoutNotifyResult,
   PaykuWalletBalanceResponse,
   PaykuWalletListParams,
   PaykuWalletListResponse,
@@ -22,6 +30,7 @@ export default class PaykuWallet {
     create: this.createPayout.bind(this),
     get: this.getPayout.bind(this),
     getV3: this.getPayoutV3.bind(this),
+    verifyNotify: this.verifyPayoutNotify.bind(this),
   };
 
   public balance = {
@@ -46,6 +55,7 @@ export default class PaykuWallet {
     params: PaykuWalletPayoutRequest,
   ): Promise<PaykuCreateWalletPayoutResponse> {
     try {
+      validateWalletPayoutRequest(params);
       return await this.http.request<PaykuCreateWalletPayoutResponse>({
         method: "POST",
         path: "/wallet/payout",
@@ -169,4 +179,58 @@ export default class PaykuWallet {
       );
     }
   }
+
+  private async verifyPayoutNotify(
+    payload: PaykuPayoutNotifyPayload,
+    options: PaykuVerifyPayoutNotifyOptions = {},
+  ): Promise<PaykuVerifyPayoutNotifyResult> {
+    const payoutId = payload?.identifier_payout || payload?.id;
+    if (!payoutId) {
+      return { valid: false, reason: "missing_id", notify: payload };
+    }
+
+    try {
+      const detailResponse = options.useV3
+        ? await this.getPayoutV3(payoutId)
+        : await this.getPayout(payoutId);
+
+      const payout = detailResponse.payout;
+      const expectedStatus = options.expectedStatus ?? payload.status;
+
+      if (expectedStatus !== undefined && payout.status !== expectedStatus) {
+        return {
+          valid: false,
+          reason: "status_mismatch",
+          notify: payload,
+          payout,
+        };
+      }
+
+      if (
+        options.expectedOrder !== undefined &&
+        payload.order !== options.expectedOrder
+      ) {
+        return {
+          valid: false,
+          reason: "order_mismatch",
+          notify: payload,
+          payout,
+        };
+      }
+
+      return { valid: true, payout, notify: payload };
+    } catch (error) {
+      if (error instanceof PaykuAPIError) {
+        return {
+          valid: false,
+          reason: "payku_api_error",
+          notify: payload,
+          error,
+        };
+      }
+
+      throw error;
+    }
+  }
 }
+
