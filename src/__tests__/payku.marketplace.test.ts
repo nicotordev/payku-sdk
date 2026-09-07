@@ -411,8 +411,8 @@ describe("PaykuMarketplace validations", () => {
     expect(mock.history.post.length).toBe(0);
   });
 
-  test("affiliations.create throws PaykuMarketplaceError when affiliation array or percentages are invalid", () => {
-    expect(
+  test("affiliations.create throws PaykuMarketplaceError when affiliation array or percentages are invalid", async () => {
+    await expect(
       marketplace.affiliations.create({
         name: "aff1",
         percentage: "20",
@@ -420,7 +420,7 @@ describe("PaykuMarketplace validations", () => {
       }),
     ).rejects.toThrow(PaykuMarketplaceError);
 
-    expect(
+    await expect(
       marketplace.affiliations.create({
         name: "aff1",
         percentage: "20",
@@ -428,11 +428,27 @@ describe("PaykuMarketplace validations", () => {
       }),
     ).rejects.toThrow(PaykuMarketplaceError);
 
+    await expect(
+      marketplace.affiliations.create({
+        name: "aff1",
+        percentage: "20",
+        affiliation: [["", "80"]],
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    await expect(
+      marketplace.affiliations.create({
+        name: "aff1",
+        percentage: "20",
+        affiliation: [["client1", "Infinity" as unknown as string]],
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
     expect(mock.history.post.length).toBe(0);
   });
 
-  test("transactions.create throws PaykuMarketplaceError when fields or amount are invalid", () => {
-    expect(
+  test("transactions.create throws PaykuMarketplaceError when fields or amount are invalid", async () => {
+    await expect(
       marketplace.transactions.create({
         email: "a@b.com",
         order: "ord1",
@@ -442,7 +458,17 @@ describe("PaykuMarketplace validations", () => {
       }),
     ).rejects.toThrow(PaykuMarketplaceError);
 
-    expect(
+    await expect(
+      marketplace.transactions.create({
+        email: "a@b.com",
+        order: "ord1",
+        subject: "test",
+        amount: "Infinity" as unknown as number,
+        marketplace: "token123",
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    await expect(
       marketplace.transactions.create({
         email: "a@b.com",
         order: "ord1",
