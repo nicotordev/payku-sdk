@@ -787,10 +787,19 @@ export function validateConciliationRequest(
   const endDate = parseValidDateOnly(params?.date_end, "date_end");
 
   const now = options.now ?? new Date();
+  const santiagoFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: PAYKU_SANTIAGO_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = santiagoFormatter.formatToParts(now);
+  const getPart = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((entry) => entry.type === type)?.value);
   const todayUtc = Date.UTC(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
+    getPart("year"),
+    getPart("month") - 1,
+    getPart("day"),
   );
 
   if (initDate.getTime() > todayUtc) {

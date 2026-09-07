@@ -188,6 +188,7 @@ describe("PaykuConciliation", () => {
       await expect(
         conciliation.list({ date_init: "invalid-date", date_end: "2024-01-01" }),
       ).rejects.toThrow(PaykuError);
+      expect(mock.history.post).toHaveLength(0);
     });
   });
 });

@@ -360,7 +360,7 @@ const detail = await payku.events.get(created.id);
  
 ## Conciliación (Chile)
 
-El módulo de conciliación permite consultar depósitos y liquidaciones bancarias realizadas por Payku para una cuenta en un rango de fechas.
+El módulo de conciliación permite consultar depósitos y liquidaciones bancarias realizadas por Payku para una cuenta en un rango de fechas (ver [documentación oficial de Conciliación Payku](https://docs.payku.com/#7e722880-928e-4a47-a8df-a7a5f6a96e95)).
 
 Disponible únicamente para Chile (`PaykuChile` o cliente global con cuenta chilena).
 
