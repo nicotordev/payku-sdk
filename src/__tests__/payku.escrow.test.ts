@@ -91,21 +91,29 @@ describe("PaykuEscrow authorize", () => {
   });
 
   describe("validations", () => {
-    test("authorize throws PaykuEscrowError when transactions is empty or not an array", () => {
-      expect(
+    test("authorize throws PaykuEscrowError when transactions is empty or not an array", async () => {
+      await expect(
         escrow.authorize({ transactions: [] }),
       ).rejects.toThrow(PaykuEscrowError);
 
-      expect(
+      await expect(
         escrow.authorize({ transactions: null as unknown as string[] }),
       ).rejects.toThrow(PaykuEscrowError);
 
       expect(mock.history.post.length).toBe(0);
     });
 
-    test("authorize throws PaykuEscrowError when transaction id is empty", () => {
-      expect(
+    test("authorize throws PaykuEscrowError when transaction id is empty or non-string", async () => {
+      await expect(
         escrow.authorize({ transactions: ["trx1", "  "] }),
+      ).rejects.toThrow(PaykuEscrowError);
+
+      await expect(
+        escrow.authorize({ transactions: ["trx1", 123 as unknown as string] }),
+      ).rejects.toThrow(PaykuEscrowError);
+
+      await expect(
+        escrow.authorize({ transactions: ["trx1", true as unknown as string] }),
       ).rejects.toThrow(PaykuEscrowError);
 
       expect(mock.history.post.length).toBe(0);

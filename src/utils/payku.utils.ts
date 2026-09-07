@@ -465,7 +465,7 @@ export function validateEscrowAuthorizeRequest(
   }
 
   for (const trxId of params.transactions) {
-    if (trxId === undefined || trxId === null || String(trxId).trim() === "") {
+    if (typeof trxId !== "string" || trxId.trim() === "") {
       throw new PaykuError("each transaction id must be a non-empty string");
     }
   }
