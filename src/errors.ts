@@ -134,6 +134,16 @@ export class PaykuSubscriptionsError extends PaykuAPIError {
   }
 }
 
+export class PaykuEscrowError extends PaykuAPIError {
+  constructor(
+    message: string,
+    options?: ConstructorParameters<typeof PaykuAPIError>[1],
+  ) {
+    super(message, options);
+    this.name = "PaykuEscrowError";
+  }
+}
+
 export class PaykuEventsError extends PaykuAPIError {
   constructor(
     message: string,
@@ -141,6 +151,26 @@ export class PaykuEventsError extends PaykuAPIError {
   ) {
     super(message, options);
     this.name = "PaykuEventsError";
+  }
+}
+
+export class PaykuMallError extends PaykuAPIError {
+  constructor(
+    message: string,
+    options?: ConstructorParameters<typeof PaykuAPIError>[1],
+  ) {
+    super(message, options);
+    this.name = "PaykuMallError";
+  }
+}
+
+export class PaykuMarketplaceError extends PaykuAPIError {
+  constructor(
+    message: string,
+    options?: ConstructorParameters<typeof PaykuAPIError>[1],
+  ) {
+    super(message, options);
+    this.name = "PaykuMarketplaceError";
   }
 }
 

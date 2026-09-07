@@ -1,10 +1,15 @@
 import {
   createPaykuAPIError,
-  PaykuAPIError,
+  PaykuMarketplaceError,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  validateCreateMarketplaceAffiliationRequest,
+  validateCreateMarketplaceClientRequest,
+  validateMarketplaceTransactionRequest,
+} from "../utils/payku.utils";
 import type {
   PaykuCreateMarketplaceAffiliationRequest,
   PaykuCreateMarketplaceClientRequest,
@@ -43,18 +48,24 @@ export default class PaykuMarketplace {
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     return fn().catch((error) => {
-      throw createPaykuAPIError(error, operation, PaykuAPIError, this.options);
+      throw createPaykuAPIError(
+        error,
+        operation,
+        PaykuMarketplaceError,
+        this.options,
+      );
     });
   }
 
   private createClient(params: PaykuCreateMarketplaceClientRequest) {
-    return this.wrap("marketplace.clients.create", () =>
-      this.http.request<PaykuMarketplaceClientResponse>({
+    return this.wrap("marketplace.clients.create", async () => {
+      validateCreateMarketplaceClientRequest(params);
+      return this.http.request<PaykuMarketplaceClientResponse>({
         method: "POST",
         path: "/maclient",
         body: bodyAsRecord(params),
-      }),
-    );
+      });
+    });
   }
 
   private getClient(id: string) {
@@ -90,13 +101,14 @@ export default class PaykuMarketplace {
   }
 
   private createAffiliation(params: PaykuCreateMarketplaceAffiliationRequest) {
-    return this.wrap("marketplace.affiliations.create", () =>
-      this.http.request<PaykuMarketplaceAffiliationResponse>({
+    return this.wrap("marketplace.affiliations.create", async () => {
+      validateCreateMarketplaceAffiliationRequest(params);
+      return this.http.request<PaykuMarketplaceAffiliationResponse>({
         method: "POST",
         path: "/maaffiliation",
         body: bodyAsRecord(params),
-      }),
-    );
+      });
+    });
   }
 
   private getAffiliation(id: string) {
@@ -120,12 +132,13 @@ export default class PaykuMarketplace {
   private createTransaction(
     params: PaykuMarketplaceTransactionRequest,
   ): Promise<PaykuCreateTransactionResponse> {
-    return this.wrap("marketplace.transactions.create", () =>
-      this.http.request<PaykuCreateTransactionResponse>({
+    return this.wrap("marketplace.transactions.create", async () => {
+      validateMarketplaceTransactionRequest(params);
+      return this.http.request<PaykuCreateTransactionResponse>({
         method: "POST",
         path: "/transaction/",
         body: bodyAsRecord(params),
-      }),
-    );
+      });
+    });
   }
 }

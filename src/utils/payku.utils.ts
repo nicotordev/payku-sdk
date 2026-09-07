@@ -3,8 +3,17 @@ import type {
   PaykuCreateEventRequest,
   PaykuEventAffiliationTuple,
 } from "../types/payku.events";
-import type { PaykuMallMerchantTuple } from "../types/payku.mall";
-import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
+import type {
+  PaykuMallMerchantTuple,
+  PaykuMallTransactionRequest,
+} from "../types/payku.mall";
+import type {
+  PaykuCreateMarketplaceAffiliationRequest,
+  PaykuCreateMarketplaceClientRequest,
+  PaykuMarketplaceAffiliationPair,
+  PaykuMarketplaceTransactionRequest,
+} from "../types/payku.marketplace";
+import type { PaykuEscrowAuthorizeRequest } from "../types/payku.escrow";
 import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
@@ -22,6 +31,7 @@ import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
   PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
+  PAYKU_MALL_PAYMENT_CODES,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
@@ -397,12 +407,35 @@ export function validateMarketplaceAffiliationPercentages(
   affiliation: PaykuMarketplaceAffiliationPair[],
 ): void {
   const merchant = Number(merchantPercentage);
+  if (!Number.isFinite(merchant) || merchant < 0 || merchant > 100) {
+    throw new PaykuError("merchant percentage must be a finite number between 0 and 100");
+  }
+
+  if (!Array.isArray(affiliation)) {
+    throw new PaykuError("affiliation must be an array");
+  }
+
+  for (let i = 0; i < affiliation.length; i++) {
+    const item = affiliation[i];
+    if (!Array.isArray(item) || item.length !== 2) {
+      throw new PaykuError(`affiliation[${i}] must be a tuple [clientId, percentage]`);
+    }
+    const [clientId, pct] = item;
+    if (typeof clientId !== "string" || clientId.trim() === "") {
+      throw new PaykuError(`affiliation[${i}].clientId must be a non-empty string`);
+    }
+    const numPct = Number(pct);
+    if (!Number.isFinite(numPct) || numPct <= 0 || numPct > 100) {
+      throw new PaykuError(`affiliation[${i}].percentage must be a finite number between 0 and 100`);
+    }
+  }
+
   const clients = affiliation.reduce((sum, [, pct]) => sum + Number(pct), 0);
   const total = merchant + clients;
 
   // Tolerancia documentada 0.01 + epsilon FP (p. ej. 20 + 79.99).
   const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
-  if (Number.isNaN(total) || Math.abs(total - 100) > tolerance) {
+  if (!Number.isFinite(total) || Math.abs(total - 100) > tolerance) {
     throw new PaykuError(
       `marketplace affiliation percentages must sum to 100 (got ${total})`,
     );
@@ -516,6 +549,121 @@ export function validateGetEventParams(id: string): void {
   requireNonEmptyField(id, "id");
 }
 
+export function validateCreateMallTransactionRequest(
+  params: PaykuMallTransactionRequest,
+): void {
+  for (const field of ["email", "order", "urlreturn"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (params.payment === undefined || params.payment === null) {
+    throw new PaykuError("payment is required");
+  }
+
+  const numPayment = Number(params.payment);
+  if (
+    !PAYKU_MALL_PAYMENT_CODES.includes(
+      numPayment as (typeof PAYKU_MALL_PAYMENT_CODES)[number],
+    )
+  ) {
+    throw new PaykuError(`payment code ${params.payment} is invalid for Mall`);
+  }
+
+  if (!Array.isArray(params.merchant) || params.merchant.length === 0) {
+    throw new PaykuError("merchant must be a non-empty array");
+  }
+
+  for (let i = 0; i < params.merchant.length; i++) {
+    const item = params.merchant[i];
+    if (!Array.isArray(item) || item.length !== 5) {
+      throw new PaykuError(`merchant[${i}] must be a valid merchant tuple of 5 elements`);
+    }
+    const [tokenOrAffiliationId, amount, subject, , individualOrder] = item;
+    requireNonEmptyField(
+      tokenOrAffiliationId,
+      `merchant[${i}].tokenOrAffiliationId`,
+    );
+    requireNonEmptyField(subject, `merchant[${i}].subject`);
+    requireNonEmptyField(individualOrder, `merchant[${i}].individualOrder`);
+
+    const numAmount = Number(amount);
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
+      throw new PaykuError(`merchant[${i}].amount must be greater than 0`);
+    }
+  }
+}
+
+export function validateGetMallTransactionParams(id: string): void {
+  requireNonEmptyField(id, "id");
+}
+
+export function validateCreateMarketplaceClientRequest(
+  params: PaykuCreateMarketplaceClientRequest,
+): void {
+  for (const field of ["email", "name", "phone"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (!params.bank) {
+    throw new PaykuError("bank is required");
+  }
+
+  for (const field of ["sbif", "type", "num", "rut"] as const) {
+    requireNonEmptyField(params.bank[field], `bank.${field}`);
+  }
+}
+
+export function validateCreateMarketplaceAffiliationRequest(
+  params: PaykuCreateMarketplaceAffiliationRequest,
+): void {
+  requireNonEmptyField(params.name, "name");
+  requireNonEmptyField(params.percentage, "percentage");
+
+  if (!Array.isArray(params.affiliation) || params.affiliation.length === 0) {
+    throw new PaykuError("affiliation must be a non-empty array");
+  }
+
+  validateMarketplaceAffiliationPercentages(
+    params.percentage,
+    params.affiliation,
+  );
+}
+
+export function validateMarketplaceTransactionRequest(
+  params: PaykuMarketplaceTransactionRequest,
+): void {
+  for (const field of ["email", "order", "subject", "marketplace"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (params.amount === undefined || params.amount === null) {
+    throw new PaykuError("amount is required");
+  }
+
+  const numAmount = Number(params.amount);
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    throw new PaykuError("amount must be greater than 0");
+  }
+}
+
+export function validateEscrowAuthorizeRequest(
+  params: PaykuEscrowAuthorizeRequest,
+): void {
+  if (
+    !params ||
+    !Array.isArray(params.transactions) ||
+    params.transactions.length === 0
+  ) {
+    throw new PaykuError("transactions must be a non-empty array");
+  }
+
+  for (const trxId of params.transactions) {
+    if (typeof trxId !== "string" || trxId.trim() === "") {
+      throw new PaykuError("each transaction id must be a non-empty string");
+    }
+  }
+}
+
 export function validateCreateNullificationRequest(
   params: PaykuNullificationCreateRequest,
 ): void {
@@ -544,7 +692,6 @@ export function validateCreateNullificationRequest(
 export function validateGetNullificationParams(id: string): void {
   requireNonEmptyField(id, "id");
 }
-
 export function validateCreateSubscriptionClientRequest(
   params: PaykuCreateSubscriptionClientRequest,
 ): void {

@@ -3,7 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMall from "../clients/payku.mall";
 import { HttpClient } from "../http/client";
-import { PaykuAPIError } from "../errors";
+import { PaykuAPIError, PaykuMallError } from "../errors";
 import { buildMallMerchant } from "../utils/payku.utils";
 
 const createFixture = {
@@ -158,6 +158,63 @@ describe("PaykuMall", () => {
       message_error: "id:it is not valid",
     });
 
-    expect(mall.get("missing")).rejects.toBeInstanceOf(PaykuAPIError);
+    await expect(mall.get("missing")).rejects.toBeInstanceOf(PaykuAPIError);
+  });
+
+  describe("validations", () => {
+    test("create throws PaykuMallError when required fields or merchant array are missing/invalid", async () => {
+      await expect(
+        mall.create({
+          email: "",
+          payment: 1,
+          merchant: [
+            ["token1", "1000", "sub", null, "ord1"],
+          ],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 2, // invalid Mall payment code
+          merchant: [
+            ["token1", "1000", "sub", null, "ord1"],
+          ],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [
+            ["token1", 0, "sub", null, "ord1"],
+          ],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(PaykuMallError);
+
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("get throws PaykuMallError when id is missing/empty", async () => {
+      await expect(mall.get("")).rejects.toThrow(PaykuMallError);
+      expect(mock.history.get.length).toBe(0);
+    });
   });
 });
