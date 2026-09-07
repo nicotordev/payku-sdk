@@ -87,6 +87,49 @@ describe("PaykuCreateEventSchema", () => {
       }
     }
   });
+
+  test("rejects invalid datetime format in event dates", () => {
+    const invalid = { ...validEvent, date_event: "not-a-date" };
+    const res = PaykuCreateEventSchema.safeParse(invalid);
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues[0]?.message).toContain("valid datetime");
+    }
+  });
+
+  test("rejects date_closing_sales after date_event", () => {
+    const invalid = {
+      ...validEvent,
+      date_event: "2026-11-20 18:00:00",
+      date_closing_sales: "2026-11-20 20:00:00",
+    };
+    const res = PaykuCreateEventSchema.safeParse(invalid);
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) =>
+          i.message.includes("less than or equal to date_event"),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test("rejects date_payment before or equal to date_event", () => {
+    const invalid = {
+      ...validEvent,
+      date_event: "2026-11-20 18:00:00",
+      date_payment: "2026-11-20 18:00:00",
+    };
+    const res = PaykuCreateEventSchema.safeParse(invalid);
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) =>
+          i.message.includes("greater than date_event"),
+        ),
+      ).toBe(true);
+    }
+  });
 });
 
 describe("PaykuCreateMallTransactionSchema", () => {
