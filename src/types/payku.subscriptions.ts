@@ -267,6 +267,15 @@ export interface PaykuSubscriptionCustomer {
   [key: string]: unknown;
 }
 
+/** Parámetros de consulta para `GET /api/suclient/customers`. */
+export interface PaykuListSubscriptionClientsParams {
+  page?: number;
+  per_page?: number;
+  date_init?: string;
+  date_end?: string;
+  [key: string]: unknown;
+}
+
 /** Response 200 de `GET /api/suclient/customers`. */
 export type PaykuListSubscriptionClientsResponse = Array<{
   Customers: PaykuSubscriptionCustomer[];
