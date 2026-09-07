@@ -7,8 +7,8 @@ export interface PaykuBank {
    *
    * En Chile corresponde al código SBIF (ej. `"0001"` para Banco de Chile, `"0012"` para Banco Estado).
    * Este código se utiliza en:
-   * - **Wallet payout:** campo `accountbank_sbif` al solicitar liquidaciones o retiros bancarios.
-   * - **Transacciones Chile:** campo opcional `payer_bank` al crear pagos con transferencias bancarias directas (Etpay, Fintoc, Floid).
+   * - **Wallet payout:** campo `accountbank_sbif` en `PaykuWalletPayoutRequest` al solicitar liquidaciones bancarias.
+   * - **Transacciones Chile:** parámetro `additional_parameters.payer_bank` al crear pagos con transferencias bancarias directas (Etpay, Fintoc, Floid).
    */
   code: string;
   /** Nombre comercial de la institución financiera. */
