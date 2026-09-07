@@ -58,12 +58,34 @@ describe("PaykuCreateEventSchema", () => {
     expect(resOver100.success).toBe(false);
   });
 
-  test("rejects affiliation tuple with invalid length", () => {
+  test("rejects affiliation tuple with invalid email", () => {
     const res = PaykuCreateEventSchema.safeParse({
       ...validEvent,
-      affiliation: [["aff@test.com", 50, "extra"]],
+      affiliation: [["not-an-email", 50]],
     });
     expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) => i.message.includes("valid email")),
+      ).toBe(true);
+    }
+  });
+
+  test("rejects whitespace-only required fields", () => {
+    for (const field of [
+      "event",
+      "name",
+      "date_event",
+      "date_closing_sales",
+      "date_payment",
+    ] as const) {
+      const invalid = { ...validEvent, [field]: "   " };
+      const res = PaykuCreateEventSchema.safeParse(invalid);
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues[0]?.message).toBe(`${field} is required`);
+      }
+    }
   });
 });
 
@@ -160,6 +182,22 @@ describe("PaykuMarketplaceAffiliationSchema", () => {
     if (!res.success) {
       expect(res.error.issues.some((i) => i.message.includes("must sum to 100"))).toBe(true);
     }
+  });
+
+  test("rejects empty or whitespace-only percentage", () => {
+    const resEmpty = PaykuMarketplaceAffiliationSchema.safeParse({
+      name: "Split",
+      percentage: "",
+      affiliation: [["client-1", "100"]],
+    });
+    expect(resEmpty.success).toBe(false);
+
+    const resWhitespace = PaykuMarketplaceAffiliationSchema.safeParse({
+      name: "Split",
+      percentage: "   ",
+      affiliation: [["client-1", "100"]],
+    });
+    expect(resWhitespace.success).toBe(false);
   });
 
   test("rejects empty affiliation array", () => {

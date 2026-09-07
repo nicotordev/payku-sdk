@@ -1,11 +1,21 @@
 import { z } from "zod";
 import { PAYKU_MALL_PAYMENT_CODES } from "../constants/payku.constants";
 
+const requireNonEmptyString = (field: string) =>
+  z
+    .string({ required_error: `${field} is required` })
+    .refine((val) => val.trim().length > 0, {
+      message: `${field} is required`,
+    });
+
 /**
  * Tupla de afiliado para eventos: [email, percent]
  */
 export const PaykuEventAffiliationTupleSchema = z.tuple([
-  z.string().min(1, "affiliation email is required"),
+  z
+    .string({ required_error: "affiliation email is required" })
+    .trim()
+    .email("affiliation email must be a valid email address"),
   z
     .union([z.number(), z.string().transform((v) => Number(v))])
     .refine(
@@ -23,11 +33,11 @@ export type PaykuEventAffiliationTuple = z.infer<
  */
 export const PaykuCreateEventSchema = z
   .object({
-    event: z.string().min(1, "event is required"),
-    name: z.string().min(1, "name is required"),
-    date_event: z.string().min(1, "date_event is required"),
-    date_closing_sales: z.string().min(1, "date_closing_sales is required"),
-    date_payment: z.string().min(1, "date_payment is required"),
+    event: requireNonEmptyString("event"),
+    name: requireNonEmptyString("name"),
+    date_event: requireNonEmptyString("date_event"),
+    date_closing_sales: requireNonEmptyString("date_closing_sales"),
+    date_payment: requireNonEmptyString("date_payment"),
     url_event: z.string().optional(),
     url_logo: z.string().optional(),
     service_sale: z.number().optional(),
@@ -35,18 +45,25 @@ export const PaykuCreateEventSchema = z
   })
   .passthrough();
 
-export type PaykuCreateEvent = z.infer<typeof PaykuCreateEventSchema>;
+export type PaykuCreateEventRequestInput = z.infer<
+  typeof PaykuCreateEventSchema
+>;
+export type PaykuCreateEventInput = PaykuCreateEventRequestInput;
+export type PaykuCreateEvent = PaykuCreateEventRequestInput;
 
 /**
  * Tupla wire de un beneficiario Mall de 5 elementos:
  * [tokenOrAffiliationId, amount, subject, eventId, individualOrder]
  */
 export const PaykuMallMerchantTupleSchema = z.tuple([
-  z.string().min(1, "tokenOrAffiliationId is required"),
+  requireNonEmptyString("tokenOrAffiliationId"),
   z
     .union([
       z.number(),
-      z.string().refine((s) => Number.isFinite(Number(s)), "amount must be finite"),
+      z.string().refine(
+        (s) => s.trim().length > 0 && Number.isFinite(Number(s)),
+        "amount must be finite",
+      ),
     ])
     .refine(
       (val) => {
@@ -55,19 +72,21 @@ export const PaykuMallMerchantTupleSchema = z.tuple([
       },
       "merchant amount must be greater than 0",
     ),
-  z.string().min(1, "subject is required"),
+  requireNonEmptyString("subject"),
   z.string().nullable().optional(),
-  z.string().min(1, "individualOrder is required"),
+  requireNonEmptyString("individualOrder"),
 ]);
 
-export type PaykuMallMerchantTuple = z.infer<typeof PaykuMallMerchantTupleSchema>;
+export type PaykuMallMerchantTuple = z.infer<
+  typeof PaykuMallMerchantTupleSchema
+>;
 
 /**
  * Esquema Zod para crear transacciones Mall multi-comercio (`POST /api/mall`).
  */
 export const PaykuCreateMallTransactionSchema = z
   .object({
-    email: z.string().min(1, "email is required"),
+    email: requireNonEmptyString("email"),
     payment: z
       .number()
       .refine(
@@ -77,23 +96,41 @@ export const PaykuCreateMallTransactionSchema = z
     merchant: z
       .array(PaykuMallMerchantTupleSchema)
       .min(1, "merchant must be a non-empty array"),
-    order: z.union([z.string().min(1, "order is required"), z.number()]),
-    urlreturn: z.string().min(1, "urlreturn is required"),
+    order: z.union([
+      requireNonEmptyString("order"),
+      z.number(),
+    ]),
+    urlreturn: requireNonEmptyString("urlreturn"),
     urlnotify: z.string().optional(),
   })
   .passthrough();
 
-export type PaykuCreateMallTransaction = z.infer<
+export type PaykuCreateMallTransactionRequestInput = z.infer<
   typeof PaykuCreateMallTransactionSchema
 >;
+export type PaykuCreateMallTransactionInput =
+  PaykuCreateMallTransactionRequestInput;
+export type PaykuCreateMallTransaction =
+  PaykuCreateMallTransactionRequestInput;
 
 /**
  * Par de afiliación para Marketplace: [clientId, percentage]
  */
 export const PaykuMarketplaceAffiliationPairSchema = z.tuple([
-  z.string().min(1, "clientId must be a non-empty string"),
   z
-    .union([z.string(), z.number().transform(String)])
+    .string({ required_error: "clientId must be a non-empty string" })
+    .refine((s) => s.trim().length > 0, "clientId must be a non-empty string"),
+  z
+    .union([
+      z.number(),
+      z
+        .string()
+        .refine(
+          (s) => s.trim().length > 0,
+          "percentage is required",
+        ),
+    ])
+    .transform((val) => String(val))
     .refine((val) => {
       const num = Number(val);
       return Number.isFinite(num) && num > 0 && num <= 100;
@@ -110,9 +147,18 @@ export type PaykuMarketplaceAffiliationPair = z.infer<
  */
 export const PaykuMarketplaceAffiliationSchema = z
   .object({
-    name: z.string().min(1, "name is required"),
+    name: requireNonEmptyString("name"),
     percentage: z
-      .union([z.string(), z.number().transform(String)])
+      .union([
+        z.number(),
+        z
+          .string()
+          .refine(
+            (s) => s.trim().length > 0,
+            "percentage is required",
+          ),
+      ])
+      .transform((val) => String(val))
       .refine((val) => {
         const num = Number(val);
         return Number.isFinite(num) && num >= 0 && num <= 100;
@@ -124,9 +170,13 @@ export const PaykuMarketplaceAffiliationSchema = z
   .passthrough()
   .superRefine((data, ctx) => {
     const merchant = Number(data.percentage);
-    const clients = data.affiliation.reduce((sum, [, pct]) => sum + Number(pct), 0);
+    const clients = data.affiliation.reduce(
+      (sum, [, pct]) => sum + Number(pct),
+      0,
+    );
     const total = merchant + clients;
-    const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
+    const tolerance =
+      0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
 
     if (!Number.isFinite(total) || Math.abs(total - 100) > tolerance) {
       ctx.addIssue({
@@ -137,6 +187,10 @@ export const PaykuMarketplaceAffiliationSchema = z
     }
   });
 
-export type PaykuMarketplaceAffiliation = z.infer<
+export type PaykuMarketplaceAffiliationRequestInput = z.infer<
   typeof PaykuMarketplaceAffiliationSchema
 >;
+export type PaykuMarketplaceAffiliationInput =
+  PaykuMarketplaceAffiliationRequestInput;
+export type PaykuMarketplaceAffiliation =
+  PaykuMarketplaceAffiliationRequestInput;
