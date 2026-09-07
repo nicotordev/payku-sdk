@@ -4,7 +4,7 @@ import type {
   PaykuCountryCore,
   PaykuCountryClient,
 } from "./payku.country-base";
-import type PaykuBanks from "./payku.banks";
+import { PaykuScopedBanks } from "./payku.banks.scoped";
 import type PaykuPaymentMethods from "./payku.payment-methods";
 import type PaykuWebhooks from "./payku.webhooks";
 import { PaykuVenezuelaTransactions } from "./payku.transactions.scoped";
@@ -22,7 +22,7 @@ export class PaykuVenezuela implements PaykuCountryClient {
 
   readonly transactions: PaykuVenezuelaTransactions;
   readonly wallet: PaykuSharedWallet;
-  readonly banks: PaykuBanks;
+  readonly banks: PaykuScopedBanks;
   readonly paymentMethods: PaykuPaymentMethods;
   readonly webhooks: PaykuWebhooks;
 
@@ -36,7 +36,7 @@ export class PaykuVenezuela implements PaykuCountryClient {
     this.options = core.options;
     this.transactions = new PaykuVenezuelaTransactions(core.transactions);
     this.wallet = new PaykuSharedWallet(core.wallet, "VE");
-    this.banks = core.banks;
+    this.banks = new PaykuScopedBanks(core.banks, "VE");
     this.paymentMethods = core.paymentMethods;
     this.webhooks = core.webhooks;
   }

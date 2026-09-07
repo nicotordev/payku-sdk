@@ -4,7 +4,7 @@ import type {
   PaykuCountryCore,
   PaykuCountryClient,
 } from "./payku.country-base";
-import type PaykuBanks from "./payku.banks";
+import { PaykuScopedBanks } from "./payku.banks.scoped";
 import type PaykuConciliation from "./payku.conciliation";
 import type PaykuConsumptionSubscriptions from "./payku.consumption-subscriptions";
 import type PaykuEscrow from "./payku.escrow";
@@ -30,7 +30,7 @@ export class PaykuChile implements PaykuCountryClient {
 
   readonly transactions: PaykuChileTransactions;
   readonly wallet: PaykuWallet;
-  readonly banks: PaykuBanks;
+  readonly banks: PaykuScopedBanks;
   readonly paymentMethods: PaykuPaymentMethods;
   readonly webhooks: PaykuWebhooks;
   readonly subscriptions: PaykuSubscriptions;
@@ -52,7 +52,7 @@ export class PaykuChile implements PaykuCountryClient {
     this.options = core.options;
     this.transactions = new PaykuChileTransactions(core.transactions);
     this.wallet = core.wallet;
-    this.banks = core.banks;
+    this.banks = new PaykuScopedBanks(core.banks, "CL");
     this.paymentMethods = core.paymentMethods;
     this.webhooks = core.webhooks;
     this.subscriptions = core.subscriptions;
