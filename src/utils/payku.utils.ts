@@ -7,6 +7,7 @@ import type {
   PaykuMarketplaceAffiliationPair,
   PaykuMarketplaceTransactionRequest,
 } from "../types/payku.marketplace";
+import type { PaykuEscrowAuthorizeRequest } from "../types/payku.escrow";
 import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
@@ -546,6 +547,24 @@ export function validateMarketplaceTransactionRequest(
   const numAmount = Number(params.amount);
   if (!Number.isFinite(numAmount) || numAmount <= 0) {
     throw new PaykuError("amount must be greater than 0");
+  }
+}
+
+export function validateEscrowAuthorizeRequest(
+  params: PaykuEscrowAuthorizeRequest,
+): void {
+  if (
+    !params ||
+    !Array.isArray(params.transactions) ||
+    params.transactions.length === 0
+  ) {
+    throw new PaykuError("transactions must be a non-empty array");
+  }
+
+  for (const trxId of params.transactions) {
+    if (typeof trxId !== "string" || trxId.trim() === "") {
+      throw new PaykuError("each transaction id must be a non-empty string");
+    }
   }
 }
 
