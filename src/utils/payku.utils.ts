@@ -15,6 +15,7 @@ import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
   PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
+  PAYKU_MALL_PAYMENT_CODES,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
@@ -466,14 +467,23 @@ export function validateCreateMallTransactionRequest(
     throw new PaykuError("payment is required");
   }
 
+  const numPayment = Number(params.payment);
+  if (
+    !PAYKU_MALL_PAYMENT_CODES.includes(
+      numPayment as (typeof PAYKU_MALL_PAYMENT_CODES)[number],
+    )
+  ) {
+    throw new PaykuError(`payment code ${params.payment} is invalid for Mall`);
+  }
+
   if (!Array.isArray(params.merchant) || params.merchant.length === 0) {
     throw new PaykuError("merchant must be a non-empty array");
   }
 
   for (let i = 0; i < params.merchant.length; i++) {
     const item = params.merchant[i];
-    if (!Array.isArray(item) || item.length < 5) {
-      throw new PaykuError(`merchant[${i}] must be a valid merchant tuple`);
+    if (!Array.isArray(item) || item.length !== 5) {
+      throw new PaykuError(`merchant[${i}] must be a valid merchant tuple of 5 elements`);
     }
     const [tokenOrAffiliationId, amount, subject, , individualOrder] = item;
     requireNonEmptyField(
@@ -484,7 +494,7 @@ export function validateCreateMallTransactionRequest(
     requireNonEmptyField(individualOrder, `merchant[${i}].individualOrder`);
 
     const numAmount = Number(amount);
-    if (Number.isNaN(numAmount) || numAmount <= 0) {
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
       throw new PaykuError(`merchant[${i}].amount must be greater than 0`);
     }
   }
