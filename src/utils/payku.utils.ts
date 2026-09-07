@@ -13,6 +13,12 @@ import type {
   PaykuCreateTransactionResponse,
   PaykuListTransactionsParams,
 } from "../types/payku.transactions";
+import type {
+  PaykuCreateSubscriptionClientRequest,
+  PaykuCreateSubscriptionRequest,
+  PaykuCreateSubscriptionTransactionRequest,
+  PaykuListSubscriptionClientsParams,
+} from "../types/payku.subscriptions";
 import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
@@ -529,4 +535,54 @@ export function validateMarketplaceTransactionRequest(
   }
 }
 
+export function validateCreateSubscriptionClientRequest(
+  params: PaykuCreateSubscriptionClientRequest,
+): void {
+  for (const field of ["email", "name", "phone"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+}
 
+export function validateCreateSubscriptionRequest(
+  params: PaykuCreateSubscriptionRequest,
+): void {
+  for (const field of ["plan", "client"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (params.amount !== undefined) {
+    const numAmount = Number(params.amount);
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
+      throw new PaykuError("amount must be greater than 0");
+    }
+  }
+}
+
+export function validateCreateSubscriptionTransactionRequest(
+  params: PaykuCreateSubscriptionTransactionRequest,
+): void {
+  requireNonEmptyField(params.suscription, "suscription");
+
+  if (params.amount !== undefined) {
+    const numAmount = Number(params.amount);
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
+      throw new PaykuError("amount must be greater than 0");
+    }
+  }
+}
+
+export function validateListSubscriptionClientsParams(
+  params: PaykuListSubscriptionClientsParams,
+): void {
+  if (params.per_page === undefined) {
+    return;
+  }
+
+  if (
+    !Number.isInteger(params.per_page) ||
+    params.per_page < 1 ||
+    params.per_page > 100
+  ) {
+    throw new PaykuError("per_page must be between 1 and 100");
+  }
+}

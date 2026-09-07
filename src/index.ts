@@ -64,7 +64,11 @@ export {
   validateChileCreateTransactionRequest,
   validateCreateMarketplaceAffiliationRequest,
   validateCreateMarketplaceClientRequest,
+  validateCreateSubscriptionClientRequest,
+  validateCreateSubscriptionRequest,
+  validateCreateSubscriptionTransactionRequest,
   validateCreateTransactionRequest,
+  validateListSubscriptionClientsParams,
   validateMarketplaceAffiliationPercentages,
   validateMarketplaceTransactionRequest,
 } from "./utils/payku.utils";
@@ -73,4 +77,5 @@ export type {
   PaykuPaymentReturnResult,
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
+export type { PaykuListSubscriptionClientsParams } from "./types/payku.subscriptions";
 
