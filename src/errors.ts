@@ -134,6 +134,16 @@ export class PaykuSubscriptionsError extends PaykuAPIError {
   }
 }
 
+export class PaykuEventsError extends PaykuAPIError {
+  constructor(
+    message: string,
+    options?: ConstructorParameters<typeof PaykuAPIError>[1],
+  ) {
+    super(message, options);
+    this.name = "PaykuEventsError";
+  }
+}
+
 export function isPaykuError(error: unknown): error is PaykuError {
   return error instanceof PaykuError;
 }

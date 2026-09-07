@@ -15,6 +15,7 @@ export {
   PaykuAuthenticationError,
   PaykuCreateTransactionError,
   PaykuError,
+  PaykuEventsError,
   PaykuGetTransactionError,
   PaykuListTransactionsError,
   PaykuSubscriptionsError,
@@ -61,7 +62,9 @@ export {
   mapNotifyStatusToTransactionStatus,
   parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
+  validateCreateEventRequest,
   validateCreateTransactionRequest,
+  validateGetEventParams,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
 export type {
