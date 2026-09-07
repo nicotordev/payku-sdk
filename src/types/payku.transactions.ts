@@ -139,7 +139,7 @@ export interface PaykuTransaction {
   order?: string;
   subject?: string;
   payment?: PaykuTransactionPayment;
-  nullify?: PaykuTransactionNullify;
+  nullify?: PaykuTransactionNullify | null;
   gateway_response?: PaykuTransactionGatewayResponse;
 }
 
@@ -156,7 +156,7 @@ export interface PaykuGetTransactionResponse {
   subject?: string;
   amount?: number | string;
   payment?: PaykuTransactionPayment;
-  nullify?: PaykuTransactionNullify;
+  nullify?: PaykuTransactionNullify | null;
   gateway_response?: PaykuTransactionGatewayResponse;
 }
 

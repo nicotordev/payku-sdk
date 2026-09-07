@@ -409,6 +409,9 @@ export function parsePaymentReturnQuery(
 
   if (typeof input === "string") {
     let queryString = input;
+    if (queryString.includes("#")) {
+      queryString = queryString.slice(0, queryString.indexOf("#"));
+    }
     if (queryString.includes("?")) {
       queryString = queryString.slice(queryString.indexOf("?") + 1);
     }
@@ -435,10 +438,11 @@ export function parsePaymentReturnQuery(
     messageError = getVal("message_error") ?? getVal("messageError");
   }
 
+  const normalizedMessageError = messageError?.trim().toLowerCase();
+  const normalizedStatus = status?.trim().toLowerCase();
+
   const isExpired =
-    (messageError !== undefined &&
-      messageError.toLowerCase().includes("expired")) ||
-    (status !== undefined && status.toLowerCase() === "expired");
+    normalizedMessageError === "expired" || normalizedStatus === "expired";
 
   return {
     id,

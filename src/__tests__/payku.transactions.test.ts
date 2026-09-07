@@ -553,6 +553,21 @@ describe("parsePaymentReturnQuery", () => {
     expect(result.status).toBe("success");
     expect(result.expired).toBe(false);
   });
+
+  test("strips URL hash fragment from param values", () => {
+    const url = "https://example.com/return?id=trx123456&message_error=expired#section";
+    const result = parsePaymentReturnQuery(url);
+
+    expect(result.id).toBe("trx123456");
+    expect(result.expired).toBe(true);
+  });
+
+  test("avoids false positives like message_error=not_expired", () => {
+    const result = parsePaymentReturnQuery("id=trx-99&message_error=not_expired");
+
+    expect(result.id).toBe("trx-99");
+    expect(result.expired).toBe(false);
+  });
 });
 
 describe("PaykuTransactions fixtures", () => {
@@ -640,7 +655,8 @@ describe("PaykuTransactions fixtures", () => {
     expect(response.status).toBe("success");
     expect(response.amount).toBe(15000);
     expect(response.payment?.payment_key).toBe("webpay");
-    expect(response.gateway_response?.authorization_code).toBe("123456");
+    expect(response.payment?.authorization_code).toBe("123456");
+    expect(response.gateway_response?.status).toBe("success");
   });
 
   test("get not found fixture (404 Not Found)", async () => {
