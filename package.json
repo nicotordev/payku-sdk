@@ -65,10 +65,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./zod": {
+      "types": "./dist/zod/index.d.ts",
+      "import": "./dist/zod/index.js",
+      "default": "./dist/zod/index.js"
     }
   },
   "typesVersions": {
     "*": {
+      "zod": [
+        "dist/zod/index.d.ts"
+      ],
       "*": [
         "dist/*"
       ]
@@ -99,7 +107,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && tsc",
+    "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && bun build ./src/zod/index.ts --outdir=./dist/zod --target=node --format=esm --external zod && tsc",
     "test": "bun run test:unit",
     "test:unit": "bun test src/__tests__ src/http",
     "test:integration": "bun test --path-ignore-patterns '' src/__tests__/integration",
@@ -113,6 +121,14 @@
   "dependencies": {
     "axios": "^1.18.0",
     "crypto-js": "^4.2.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.20.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -129,7 +145,8 @@
     "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
     "typedoc": "^0.28.19",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^3.24.2"
   },
   "overrides": {
     "@babel/helpers": "^7.26.10",
