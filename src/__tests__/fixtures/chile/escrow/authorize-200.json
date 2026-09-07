@@ -1,0 +1,18 @@
+{
+  "transactions": [
+    {
+      "status": "liquidate",
+      "transaction_id": "trx3b4d77b43acd9a720",
+      "amount": 15000,
+      "availability_date": "2021-07-01",
+      "deposit_date": "2021-07-06"
+    },
+    {
+      "status": "pending for deposit",
+      "transaction_id": "trx3b4d77b43acd9a385",
+      "amount": 8000,
+      "availability_date": "2021-07-01",
+      "deposit_date": "N/D"
+    }
+  ]
+}

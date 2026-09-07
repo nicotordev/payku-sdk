@@ -500,17 +500,55 @@ const nullify = await payku.nullification.create({
 
 ## Escrow (Chile)
 
+El módulo Escrow permite autorizar la liquidación de transacciones en custodia a través del endpoint `POST /api/escrow`.
+
+> [!NOTE]
+> - **Alcance:** Exclusivo para Chile (`Payku.forCountry("CL").escrow`). En Perú y Venezuela el cliente no expone este módulo (`PaykuPeru` y `PaykuVenezuela`).
+> - **Requisito:** Requiere una cuenta de custodia / escrow previamente habilitada y autorizada por Payku para tu comercio.
+> - **Autenticación:** Utiliza autenticación estándar `Bearer` (no requiere firma HMAC `Sign`).
+
+### Autorizar liquidación (`escrow.authorize`)
+
 ```typescript
+import Payku, { PaykuEscrowError } from "@nicotordev/payku";
+
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
   privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
-  environment: "sandbox",
+  environment: "sandbox", // o "production"
 });
 
-await payku.escrow.authorize({
-  transactions: ["trx3b4d77b43acd9a720", "trx3b4d77b43acd9a385"],
-});
+try {
+  const result = await payku.escrow.authorize({
+    transactions: [
+      "trx3b4d77b43acd9a720",
+      "trx3b4d77b43acd9a385",
+    ],
+  });
+
+  for (const item of result.transactions) {
+    console.log(
+      `ID: ${item.transaction_id} | Estado: ${item.status} | Depósito: ${item.deposit_date}`,
+    );
+  }
+} catch (error) {
+  if (error instanceof PaykuEscrowError) {
+    console.error(`Error en Escrow (${error.statusCode}):`, error.message);
+  }
+}
 ```
+
+### Estados de liquidación (`status`)
+
+Cada transacción autorizada dentro de `result.transactions` retorna uno de los siguientes estados documentados:
+
+| Estado (`status`) | Descripción |
+| --- | --- |
+| `liquidate` | Transacción autorizada y liquidada. Contiene fechas `availability_date` y `deposit_date`. |
+| `pending for deposit` | Transacción autorizada, pendiente de programación bancaria (`deposit_date: "N/D"`). |
+| `pending` | Transacción en espera de procesamiento. |
+| `paid` | Fondos ya depositados previamente en la cuenta de destino. |
+| `not found` | Identificador no encontrado o no asociado a una custodia válida. |
 
 ## Suscripciones (Chile)
 

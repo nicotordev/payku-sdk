@@ -5,24 +5,9 @@ import PaykuEscrow from "../clients/payku.escrow";
 import { PaykuEscrowError } from "../errors";
 import { HttpClient } from "../http/client";
 
-const authorizeFixture = {
-  transactions: [
-    {
-      status: "liquidate" as const,
-      transaction_id: "trx3b4d77b43acd9a720",
-      amount: 15000,
-      availability_date: "2021-07-01",
-      deposit_date: "2021-07-06",
-    },
-    {
-      status: "pending for deposit" as const,
-      transaction_id: "trx3b4d77b43acd9a385",
-      amount: 8000,
-      availability_date: "2021-07-01",
-      deposit_date: "N/D",
-    },
-  ],
-};
+import authorize200Fixture from "./fixtures/chile/escrow/authorize-200.json";
+import authorize401Fixture from "./fixtures/chile/escrow/authorize-401.json";
+import Payku from "../clients/payku";
 
 describe("PaykuEscrow authorize", () => {
   let mock: InstanceType<typeof MockAdapter>;
@@ -64,7 +49,7 @@ describe("PaykuEscrow authorize", () => {
       });
       expect(body).not.toHaveProperty("transaction");
 
-      return [200, authorizeFixture];
+      return [200, authorize200Fixture];
     });
 
     await escrow.authorize({
@@ -76,7 +61,7 @@ describe("PaykuEscrow authorize", () => {
   });
 
   test("authorize maps transactions settlement fixture", async () => {
-    mock.onPost("/escrow").reply(200, authorizeFixture);
+    mock.onPost("/escrow").reply(200, authorize200Fixture);
 
     const response = await escrow.authorize({
       transactions: [
@@ -85,9 +70,24 @@ describe("PaykuEscrow authorize", () => {
       ],
     });
 
-    expect(response).toEqual(authorizeFixture);
+    expect(response).toEqual(authorize200Fixture);
     expect(response.transactions[0]?.status).toBe("liquidate");
     expect(response.transactions[1]?.deposit_date).toBe("N/D");
+  });
+
+  test("authorize throws PaykuEscrowError on 401 Unauthorized", async () => {
+    mock.onPost("/escrow").reply(401, authorize401Fixture);
+
+    try {
+      await escrow.authorize({
+        transactions: ["trx3b4d77b43acd9a720"],
+      });
+      expect.unreachable("should have thrown PaykuEscrowError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PaykuEscrowError);
+      const escrowError = error as PaykuEscrowError;
+      expect(escrowError.statusCode).toBe(401);
+    }
   });
 
   describe("validations", () => {
@@ -118,5 +118,29 @@ describe("PaykuEscrow authorize", () => {
 
       expect(mock.history.post.length).toBe(0);
     });
+  });
+});
+
+describe("Payku.forCountry escrow integration", () => {
+  test("Payku.forCountry('CL').escrow is an instance of PaykuEscrow", () => {
+    const paykuCL = Payku.forCountry("CL", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+    expect(paykuCL.escrow).toBeInstanceOf(PaykuEscrow);
+  });
+
+  test("Payku.forCountry('PE') and 'VE' do not expose escrow", () => {
+    const paykuPE = Payku.forCountry("PE", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+    const paykuVE = Payku.forCountry("VE", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+
+    expect("escrow" in paykuPE).toBe(false);
+    expect("escrow" in paykuVE).toBe(false);
   });
 });
