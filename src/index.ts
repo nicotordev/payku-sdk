@@ -18,6 +18,7 @@ export {
   PaykuEventsError,
   PaykuGetTransactionError,
   PaykuListTransactionsError,
+  PaykuNullificationError,
   PaykuSubscriptionsError,
   PaykuUnsupportedFeatureError,
   PaykuWalletError,
@@ -63,11 +64,13 @@ export {
   parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
   validateCreateEventRequest,
+  validateCreateNullificationRequest,
   validateCreateSubscriptionClientRequest,
   validateCreateSubscriptionRequest,
   validateCreateSubscriptionTransactionRequest,
   validateCreateTransactionRequest,
   validateGetEventParams,
+  validateGetNullificationParams,
   validateListSubscriptionClientsParams,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
@@ -77,4 +80,3 @@ export type {
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
 export type { PaykuListSubscriptionClientsParams } from "./types/payku.subscriptions";
-
