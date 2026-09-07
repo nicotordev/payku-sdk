@@ -4,7 +4,13 @@ import {
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  validateCreateSubscriptionClientRequest,
+  validateCreateSubscriptionRequest,
+  validateCreateSubscriptionTransactionRequest,
+  validateListSubscriptionClientsParams,
+} from "../utils/payku.utils";
 import type {
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
@@ -17,6 +23,7 @@ import type {
   PaykuDeleteSubscriptionResponse,
   PaykuGetSubscriptionPlanResponse,
   PaykuGetSubscriptionResponse,
+  PaykuListSubscriptionClientsParams,
   PaykuListSubscriptionClientsResponse,
   PaykuListSubscriptionPlansResponse,
   PaykuListSubscriptionsQuery,
@@ -77,14 +84,15 @@ export default class PaykuSubscriptions {
   }
 
   private createClient(params: PaykuCreateSubscriptionClientRequest) {
-    return this.wrap("subscriptions.clients.create", () =>
-      this.http.request<PaykuSubscriptionClientResponse>({
+    return this.wrap("subscriptions.clients.create", async () => {
+      validateCreateSubscriptionClientRequest(params);
+      return this.http.request<PaykuSubscriptionClientResponse>({
         method: "POST",
         path: "/suclient",
         body: bodyAsRecord(params),
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private getClient(id: string) {
@@ -121,15 +129,18 @@ export default class PaykuSubscriptions {
     );
   }
 
-  private listClients(query?: Record<string, unknown>) {
-    return this.wrap("subscriptions.clients.list", () =>
-      this.http.request<PaykuListSubscriptionClientsResponse>({
+  private listClients(query?: PaykuListSubscriptionClientsParams) {
+    return this.wrap("subscriptions.clients.list", async () => {
+      if (query) {
+        validateListSubscriptionClientsParams(query);
+      }
+      return this.http.request<PaykuListSubscriptionClientsResponse>({
         method: "GET",
         path: "/suclient/customers",
-        query,
+        query: query as Record<string, unknown> | undefined,
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private getPlan(id: string) {
@@ -153,14 +164,15 @@ export default class PaykuSubscriptions {
   }
 
   private createSubscription(params: PaykuCreateSubscriptionRequest) {
-    return this.wrap("subscriptions.create", () =>
-      this.http.request<PaykuCreateSubscriptionResponse>({
+    return this.wrap("subscriptions.create", async () => {
+      validateCreateSubscriptionRequest(params);
+      return this.http.request<PaykuCreateSubscriptionResponse>({
         method: "POST",
         path: "/sususcription",
         body: bodyAsRecord(params),
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private getSubscription(id: string) {
@@ -208,14 +220,15 @@ export default class PaykuSubscriptions {
   private createSubscriptionTransaction(
     params: PaykuCreateSubscriptionTransactionRequest,
   ) {
-    return this.wrap("subscriptions.transactions.create", () =>
-      this.http.request<PaykuCreateSubscriptionTransactionResponse>({
+    return this.wrap("subscriptions.transactions.create", async () => {
+      validateCreateSubscriptionTransactionRequest(params);
+      return this.http.request<PaykuCreateSubscriptionTransactionResponse>({
         method: "POST",
         path: "/sutransaction",
         body: bodyAsRecord(params),
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private registerCard(params: PaykuRegisterCardRequest) {
