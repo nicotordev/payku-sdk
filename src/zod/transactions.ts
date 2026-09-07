@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
+  PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
@@ -23,6 +24,13 @@ function resolveClpPaymentCodes(
   }
   return Object.values(PAYKU_PAYMENT_METHODS.CLP);
 }
+
+const requireNonEmptyString = (field: string) =>
+  z
+    .string({ required_error: `${field} is required` })
+    .refine((val) => val.trim().length > 0, {
+      message: `${field} is required`,
+    });
 
 /**
  * Esquema para parámetros adicionales de transacción.
@@ -50,7 +58,7 @@ export function createTransactionSchema(
       order: z.string().optional(),
       subject: z.string().optional(),
       amount: z.number().positive("amount must be greater than 0"),
-      currency: z.enum(["CLP", "PEN", "USD", "VES"]),
+      currency: z.enum(["CLP", "PEN", "VES"]),
       payment: z.number().int().optional(),
       expired: z.string().optional(),
       urlreturn: z.string().optional(),
@@ -98,25 +106,21 @@ export function createTransactionSchema(
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               message:
-                "expired must be more than 5 minutes after the current time (America/Santiago)",
+                "expired must be more than 5 minutes in the future (Santiago)",
               path: ["expired"],
             });
           }
         }
       }
 
-      // 2. Validación de payment por moneda
+      // 2. Validación de payment según moneda
       if (data.payment !== undefined) {
         const validCodes: readonly number[] =
           data.currency === "CLP"
             ? resolveClpPaymentCodes(options.clpPaymentCodes)
-            : data.currency in PAYKU_PAYMENT_METHODS
-              ? Object.values(
-                  PAYKU_PAYMENT_METHODS[
-                    data.currency as Exclude<PaykuCurrency, "USD">
-                  ],
-                )
-              : [];
+            : Object.values(
+                PAYKU_PAYMENT_METHODS[data.currency as PaykuCurrency],
+              );
 
         if (!validCodes.includes(data.payment)) {
           ctx.addIssue({
@@ -127,31 +131,37 @@ export function createTransactionSchema(
         }
       }
 
-      // 3. Validación de payer_rut requerido para CLP con Etpay (4), Fintoc (19), Floid (26)
+      // 3. Validación de payer_rut para pagos CLP específicos
       if (data.currency === "CLP" && data.payment !== undefined) {
         if (
-          (
-            PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT as readonly number[]
-          ).includes(data.payment)
+          PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT.includes(
+            data.payment as (typeof PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT)[number],
+          )
         ) {
           const payerRut = data.additional_parameters?.payer_rut;
-          if (payerRut === undefined || String(payerRut).trim() === "") {
+          if (
+            payerRut === undefined ||
+            payerRut === null ||
+            String(payerRut).trim() === ""
+          ) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               message:
-                "additional_parameters.payer_rut is required for payment methods Etpay (4), Fintoc (19), and Floid (26)",
+                "additional_parameters.payer_rut is required for this payment method",
               path: ["additional_parameters", "payer_rut"],
             });
           }
         }
       }
 
-      // 4. Validación de gateway en VES
-      const gateway = data.additional_parameters?.gateway;
-      if (data.currency === "VES" && gateway !== undefined) {
-        const validGateways = Object.values(PAYKU_VES_GATEWAYS);
+      // 4. Validación de gateway para VES
+      if (data.currency === "VES") {
+        const gateway = data.additional_parameters?.gateway;
         if (
-          !validGateways.includes(gateway as (typeof validGateways)[number])
+          gateway !== undefined &&
+          !Object.values(PAYKU_VES_GATEWAYS).includes(
+            gateway as (typeof PAYKU_VES_GATEWAYS)[keyof typeof PAYKU_VES_GATEWAYS],
+          )
         ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -168,9 +178,11 @@ export function createTransactionSchema(
  */
 export const PaykuCreateTransactionSchema = createTransactionSchema();
 
-export type PaykuCreateTransaction = z.infer<
+export type PaykuCreateTransactionRequestInput = z.infer<
   typeof PaykuCreateTransactionSchema
 >;
+export type PaykuCreateTransactionInput = PaykuCreateTransactionRequestInput;
+export type PaykuCreateTransaction = PaykuCreateTransactionRequestInput;
 
 /**
  * Fábrica para construir PaykuChileCreateTransactionSchema con opciones.
@@ -182,12 +194,12 @@ export function createChileTransactionSchema(
 
   return z
     .object({
-      email: z.string().min(1, "email is required"),
-      order: z.string().min(1, "order is required"),
-      subject: z.string().min(1, "subject is required"),
+      email: requireNonEmptyString("email"),
+      order: requireNonEmptyString("order"),
+      subject: requireNonEmptyString("subject"),
       amount: z.number().positive("amount must be greater than 0"),
-      urlreturn: z.string().min(1, "urlreturn is required"),
-      urlnotify: z.string().min(1, "urlnotify is required"),
+      urlreturn: requireNonEmptyString("urlreturn"),
+      urlnotify: requireNonEmptyString("urlnotify"),
       payment: z.number().int().optional(),
       expired: z.string().optional(),
       additional_parameters:
@@ -216,13 +228,17 @@ export function createChileTransactionSchema(
  */
 export const PaykuChileCreateTransactionSchema = createChileTransactionSchema();
 
-export type PaykuChileCreateTransaction = z.infer<
+export type PaykuChileCreateTransactionRequestInput = z.infer<
   typeof PaykuChileCreateTransactionSchema
 >;
+export type PaykuChileCreateTransactionInput =
+  PaykuChileCreateTransactionRequestInput;
+export type PaykuChileCreateTransaction =
+  PaykuChileCreateTransactionRequestInput;
 
 /**
  * Esquema Zod para validar filtros de listado de transacciones.
- * Exige `per_page` entre 1 y 50.
+ * Exige `per_page` entre 1 y PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE (4000).
  */
 export const PaykuListTransactionsParamsSchema = z
   .object({
@@ -236,8 +252,14 @@ export const PaykuListTransactionsParamsSchema = z
     per_page: z
       .number()
       .int()
-      .min(1, "per_page must be between 1 and 50")
-      .max(50, "per_page must be between 1 and 50")
+      .min(
+        1,
+        `per_page must be between 1 and ${PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE}`,
+      )
+      .max(
+        PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
+        `per_page must be between 1 and ${PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE}`,
+      )
       .optional(),
     success: z.boolean().optional(),
     pending: z.boolean().optional(),
@@ -249,3 +271,4 @@ export const PaykuListTransactionsParamsSchema = z
 export type PaykuListTransactionsParamsInput = z.infer<
   typeof PaykuListTransactionsParamsSchema
 >;
+export type PaykuListTransactionsParams = PaykuListTransactionsParamsInput;

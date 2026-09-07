@@ -265,12 +265,39 @@ describe("PaykuChileCreateTransactionSchema", () => {
       ).toBe(true);
     }
   });
+
+  test("rejects whitespace-only required fields", () => {
+    for (const field of [
+      "email",
+      "order",
+      "subject",
+      "urlreturn",
+      "urlnotify",
+    ] as const) {
+      const res = PaykuChileCreateTransactionSchema.safeParse({
+        ...chileCreateBase,
+        [field]: "   ",
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues[0]?.message).toBe(`${field} is required`);
+      }
+    }
+  });
+
+  test("rejects unsupported currencies like USD", () => {
+    const res = PaykuCreateTransactionSchema.safeParse({
+      amount: 1000,
+      currency: "USD",
+    });
+    expect(res.success).toBe(false);
+  });
 });
 
 describe("PaykuListTransactionsParamsSchema", () => {
   test("accepts valid per_page and filters", () => {
     const res = PaykuListTransactionsParamsSchema.safeParse({
-      per_page: 25,
+      per_page: 4000,
       page: 2,
       order: "ord-1",
       date_init: "2026-01-01",
@@ -286,17 +313,17 @@ describe("PaykuListTransactionsParamsSchema", () => {
     });
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.issues[0]?.message).toContain("between 1 and 50");
+      expect(res.error.issues[0]?.message).toContain("between 1 and 4000");
     }
   });
 
-  test("rejects per_page greater than 50", () => {
+  test("rejects per_page greater than 4000", () => {
     const res = PaykuListTransactionsParamsSchema.safeParse({
-      per_page: 51,
+      per_page: 4001,
     });
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.issues[0]?.message).toContain("between 1 and 50");
+      expect(res.error.issues[0]?.message).toContain("between 1 and 4000");
     }
   });
 
