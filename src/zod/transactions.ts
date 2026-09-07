@@ -27,7 +27,7 @@ function resolveClpPaymentCodes(
 
 const requireNonEmptyString = (field: string) =>
   z
-    .string({ required_error: `${field} is required` })
+    .string({ message: `${field} is required` })
     .refine((val) => val.trim().length > 0, {
       message: `${field} is required`,
     });
@@ -44,7 +44,7 @@ export const PaykuTransactionAdditionalParametersSchema = z
     payer_bank: z.string().optional(),
     gateway: z.string().optional(),
   })
-  .passthrough();
+  .loose();
 
 /**
  * Fábrica para construir PaykuCreateTransactionSchema con opciones de reloj o set de medios.
@@ -66,13 +66,13 @@ export function createTransactionSchema(
       additional_parameters:
         PaykuTransactionAdditionalParametersSchema.optional(),
     })
-    .passthrough()
+    .loose()
     .superRefine((data, ctx) => {
       // 1. Validación de expired
       if (data.expired !== undefined) {
         if (data.urlreturn === undefined || data.urlreturn.trim() === "") {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message: "urlreturn is required when expired is set",
             path: ["urlreturn"],
           });
@@ -81,7 +81,7 @@ export function createTransactionSchema(
         const expiredValue = String(data.expired).trim();
         if (!PAYKU_EXPIRED_FORMAT.test(expiredValue)) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message: "expired must use format YYYY-MM-DD HH:mm:ss",
             path: ["expired"],
           });
@@ -91,7 +91,7 @@ export function createTransactionSchema(
             expiredAt = parsePaykuExpiredInSantiago(expiredValue);
           } catch {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
+              code: "custom",
               message: "expired is not a valid date",
               path: ["expired"],
             });
@@ -104,7 +104,7 @@ export function createTransactionSchema(
             now.getTime() + PAYKU_EXPIRED_MIN_MARGIN_MS
           ) {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
+              code: "custom",
               message:
                 "expired must be more than 5 minutes in the future (Santiago)",
               path: ["expired"],
@@ -124,7 +124,7 @@ export function createTransactionSchema(
 
         if (!validCodes.includes(data.payment)) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message: `payment ${data.payment} is not valid for currency ${data.currency}`,
             path: ["payment"],
           });
@@ -145,7 +145,7 @@ export function createTransactionSchema(
             String(payerRut).trim() === ""
           ) {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
+              code: "custom",
               message:
                 "additional_parameters.payer_rut is required for this payment method",
               path: ["additional_parameters", "payer_rut"],
@@ -164,7 +164,7 @@ export function createTransactionSchema(
           )
         ) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message: `Unknown VES gateway: ${gateway}`,
             path: ["additional_parameters", "gateway"],
           });
@@ -205,7 +205,7 @@ export function createChileTransactionSchema(
       additional_parameters:
         PaykuTransactionAdditionalParametersSchema.optional(),
     })
-    .passthrough()
+    .loose()
     .superRefine((data, ctx) => {
       // Aplica validaciones base fijando currency = "CLP"
       const basePayload = {
@@ -216,7 +216,11 @@ export function createChileTransactionSchema(
       const result = baseValidator.safeParse(basePayload);
       if (!result.success) {
         for (const issue of result.error.issues) {
-          ctx.addIssue(issue);
+          ctx.addIssue({
+            code: "custom",
+            message: issue.message,
+            path: issue.path,
+          });
         }
       }
     });
@@ -265,7 +269,7 @@ export const PaykuListTransactionsParamsSchema = z
     pending: z.boolean().optional(),
     rejected: z.boolean().optional(),
   })
-  .passthrough();
+  .loose();
 
 export type PaykuListTransactionsParamsInput = z.infer<
   typeof PaykuListTransactionsParamsSchema

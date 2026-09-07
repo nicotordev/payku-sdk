@@ -3,7 +3,7 @@ import { PAYKU_MALL_PAYMENT_CODES } from "../constants/payku.constants";
 
 const requireNonEmptyString = (field: string) =>
   z
-    .string({ required_error: `${field} is required` })
+    .string({ message: `${field} is required` })
     .refine((val) => val.trim().length > 0, {
       message: `${field} is required`,
     });
@@ -25,7 +25,7 @@ function parseEventDateTime(value: string): number | null {
 
 const requireEventDateTime = (field: string) =>
   z
-    .string({ required_error: `${field} is required` })
+    .string({ message: `${field} is required` })
     .refine((val) => val.trim().length > 0, {
       message: `${field} is required`,
     })
@@ -38,7 +38,7 @@ const requireEventDateTime = (field: string) =>
  */
 export const PaykuEventAffiliationTupleSchema = z.tuple([
   z
-    .string({ required_error: "affiliation email is required" })
+    .string({ message: "affiliation email is required" })
     .trim()
     .email("affiliation email must be a valid email address"),
   z
@@ -69,7 +69,7 @@ export const PaykuCreateEventSchema = z
     service_sale: z.number().optional(),
     affiliation: z.array(PaykuEventAffiliationTupleSchema).optional(),
   })
-  .passthrough()
+  .loose()
   .superRefine((data, ctx) => {
     const tClosing = parseEventDateTime(data.date_closing_sales);
     const tEvent = parseEventDateTime(data.date_event);
@@ -77,7 +77,7 @@ export const PaykuCreateEventSchema = z
 
     if (tClosing !== null && tEvent !== null && tClosing > tEvent) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "date_closing_sales must be less than or equal to date_event",
         path: ["date_closing_sales"],
       });
@@ -85,7 +85,7 @@ export const PaykuCreateEventSchema = z
 
     if (tPayment !== null && tEvent !== null && tPayment <= tEvent) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "date_payment must be greater than date_event",
         path: ["date_payment"],
       });
@@ -138,7 +138,7 @@ export const PaykuCreateMallTransactionSchema = z
       .number()
       .refine(
         (code) => (PAYKU_MALL_PAYMENT_CODES as readonly number[]).includes(code),
-        (code) => ({ message: `payment code ${code} is invalid for Mall` }),
+        { message: "payment code is invalid for Mall" },
       ),
     merchant: z
       .array(PaykuMallMerchantTupleSchema)
@@ -150,7 +150,7 @@ export const PaykuCreateMallTransactionSchema = z
     urlreturn: requireNonEmptyString("urlreturn"),
     urlnotify: z.string().optional(),
   })
-  .passthrough();
+  .loose();
 
 export type PaykuCreateMallTransactionRequestInput = z.infer<
   typeof PaykuCreateMallTransactionSchema
@@ -165,7 +165,7 @@ export type PaykuCreateMallTransaction =
  */
 export const PaykuMarketplaceAffiliationPairSchema = z.tuple([
   z
-    .string({ required_error: "clientId must be a non-empty string" })
+    .string({ message: "clientId must be a non-empty string" })
     .refine((s) => s.trim().length > 0, "clientId must be a non-empty string"),
   z
     .union([
@@ -214,7 +214,7 @@ export const PaykuMarketplaceAffiliationSchema = z
       .array(PaykuMarketplaceAffiliationPairSchema)
       .min(1, "affiliation must be a non-empty array"),
   })
-  .passthrough()
+  .loose()
   .superRefine((data, ctx) => {
     const merchant = Number(data.percentage);
     const clients = data.affiliation.reduce(
@@ -227,7 +227,7 @@ export const PaykuMarketplaceAffiliationSchema = z
 
     if (!Number.isFinite(total) || Math.abs(total - 100) > tolerance) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `marketplace affiliation percentages must sum to 100 (got ${total})`,
         path: ["affiliation"],
       });
