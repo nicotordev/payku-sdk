@@ -5,6 +5,4 @@
  * Requires `zod` (^3.20.0) installed as peer dependency in consumer application.
  */
 
-import { z } from "zod";
-
-export { z };
+export * from "zod";
