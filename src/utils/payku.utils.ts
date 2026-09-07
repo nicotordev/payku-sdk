@@ -1,6 +1,9 @@
 import type { PaykuCurrency } from "../types/payku.common";
 import type { PaykuEventAffiliationTuple } from "../types/payku.events";
-import type { PaykuMallMerchantTuple } from "../types/payku.mall";
+import type {
+  PaykuMallMerchantTuple,
+  PaykuMallTransactionRequest,
+} from "../types/payku.mall";
 import type {
   PaykuCreateMarketplaceAffiliationRequest,
   PaykuCreateMarketplaceClientRequest,
@@ -25,6 +28,7 @@ import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
   PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
+  PAYKU_MALL_PAYMENT_CODES,
   PAYKU_PAYMENT_METHODS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
@@ -499,6 +503,54 @@ export function parsePaymentReturnQuery(
     messageError,
     expired: isExpired,
   };
+}
+
+export function validateCreateMallTransactionRequest(
+  params: PaykuMallTransactionRequest,
+): void {
+  for (const field of ["email", "order", "urlreturn"] as const) {
+    requireNonEmptyField(params[field], field);
+  }
+
+  if (params.payment === undefined || params.payment === null) {
+    throw new PaykuError("payment is required");
+  }
+
+  const numPayment = Number(params.payment);
+  if (
+    !PAYKU_MALL_PAYMENT_CODES.includes(
+      numPayment as (typeof PAYKU_MALL_PAYMENT_CODES)[number],
+    )
+  ) {
+    throw new PaykuError(`payment code ${params.payment} is invalid for Mall`);
+  }
+
+  if (!Array.isArray(params.merchant) || params.merchant.length === 0) {
+    throw new PaykuError("merchant must be a non-empty array");
+  }
+
+  for (let i = 0; i < params.merchant.length; i++) {
+    const item = params.merchant[i];
+    if (!Array.isArray(item) || item.length !== 5) {
+      throw new PaykuError(`merchant[${i}] must be a valid merchant tuple of 5 elements`);
+    }
+    const [tokenOrAffiliationId, amount, subject, , individualOrder] = item;
+    requireNonEmptyField(
+      tokenOrAffiliationId,
+      `merchant[${i}].tokenOrAffiliationId`,
+    );
+    requireNonEmptyField(subject, `merchant[${i}].subject`);
+    requireNonEmptyField(individualOrder, `merchant[${i}].individualOrder`);
+
+    const numAmount = Number(amount);
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
+      throw new PaykuError(`merchant[${i}].amount must be greater than 0`);
+    }
+  }
+}
+
+export function validateGetMallTransactionParams(id: string): void {
+  requireNonEmptyField(id, "id");
 }
 
 export function validateCreateMarketplaceClientRequest(
