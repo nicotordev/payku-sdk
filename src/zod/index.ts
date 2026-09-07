@@ -8,3 +8,4 @@
 export * from "zod";
 export * from "./webhooks";
 export * from "./transactions";
+export * from "./modules";
