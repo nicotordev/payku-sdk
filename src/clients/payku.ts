@@ -216,6 +216,7 @@ export { PaykuPeru } from "./payku.peru";
 export { PaykuVenezuela } from "./payku.venezuela";
 export { PaykuSharedWallet } from "./payku.wallet.scoped";
 export { PaykuScopedBanks } from "./payku.banks.scoped";
+export { PaykuScopedPaymentMethods } from "./payku.payment-methods.scoped";
 export {
   PaykuChileTransactions,
   PaykuScopedTransactions,

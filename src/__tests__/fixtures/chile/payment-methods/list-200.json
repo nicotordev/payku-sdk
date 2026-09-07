@@ -1,0 +1,41 @@
+{
+  "status": "success",
+  "payment_methods": [
+    {
+      "payment": 1,
+      "currency": "CLP",
+      "name": "Webpay plus",
+      "description": "Visa, Mastercard, Magna, American, Diners y Redcompra."
+    },
+    {
+      "payment": 2,
+      "currency": "CLP",
+      "name": "Khipu",
+      "description": "Utiliza tu banco, simplifica tus transferencias. (Pago Normal)"
+    },
+    {
+      "payment": 4,
+      "currency": "CLP",
+      "name": "ETpay",
+      "description": "Recibe pagos por transferencia."
+    },
+    {
+      "payment": 9,
+      "currency": "CLP",
+      "name": "MACH",
+      "description": "Paga en comercios online internacionales y nacionales"
+    },
+    {
+      "payment": 19,
+      "currency": "CLP",
+      "name": "Fintoc",
+      "description": "Más simple que las transferencias"
+    },
+    {
+      "payment": 26,
+      "currency": "CLP",
+      "name": "Floid",
+      "description": "Pagar de manera rápida y segura con tu billetera 100% digital."
+    }
+  ]
+}

@@ -219,9 +219,61 @@ En Chile, el valor de `bank.code` corresponde al código oficial SBIF de la inst
 
 ### Métodos de Pago (`paymentMethods`)
 
+Permite consultar los medios de pago disponibles. El endpoint `GET /api/paymentmethods` es de acceso público (no requiere Bearer ni firma HMAC `Sign`).
+
+#### Con cliente por país (recomendado)
+
 ```typescript
-const methods = await payku.paymentMethods.list({ currency: "clp" });
+const payku = Payku.fromEnvForCountry("CL");
+
+// Infiere automáticamente currency="clp"
+const methods = await payku.paymentMethods.list();
+
+for (const method of methods) {
+  console.log(`${method.payment}: ${method.name} (${method.currency})`);
+}
 ```
+
+#### Con cliente global
+
+```typescript
+const payku = Payku.fromEnv();
+// Filtrar por moneda
+const clpMethods = await payku.paymentMethods.list({ currency: "clp" });
+// O consultar todos los medios disponibles sin filtro
+const allMethods = await payku.paymentMethods.list();
+```
+
+#### Uso en creación de transacciones (`transactions.create`)
+
+Cada método de pago incluye un identificador numérico `payment` (ej. `1` para Webpay Plus, `4` para ETpay, `9` para MACH). Este código se utiliza en el campo `payment` al crear una transacción:
+
+```typescript
+import Payku from "@nicotordev/payku";
+
+const payku = Payku.fromEnvForCountry("CL");
+
+// 1. Obtener medios de pago disponibles para la cuenta
+const methods = await payku.paymentMethods.list();
+const webpay = methods.find((m) => m.payment === 1);
+
+if (!webpay) {
+  throw new Error("Webpay Plus no está habilitado para esta cuenta.");
+}
+
+// 2. Iniciar transacción fijando el medio de pago verificado
+const order = await payku.transactions.create({
+  amount: 15000,
+  payment: webpay.payment, // 1 (Webpay Plus)
+  order: "orden-001",
+  email: "cliente@example.com",
+  subject: "Compra en línea",
+  urlreturn: "https://tu-sitio.com/return",
+  urlnotify: "https://tu-sitio.com/notify",
+});
+```
+
+> **Nota:** Los medios de pago devueltos por la API dependen de los convenios y pasarelas efectivamente activadas para la cuenta comercial en Payku.
 
 ## Webhooks
 
