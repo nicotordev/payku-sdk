@@ -13,7 +13,10 @@ import {
   type PaykuCountry,
 } from "../types/payku.common";
 import { assertFeature } from "../utils/payku.country";
-import { validateChileCreateTransactionRequest } from "../utils/payku.utils";
+import {
+  validateChileCreateTransactionRequest,
+  type ValidateCreateTransactionOptions,
+} from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
 export type PaykuScopedCreateTransactionRequest = Omit<
@@ -32,11 +35,15 @@ export class PaykuScopedTransactions {
 
   create(
     params: PaykuScopedCreateTransactionRequest,
+    options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
-    return this.inner.create({
-      ...params,
-      currency: PAYKU_COUNTRY_CURRENCY[this.country],
-    });
+    return this.inner.create(
+      {
+        ...params,
+        currency: PAYKU_COUNTRY_CURRENCY[this.country],
+      },
+      options,
+    );
   }
 
   get(id: string): Promise<PaykuGetTransactionResponse> {
@@ -58,12 +65,16 @@ export class PaykuChileTransactions extends PaykuScopedTransactions {
 
   override async create(
     params: PaykuChileCreateTransactionRequest,
+    options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
-    validateChileCreateTransactionRequest(params);
-    return this.transactions.create({
-      ...params,
-      currency: PAYKU_COUNTRY_CURRENCY.CL,
-    });
+    validateChileCreateTransactionRequest(params, options);
+    return this.transactions.create(
+      {
+        ...params,
+        currency: PAYKU_COUNTRY_CURRENCY.CL,
+      },
+      options,
+    );
   }
 }
 

@@ -6,6 +6,8 @@ import PaykuTransactions from "../clients/payku.transactions";
 import { PaykuChileTransactions } from "../clients/payku.transactions.scoped";
 import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
+import { PAYKU_PAYMENT_METHODS } from "../constants/payku.constants";
+import * as PaykuSDK from "../index";
 import {
   parsePaykuExpiredInSantiago,
   validateChileCreateTransactionRequest,
@@ -301,6 +303,33 @@ describe("PaykuChileTransactions", () => {
 
     expect(response.id).toBe("tx-cl");
   });
+
+  test("create respects clpPaymentCodes option when set to create-docs", async () => {
+    await expect(
+      chileTransactions.create(
+        {
+          ...chileCreateBase,
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).rejects.toThrow("payment 14 is not valid for currency CLP");
+    expect(mock.history.post).toHaveLength(0);
+  });
+
+  test("create accepts catalog CLP code by default", async () => {
+    mock.onPost("/transaction").reply(200, {
+      status: "pending",
+      id: "tx-cl-14",
+    });
+
+    const response = await chileTransactions.create({
+      ...chileCreateBase,
+      payment: 14,
+    });
+    expect(response.id).toBe("tx-cl-14");
+    expect(mock.history.post).toHaveLength(1);
+  });
 });
 
 describe("Payku.forCountry CL transactions", () => {
@@ -414,6 +443,23 @@ describe("PaykuTransactions HTTP", () => {
     expect(mock.history.get).toHaveLength(1);
   });
 
+  test("create respects clpPaymentCodes option when set to create-docs", async () => {
+    await expect(
+      transactions.create(
+        {
+          email: "cliente@example.com",
+          order: "orden-001",
+          subject: "Test",
+          amount: 1000,
+          currency: "CLP",
+          payment: 14,
+        },
+        { clpPaymentCodes: "create-docs" },
+      ),
+    ).rejects.toThrow("payment 14 is not valid for currency CLP");
+    expect(mock.history.post).toHaveLength(0);
+  });
+
   test("get throws PaykuError on failed business response", async () => {
     mock.onGet("/transaction/missing").reply(404, {
       status: "failed",
@@ -424,5 +470,19 @@ describe("PaykuTransactions HTTP", () => {
     await expect(transactions.get("missing")).rejects.toBeInstanceOf(
       PaykuError,
     );
+  });
+});
+
+describe("PAYKU_PAYMENT_METHODS PEN aliases", () => {
+  test("defines ALIX and deprecated ATIX alias with the same code", () => {
+    expect(PAYKU_PAYMENT_METHODS.PEN.ALIX).toBe(29);
+    expect(PAYKU_PAYMENT_METHODS.PEN.ATIX).toBe(29);
+  });
+});
+
+describe("SDK entrypoint exports", () => {
+  test("exports validation functions", () => {
+    expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
+    expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
   });
 });

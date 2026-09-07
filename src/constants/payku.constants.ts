@@ -34,6 +34,8 @@ export const PAYKU_PAYMENT_METHODS = {
     CARDS: 25,
     LIGOPAY: 28,
     ALIX: 29,
+    /** @deprecated Alias for `ALIX` kept for backwards compatibility. */
+    ATIX: 29,
   },
   VES: {
     VEPUY: 17,

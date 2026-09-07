@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).
 - Validación `additional_parameters.payer_rut` obligatorio para CLP + payment Etpay/Fintoc/Floid (4/19/26).
-- `PAYKU_CLP_CREATE_PAYMENT_CODES` + opción `clpPaymentCodes` (`catalog` default / `create-docs`).
+- `PAYKU_CLP_CREATE_PAYMENT_CODES` + opción `clpPaymentCodes` (`catalog` default / `create-docs`) en `transactions.create` y `forCountry("CL").transactions.create`.
+- Alias deprecado `ATIX: 29` en `PAYKU_PAYMENT_METHODS.PEN` preservado por compatibilidad junto con `ALIX`.
 - Validación `per_page` en `transactions.list` (máx. 4000).
 - `mapNotifyStatusToTransactionStatus` y mapeo `failed`→`rejected` en `verifyNotify`.
 - Validación de `expired` en create: requiere `urlreturn`, formato `YYYY-MM-DD HH:mm:ss`, margen > 5 min en `America/Santiago`.

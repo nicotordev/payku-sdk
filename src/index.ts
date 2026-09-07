@@ -59,6 +59,8 @@ export {
   buildEventAffiliation,
   buildMarketplaceAffiliation,
   mapNotifyStatusToTransactionStatus,
+  validateChileCreateTransactionRequest,
+  validateCreateTransactionRequest,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
 export type {
