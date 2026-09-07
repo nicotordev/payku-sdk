@@ -10,9 +10,18 @@ import { PAYKU_PAYMENT_METHODS } from "../constants/payku.constants";
 import * as PaykuSDK from "../index";
 import {
   parsePaykuExpiredInSantiago,
+  parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
   validateCreateTransactionRequest,
 } from "../utils/payku.utils";
+import createSuccessFixture from "./fixtures/chile/transactions/create-success.json";
+import createInvalid400Fixture from "./fixtures/chile/transactions/create-invalid-400.json";
+import createUnauthorized401Fixture from "./fixtures/chile/transactions/create-unauthorized-401.json";
+import getSuccessFixture from "./fixtures/chile/transactions/get-success.json";
+import getNotFound404Fixture from "./fixtures/chile/transactions/get-not-found-404.json";
+import listSuccessFixture from "./fixtures/chile/transactions/list-success.json";
+import listEmptyNoRecordsFixture from "./fixtures/chile/transactions/list-empty-no-records.json";
+
 
 const chileCreateBase = {
   email: "cliente@example.com",
@@ -484,5 +493,196 @@ describe("SDK entrypoint exports", () => {
   test("exports validation functions", () => {
     expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
     expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
+    expect(typeof PaykuSDK.parsePaymentReturnQuery).toBe("function");
   });
 });
+
+describe("parsePaymentReturnQuery", () => {
+  test("parses full URL string with expired message_error", () => {
+    const url = "https://example.com/return?message_error=expired&id=trx123456";
+    const result = parsePaymentReturnQuery(url);
+
+    expect(result).toEqual({
+      id: "trx123456",
+      status: undefined,
+      messageError: "expired",
+      expired: true,
+    });
+  });
+
+  test("parses partial query string", () => {
+    const query = "id=trx789&message_error=expired";
+    const result = parsePaymentReturnQuery(query);
+
+    expect(result.id).toBe("trx789");
+    expect(result.expired).toBe(true);
+  });
+
+  test("parses URLSearchParams instance", () => {
+    const params = new URLSearchParams({
+      id: "trx-sp",
+      status: "expired",
+    });
+    const result = parsePaymentReturnQuery(params);
+
+    expect(result.id).toBe("trx-sp");
+    expect(result.status).toBe("expired");
+    expect(result.expired).toBe(true);
+  });
+
+  test("parses object record (e.g. Next.js query / searchParams)", () => {
+    const reqQuery = {
+      id: "trx-next",
+      message_error: "expired",
+    };
+    const result = parsePaymentReturnQuery(reqQuery);
+
+    expect(result.id).toBe("trx-next");
+    expect(result.messageError).toBe("expired");
+    expect(result.expired).toBe(true);
+  });
+
+  test("returns expired: false for non-expired success return query", () => {
+    const reqQuery = {
+      id: "trx-ok",
+      status: "success",
+    };
+    const result = parsePaymentReturnQuery(reqQuery);
+
+    expect(result.id).toBe("trx-ok");
+    expect(result.status).toBe("success");
+    expect(result.expired).toBe(false);
+  });
+
+  test("strips URL hash fragment from param values", () => {
+    const url = "https://example.com/return?id=trx123456&message_error=expired#section";
+    const result = parsePaymentReturnQuery(url);
+
+    expect(result.id).toBe("trx123456");
+    expect(result.expired).toBe(true);
+  });
+
+  test("avoids false positives like message_error=not_expired", () => {
+    const result = parsePaymentReturnQuery("id=trx-99&message_error=not_expired");
+
+    expect(result.id).toBe("trx-99");
+    expect(result.expired).toBe(false);
+  });
+});
+
+describe("PaykuTransactions fixtures", () => {
+  let mock: MockAdapter;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let transactions: PaykuTransactions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    transactions = new PaykuTransactions(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("create success fixture (200 OK)", async () => {
+    mock.onPost("/transaction").reply(200, createSuccessFixture);
+
+    const response = await transactions.create({
+      email: "cliente@example.com",
+      order: "orden-001",
+      subject: "Test",
+      amount: 1000,
+      currency: "CLP",
+      payment: 1,
+    });
+
+    expect(response.id).toBe("trxa4f96cde9e4356908");
+    expect(response.status).toBe("register");
+    expect(response.url).toBe(
+      "https://des.payku.cl/gateway/cobro?id=trxa4f96cde9e4356908&valid=ae28e12e29",
+    );
+  });
+
+  test("create invalid fixture (400 Bad Request)", async () => {
+    mock.onPost("/transaction").reply(400, createInvalid400Fixture);
+
+    await expect(
+      transactions.create({
+        email: "cliente@example.com",
+        order: "orden-001",
+        subject: "Test",
+        amount: 1000,
+        currency: "CLP",
+        payment: 1,
+      }),
+    ).rejects.toThrow();
+  });
+
+  test("create unauthorized fixture (401 Unauthorized)", async () => {
+    mock.onPost("/transaction").reply(401, createUnauthorized401Fixture);
+
+    await expect(
+      transactions.create({
+        email: "cliente@example.com",
+        order: "orden-001",
+        subject: "Test",
+        amount: 1000,
+        currency: "CLP",
+        payment: 1,
+      }),
+    ).rejects.toThrow();
+  });
+
+  test("get success fixture (200 OK with payment and gateway_response)", async () => {
+    mock.onGet("/transaction/trx123456").reply(200, getSuccessFixture);
+
+    const response = await transactions.get("trx123456");
+
+    expect(response.id).toBe("trx123456");
+    expect(response.status).toBe("success");
+    expect(response.amount).toBe(15000);
+    expect(response.payment?.payment_key).toBe("webpay");
+    expect(response.payment?.authorization_code).toBe("123456");
+    expect(response.gateway_response?.status).toBe("success");
+  });
+
+  test("get not found fixture (404 Not Found)", async () => {
+    mock.onGet("/transaction/trx-missing").reply(404, getNotFound404Fixture);
+
+    await expect(transactions.get("trx-missing")).rejects.toThrow("it is not valid");
+  });
+
+  test("list success fixture (200 OK with mixed amount string/number)", async () => {
+    mock.onGet("/transaction").reply(200, listSuccessFixture);
+
+    const items = await transactions.list();
+
+    expect(items).toHaveLength(2);
+    expect(items[0]?.id).toBe("trx101");
+    expect(items[0]?.amount).toBe("15000");
+    expect(items[1]?.id).toBe("trx102");
+    expect(items[1]?.amount).toBe(25000);
+  });
+
+  test("list empty fixture (There are no records)", async () => {
+    mock.onGet("/transaction").reply(200, listEmptyNoRecordsFixture);
+
+    const items = await transactions.list();
+
+    expect(items).toEqual([]);
+  });
+});
+

@@ -385,3 +385,70 @@ export function validateMarketplaceAffiliationPercentages(
     );
   }
 }
+
+export interface PaykuPaymentReturnResult {
+  id?: string;
+  status?: string;
+  messageError?: string;
+  expired: boolean;
+}
+
+/**
+ * Parsea la query string o los parámetros devueltos por la pasarela en `urlreturn`
+ * e identifica si la transacción expiró o registró error.
+ */
+export function parsePaymentReturnQuery(
+  input:
+    | string
+    | URLSearchParams
+    | Record<string, string | string[] | undefined>,
+): PaykuPaymentReturnResult {
+  let id: string | undefined;
+  let status: string | undefined;
+  let messageError: string | undefined;
+
+  if (typeof input === "string") {
+    let queryString = input;
+    if (queryString.includes("#")) {
+      queryString = queryString.slice(0, queryString.indexOf("#"));
+    }
+    if (queryString.includes("?")) {
+      queryString = queryString.slice(queryString.indexOf("?") + 1);
+    }
+    const params = new URLSearchParams(queryString);
+    id = params.get("id") ?? undefined;
+    status = params.get("status") ?? undefined;
+    messageError =
+      params.get("message_error") ?? params.get("messageError") ?? undefined;
+  } else if (input instanceof URLSearchParams) {
+    id = input.get("id") ?? undefined;
+    status = input.get("status") ?? undefined;
+    messageError =
+      input.get("message_error") ?? input.get("messageError") ?? undefined;
+  } else if (typeof input === "object" && input !== null) {
+    const getVal = (key: string): string | undefined => {
+      const val = input[key];
+      if (Array.isArray(val)) {
+        return val[0];
+      }
+      return val;
+    };
+    id = getVal("id");
+    status = getVal("status");
+    messageError = getVal("message_error") ?? getVal("messageError");
+  }
+
+  const normalizedMessageError = messageError?.trim().toLowerCase();
+  const normalizedStatus = status?.trim().toLowerCase();
+
+  const isExpired =
+    normalizedMessageError === "expired" || normalizedStatus === "expired";
+
+  return {
+    id,
+    status,
+    messageError,
+    expired: isExpired,
+  };
+}
+

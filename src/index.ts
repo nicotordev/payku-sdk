@@ -59,11 +59,14 @@ export {
   buildEventAffiliation,
   buildMarketplaceAffiliation,
   mapNotifyStatusToTransactionStatus,
+  parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
   validateCreateTransactionRequest,
   validateMarketplaceAffiliationPercentages,
 } from "./utils/payku.utils";
 export type {
   ClpPaymentCodeSet,
+  PaykuPaymentReturnResult,
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
+
