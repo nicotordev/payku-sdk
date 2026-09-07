@@ -161,7 +161,25 @@ console.log(order.url);
 
 `expired` es opcional (`YYYY-MM-DD HH:mm:ss`, hora Santiago). Si se envía, el SDK exige `urlreturn` y que la fecha sea **más de 5 minutos** después de ahora (`America/Santiago`, vía `Intl`). Si la transacción expira, Payku redirige a `urlreturn?message_error=expired&id=…`.
 
+### Retorno de pasarela (`urlreturn`) y expiración
+
+Puedes parsear los parámetros devueltos por Payku a la `urlreturn` usando `parsePaymentReturnQuery`:
+
+```typescript
+import { parsePaymentReturnQuery } from "@nicotordev/payku";
+
+// Acepta URL completa, query string, URLSearchParams o un objeto query (Next.js / Express)
+const result = parsePaymentReturnQuery(req.query); // o searchParams / window.location.search
+
+if (result.expired) {
+  console.log(`La transacción ${result.id} ha expirado.`);
+} else {
+  console.log(`Transacción retornada id: ${result.id}, status: ${result.status}`);
+}
+```
+
 ## Catálogo
+
 
 ```typescript
 const methods = await payku.paymentMethods.list({ currency: "clp" });

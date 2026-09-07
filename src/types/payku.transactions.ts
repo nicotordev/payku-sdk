@@ -127,6 +127,7 @@ export interface PaykuTransactionNullify {
 export interface PaykuTransactionGatewayResponse {
   status?: PaykuGatewayStatus | string;
   message?: string;
+  [key: string]: unknown;
 }
 
 export interface PaykuTransaction {
