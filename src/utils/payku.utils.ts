@@ -9,6 +9,7 @@ import type {
   PaykuCreateTransactionResponse,
   PaykuListTransactionsParams,
 } from "../types/payku.transactions";
+import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import type {
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
@@ -82,6 +83,19 @@ export function bodyAsRecord<T extends object>(
 function requireNonEmptyField(value: unknown, field: string): void {
   if (value === undefined || value === null || String(value).trim() === "") {
     throw new PaykuError(`${field} is required`);
+  }
+}
+
+function requireStringField(
+  value: unknown,
+  field: string,
+  maxLength?: number,
+): void {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new PaykuError(`${field} is required`);
+  }
+  if (maxLength !== undefined && value.length > maxLength) {
+    throw new PaykuError(`${field} must be at most ${maxLength} characters`);
   }
 }
 
@@ -477,6 +491,34 @@ export function validateEscrowAuthorizeRequest(
   }
 }
 
+export function validateCreateNullificationRequest(
+  params: PaykuNullificationCreateRequest,
+): void {
+  requireStringField(params.id, "id", 40);
+  requireStringField(params.subject, "subject", 200);
+
+  if (params.amount === undefined || params.amount === null) {
+    throw new PaykuError("amount is required");
+  }
+
+  if (typeof params.amount === "boolean") {
+    throw new PaykuError("amount must be a number");
+  }
+
+  const numAmount = Number(params.amount);
+  if (
+    !Number.isFinite(numAmount) ||
+    !Number.isInteger(numAmount) ||
+    numAmount <= 0 ||
+    numAmount > 99999999999999
+  ) {
+    throw new PaykuError("amount must be a positive integer of at most 14 digits");
+  }
+}
+
+export function validateGetNullificationParams(id: string): void {
+  requireNonEmptyField(id, "id");
+}
 export function validateCreateSubscriptionClientRequest(
   params: PaykuCreateSubscriptionClientRequest,
 ): void {
@@ -528,4 +570,3 @@ export function validateListSubscriptionClientsParams(
     throw new PaykuError("per_page must be between 1 and 100");
   }
 }
-
