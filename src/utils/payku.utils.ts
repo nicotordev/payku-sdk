@@ -78,6 +78,137 @@ function requireNonEmptyField(value: unknown, field: string): void {
   }
 }
 
+/** Docs Chile: `expired` wall-clock en hora Santiago. */
+const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const PAYKU_SANTIAGO_TZ = "America/Santiago";
+const PAYKU_EXPIRED_MIN_MARGIN_MS = 5 * 60 * 1000;
+
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function readDateTimeParts(parts: Intl.DateTimeFormatPart[]): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+} {
+  const get = (type: Intl.DateTimeFormatPartTypes): number => {
+    const part = parts.find((entry) => entry.type === type)?.value;
+    return Number(part);
+  };
+
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    hour: get("hour"),
+    minute: get("minute"),
+    second: get("second"),
+  };
+}
+
+/**
+ * Interpreta `YYYY-MM-DD HH:mm:ss` como hora local America/Santiago.
+ * Usa `Intl` (sin deps); el offset puede variar por DST histórico de Chile.
+ */
+export function parsePaykuExpiredInSantiago(expired: string): Date {
+  const [datePart, timePart] = expired.split(" ");
+  const [year, month, day] = datePart!.split("-").map(Number);
+  const [hour, minute, second] = timePart!.split(":").map(Number);
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: PAYKU_SANTIAGO_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+
+  // Ajuste iterativo: tratar los dígitos como UTC y corregir con el wall-clock Santiago.
+  let utcMs = Date.UTC(year!, month! - 1, day!, hour!, minute!, second!);
+
+  for (let i = 0; i < 3; i++) {
+    const asSantiago = readDateTimeParts(
+      formatter.formatToParts(new Date(utcMs)),
+    );
+    const asUtcMs = Date.UTC(
+      asSantiago.year,
+      asSantiago.month - 1,
+      asSantiago.day,
+      asSantiago.hour,
+      asSantiago.minute,
+      asSantiago.second,
+    );
+    const desiredAsUtcMs = Date.UTC(
+      year!,
+      month! - 1,
+      day!,
+      hour!,
+      minute!,
+      second!,
+    );
+    const diff = desiredAsUtcMs - asUtcMs;
+    utcMs += diff;
+    if (diff === 0) {
+      break;
+    }
+  }
+
+  const result = new Date(utcMs);
+  const roundTrip = readDateTimeParts(formatter.formatToParts(result));
+  const formatted = `${roundTrip.year}-${pad2(roundTrip.month)}-${pad2(roundTrip.day)} ${pad2(roundTrip.hour)}:${pad2(roundTrip.minute)}:${pad2(roundTrip.second)}`;
+
+  if (formatted !== expired) {
+    throw new PaykuError("expired is not a valid date");
+  }
+
+  return result;
+}
+
+function validateExpiredField(
+  expired: string | undefined,
+  urlreturn: string | undefined,
+  now: Date,
+): void {
+  // Solo `undefined` omite el campo; "" / whitespace son valores explícitos inválidos.
+  if (expired === undefined) {
+    return;
+  }
+
+  if (urlreturn === undefined || String(urlreturn).trim() === "") {
+    throw new PaykuError("urlreturn is required when expired is set");
+  }
+
+  const expiredValue = String(expired).trim();
+
+  if (!PAYKU_EXPIRED_FORMAT.test(expiredValue)) {
+    throw new PaykuError("expired must use format YYYY-MM-DD HH:mm:ss");
+  }
+
+  let expiredAt: Date;
+  try {
+    expiredAt = parsePaykuExpiredInSantiago(expiredValue);
+  } catch (error) {
+    if (error instanceof PaykuError) {
+      throw error;
+    }
+    throw new PaykuError("expired is not a valid date");
+  }
+
+  if (expiredAt.getTime() <= now.getTime() + PAYKU_EXPIRED_MIN_MARGIN_MS) {
+    throw new PaykuError(
+      "expired must be more than 5 minutes after the current time (America/Santiago)",
+    );
+  }
+}
+
 function validateClpPayerRutRequirement(
   payment: number | undefined,
   payerRut: string | undefined,
@@ -109,6 +240,9 @@ function validateClpPayerRutRequirement(
 export type ClpPaymentCodeSet = "catalog" | "create-docs";
 
 export type ValidateCreateTransactionOptions = {
+  /** Override de reloj (tests). Por defecto `new Date()`. */
+  now?: Date;
+  /** Set de códigos CLP al validar `payment` en create. Por defecto `catalog`. */
   clpPaymentCodes?: ClpPaymentCodeSet;
 };
 
@@ -162,6 +296,12 @@ export function validateCreateTransactionRequest(
   if (params.amount <= 0) {
     throw new PaykuError("amount must be greater than 0");
   }
+
+  validateExpiredField(
+    params.expired,
+    params.urlreturn,
+    options.now ?? new Date(),
+  );
 
   if (params.payment !== undefined) {
     const validCodes: readonly number[] =
@@ -222,10 +362,7 @@ export function validateChileCreateTransactionRequest(
 export function buildMarketplaceAffiliation(
   members: Array<{ clientId: string; percentage: string | number }>,
 ): PaykuMarketplaceAffiliationPair[] {
-  return members.map((member) => [
-    member.clientId,
-    String(member.percentage),
-  ]);
+  return members.map((member) => [member.clientId, String(member.percentage)]);
 }
 
 /**
@@ -237,10 +374,7 @@ export function validateMarketplaceAffiliationPercentages(
   affiliation: PaykuMarketplaceAffiliationPair[],
 ): void {
   const merchant = Number(merchantPercentage);
-  const clients = affiliation.reduce(
-    (sum, [, pct]) => sum + Number(pct),
-    0,
-  );
+  const clients = affiliation.reduce((sum, [, pct]) => sum + Number(pct), 0);
   const total = merchant + clients;
 
   // Tolerancia documentada 0.01 + epsilon FP (p. ej. 20 + 79.99).

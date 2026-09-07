@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PAYKU_CLP_CREATE_PAYMENT_CODES` + opción `clpPaymentCodes` (`catalog` default / `create-docs`).
 - Validación `per_page` en `transactions.list` (máx. 4000).
 - `mapNotifyStatusToTransactionStatus` y mapeo `failed`→`rejected` en `verifyNotify`.
+- Validación de `expired` en create: requiere `urlreturn`, formato `YYYY-MM-DD HH:mm:ss`, margen > 5 min en `America/Santiago`.
 
 ## [1.2.0] - 2026-08-31
 
