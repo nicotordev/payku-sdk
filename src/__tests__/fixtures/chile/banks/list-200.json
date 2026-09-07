@@ -1,0 +1,45 @@
+{
+  "status": "success",
+  "banks": [
+    {
+      "code": "0016",
+      "name": "Banco Bci",
+      "currency": "CLP"
+    },
+    {
+      "code": "0028",
+      "name": "Banco Bice",
+      "currency": "CLP"
+    },
+    {
+      "code": "0055",
+      "name": "Banco Consorcio",
+      "currency": "CLP"
+    },
+    {
+      "code": "0001",
+      "name": "Banco de Chile",
+      "currency": "CLP"
+    },
+    {
+      "code": "0012",
+      "name": "Banco Estado",
+      "currency": "CLP"
+    },
+    {
+      "code": "0051",
+      "name": "Banco Falabella",
+      "currency": "CLP"
+    },
+    {
+      "code": "0037",
+      "name": "Santander",
+      "currency": "CLP"
+    },
+    {
+      "code": "0014",
+      "name": "Scotiabank",
+      "currency": "CLP"
+    }
+  ]
+}

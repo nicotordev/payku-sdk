@@ -180,10 +180,45 @@ if (result.expired) {
 
 ## Catálogo
 
+### Bancos (`banks`)
+
+Permite consultar las instituciones financieras disponibles por moneda. El endpoint `GET /api/banks` es de acceso público (no requiere Bearer ni firma HMAC `Sign`).
+
+#### Con cliente por país (recomendado)
+
+Al usar `Payku.forCountry("CL" | "PE" | "VE")`, la moneda se infiere automáticamente:
+
+```typescript
+const payku = Payku.forCountry("CL");
+
+// Consulta automáticamente con currency="clp"
+const banks = await payku.banks.list();
+
+for (const bank of banks) {
+  console.log(`${bank.code}: ${bank.name} (${bank.currency})`);
+}
+```
+
+#### Con cliente global
+
+```typescript
+const payku = Payku.fromEnv();
+const banks = await payku.banks.list({ currency: "clp" }); // "clp" | "pen" | "ves"
+```
+
+#### Uso del código SBIF (`PaykuBank.code`)
+
+En Chile, el valor de `bank.code` corresponde al código oficial SBIF de la institución (ej. `"0001"` para Banco de Chile, `"0012"` para Banco Estado). Se utiliza en dos flujos esenciales:
+
+1. **Retiro / Payout de Wallet:** al crear un payout bancario (`payku.wallet.payout.create`), se debe especificar el código SBIF en el campo `accountbank_sbif`.
+   > **Nota:** Para transferencias a Banco Estado (incluyendo CuentaRUT), el código SBIF es `"0012"`.
+
+2. **Transacciones directas (Chile):** al crear una transacción (`payku.transactions.create`) utilizando pasarelas de transferencia bancaria directa (Etpay, Fintoc o Floid), puedes preseleccionar el banco del pagador mediante el campo `payer_bank: bank.code`.
+
+### Métodos de Pago (`paymentMethods`)
 
 ```typescript
 const methods = await payku.paymentMethods.list({ currency: "clp" });
-const banks = await payku.banks.list({ currency: "clp" });
 ```
 
 ## Webhooks
