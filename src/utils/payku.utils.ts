@@ -79,6 +79,19 @@ function requireNonEmptyField(value: unknown, field: string): void {
   }
 }
 
+function requireStringField(
+  value: unknown,
+  field: string,
+  maxLength?: number,
+): void {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new PaykuError(`${field} is required`);
+  }
+  if (maxLength !== undefined && value.length > maxLength) {
+    throw new PaykuError(`${field} must be at most ${maxLength} characters`);
+  }
+}
+
 /** Docs Chile: `expired` wall-clock en hora Santiago. */
 const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 const PAYKU_SANTIAGO_TZ = "America/Santiago";
@@ -456,16 +469,25 @@ export function parsePaymentReturnQuery(
 export function validateCreateNullificationRequest(
   params: PaykuNullificationCreateRequest,
 ): void {
-  requireNonEmptyField(params.id, "id");
-  requireNonEmptyField(params.subject, "subject");
+  requireStringField(params.id, "id", 40);
+  requireStringField(params.subject, "subject", 200);
 
   if (params.amount === undefined || params.amount === null) {
     throw new PaykuError("amount is required");
   }
 
+  if (typeof params.amount === "boolean") {
+    throw new PaykuError("amount must be a number");
+  }
+
   const numAmount = Number(params.amount);
-  if (Number.isNaN(numAmount) || numAmount <= 0) {
-    throw new PaykuError("amount must be greater than 0");
+  if (
+    !Number.isFinite(numAmount) ||
+    !Number.isInteger(numAmount) ||
+    numAmount <= 0 ||
+    numAmount > 99999999999999
+  ) {
+    throw new PaykuError("amount must be a positive integer of at most 14 digits");
   }
 }
 

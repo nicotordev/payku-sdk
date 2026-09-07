@@ -113,30 +113,64 @@ describe("PaykuNullification", () => {
   });
 
   describe("validations", () => {
-    test("create throws PaykuNullificationError when id is missing/empty", () => {
-      expect(
+    test("create throws PaykuNullificationError when id is missing/empty/invalid/overlong", async () => {
+      await expect(
         nullification.create({
           id: "",
           amount: 1000,
           subject: "Test",
         }),
       ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: 123 as unknown as string,
+          amount: 1000,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "a".repeat(41),
+          amount: 1000,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
       expect(mock.history.post.length).toBe(0);
     });
 
-    test("create throws PaykuNullificationError when subject is missing/empty", () => {
-      expect(
+    test("create throws PaykuNullificationError when subject is missing/empty/invalid/overlong", async () => {
+      await expect(
         nullification.create({
           id: "trx123",
           amount: 1000,
           subject: "  ",
         }),
       ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: 1000,
+          subject: 123 as unknown as string,
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: 1000,
+          subject: "a".repeat(201),
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
       expect(mock.history.post.length).toBe(0);
     });
 
-    test("create throws PaykuNullificationError when amount is <= 0 or invalid", () => {
-      expect(
+    test("create throws PaykuNullificationError when amount is <= 0, non-integer, infinite or over 14 digits", async () => {
+      await expect(
         nullification.create({
           id: "trx123",
           amount: 0,
@@ -144,18 +178,43 @@ describe("PaykuNullification", () => {
         }),
       ).rejects.toThrow(PaykuNullificationError);
 
-      expect(
+      await expect(
         nullification.create({
           id: "trx123",
           amount: -500,
           subject: "Test",
         }),
       ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: "Infinity" as unknown as number,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: 10.5,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: 100000000000000, // 15 digits
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
       expect(mock.history.post.length).toBe(0);
     });
 
-    test("get throws PaykuNullificationError when id is missing/empty", () => {
-      expect(nullification.get("")).rejects.toThrow(PaykuNullificationError);
+    test("get throws PaykuNullificationError when id is missing/empty", async () => {
+      await expect(nullification.get("")).rejects.toThrow(PaykuNullificationError);
       expect(mock.history.get.length).toBe(0);
     });
   });
