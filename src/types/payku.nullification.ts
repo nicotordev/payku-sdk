@@ -1,3 +1,4 @@
+import type { PaykuAPIError } from "../errors";
 import type { PaykuNullifyStatus } from "./payku.responses";
 
 /**
@@ -55,3 +56,44 @@ export interface PaykuGetNullificationResponse {
 export type PaykuNullificationResponse =
   | PaykuCreateNullificationResponse
   | PaykuGetNullificationResponse;
+
+/**
+ * Payload enviado por Payku al endpoint o webhook de callback de anulación.
+ * Nota: Es independiente del callback `urlnotify` de transacciones estándar.
+ */
+export interface PaykuNullificationCallbackPayload {
+  id: string;
+  id_transaction?: string;
+  ordencompra?: string;
+  fecha?: string;
+  monto: number;
+  status: string;
+  [key: string]: unknown;
+}
+
+export type PaykuVerifyNullificationCallbackFailureReason =
+  | "missing_id"
+  | "id_mismatch"
+  | "missing_status"
+  | "status_mismatch"
+  | "amount_mismatch"
+  | "payku_api_error";
+
+export interface PaykuVerifyNullificationCallbackOptions {
+  expectedStatus?: string;
+  expectedAmount?: number;
+}
+
+export type PaykuVerifyNullificationCallbackResult =
+  | {
+      valid: true;
+      nullify: PaykuNullifyDetail;
+      callback: PaykuNullificationCallbackPayload;
+    }
+  | {
+      valid: false;
+      reason: PaykuVerifyNullificationCallbackFailureReason;
+      callback: PaykuNullificationCallbackPayload;
+      nullify?: PaykuNullifyDetail;
+      error?: PaykuAPIError;
+    };

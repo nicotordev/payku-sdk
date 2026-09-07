@@ -484,19 +484,72 @@ import { PAYKU_WALLET_SANDBOX_AMOUNTS } from "@nicotordev/payku";
 
 ## Anulación (Chile)
 
+El módulo de Anulación permite solicitar la reversa o cancelación (total o parcial) de transacciones procesadas a través de `POST /api/nullification` y consultar su estado vía `GET /api/nullification/{id}`.
+
+> [!NOTE]
+> - **Alcance:** Exclusivo para Chile (`Payku.forCountry("CL").nullification`). En Perú y Venezuela el cliente no expone este módulo (`PaykuPeru` y `PaykuVenezuela`).
+> - **Autenticación y firma:** Tanto `create` como `get` requieren firma HMAC-SHA256 en el header `Sign` (el SDK lo calcula e inyecta automáticamente usando tu `privateToken`). En el ambiente Sandbox, la API rechaza `GET` con `error:waiting sign` si no se envía la firma.
+> - **Callback de anulación:** Se configura en el panel de Payku y su formato es distinto al webhook de cobro `urlnotify` de transacciones.
+
+### Crear y consultar anulación
+
 ```typescript
+import Payku, { PaykuNullificationError } from "@nicotordev/payku";
+
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
   privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
-  environment: "sandbox",
+  environment: "sandbox", // o "production"
 });
 
-const nullify = await payku.nullification.create({
-  id: "trxpr2a45s1dytg1",
-  amount: 25000,
-  subject: "anulación transacción",
-});
+try {
+  // 1. Solicitar anulación de la transacción
+  const created = await payku.nullification.create({
+    id: "trxpr2a45s1dytg1",
+    amount: 25000,
+    subject: "anulación transacción",
+  });
+
+  console.log(`Solicitud registrada: ${created.status} | ID: ${created.nullify.id}`);
+
+  // 2. Consultar estado de la anulación
+  const detail = await payku.nullification.get(created.nullify.id!);
+  console.log(`Estado anulación: ${detail.nullify.status_nullify} | Monto: ${detail.nullify.amount}`);
+} catch (error) {
+  if (error instanceof PaykuNullificationError) {
+    console.error(`Error en anulación (${error.statusCode}):`, error.message);
+  }
+}
 ```
+
+### Verificación del callback de anulación (`verifyCallback`)
+
+Payku envía un POST a la URL de callback configurada en tu panel con los datos de la reversa. Para evitar confiar ciegamente en datos externos no firmados, `nullification.verifyCallback` reconsulta directamente la API de Payku:
+
+```typescript
+// En tu endpoint /api/nullification-callback (Express, Next.js, etc.)
+const callbackPayload = await req.json();
+
+const result = await payku.nullification.verifyCallback(callbackPayload, {
+  expectedStatus: "complete", // opcional: exige estado específico
+  expectedAmount: 25000,      // opcional: valida que coincida con el monto esperado
+});
+
+if (result.valid) {
+  console.log(`Anulación verificada exitosamente para ID: ${result.nullify.id}`);
+} else {
+  console.error(`Fallo en verificación (${result.reason}):`, result.callback);
+}
+```
+
+### Estados de anulación (`status_nullify`)
+
+| Estado | Descripción |
+| --- | --- |
+| `complete` | Anulación procesada y ejecutada exitosamente. |
+| `success` | Solicitud aceptada por la pasarela. |
+| `pending` | Anulación en proceso o a la espera de fondos en la próxima liquidación. |
+| `failed` / `rejected` | Anulación rechazada por la pasarela o comercio. |
 
 ## Escrow (Chile)
 

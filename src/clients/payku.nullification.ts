@@ -1,5 +1,6 @@
 import {
   createPaykuAPIError,
+  PaykuAPIError,
   PaykuNullificationError,
   type PaykuClientOptions,
 } from "../errors";
@@ -12,12 +13,17 @@ import {
 import type {
   PaykuCreateNullificationResponse,
   PaykuGetNullificationResponse,
+  PaykuNullificationCallbackPayload,
   PaykuNullificationCreateRequest,
+  PaykuVerifyNullificationCallbackOptions,
+  PaykuVerifyNullificationCallbackResult,
 } from "../types/payku.nullification";
 
 export default class PaykuNullification {
   public create = this.createNullification.bind(this);
   public get = this.getNullification.bind(this);
+  public verifyCallback = this.verifyNullificationCallback.bind(this);
+  public verifyNotify = this.verifyNullificationCallback.bind(this);
 
   constructor(
     private readonly http: HttpClient,
@@ -60,5 +66,72 @@ export default class PaykuNullification {
         signed: true,
       });
     });
+  }
+
+  private async verifyNullificationCallback(
+    payload: PaykuNullificationCallbackPayload,
+    options: PaykuVerifyNullificationCallbackOptions = {},
+  ): Promise<PaykuVerifyNullificationCallbackResult> {
+    const rawId = payload?.id ? String(payload.id).trim() : "";
+    const rawIdTx = payload?.id_transaction
+      ? String(payload.id_transaction).trim()
+      : "";
+
+    if (!rawId && !rawIdTx) {
+      return { valid: false, reason: "missing_id", callback: payload };
+    }
+
+    if (rawId && rawIdTx && rawId !== rawIdTx) {
+      return { valid: false, reason: "id_mismatch", callback: payload };
+    }
+
+    const nullifyId = rawId || rawIdTx;
+
+    const expectedStatus = options.expectedStatus ?? payload?.status;
+    if (!expectedStatus || String(expectedStatus).trim() === "") {
+      return { valid: false, reason: "missing_status", callback: payload };
+    }
+
+    try {
+      const detailResponse = await this.get(nullifyId);
+      const nullify = detailResponse.nullify;
+
+      const currentStatus = (nullify.status_nullify ?? "").toLowerCase().trim();
+      const targetStatus = expectedStatus.toLowerCase().trim();
+
+      if (currentStatus !== targetStatus) {
+        return {
+          valid: false,
+          reason: "status_mismatch",
+          callback: payload,
+          nullify,
+        };
+      }
+
+      const expectedAmount = options.expectedAmount ?? payload?.monto;
+      if (expectedAmount !== undefined && nullify.amount !== undefined) {
+        if (Number(nullify.amount) !== Number(expectedAmount)) {
+          return {
+            valid: false,
+            reason: "amount_mismatch",
+            callback: payload,
+            nullify,
+          };
+        }
+      }
+
+      return { valid: true, nullify, callback: payload };
+    } catch (error) {
+      if (error instanceof PaykuAPIError) {
+        return {
+          valid: false,
+          reason: "payku_api_error",
+          callback: payload,
+          error,
+        };
+      }
+
+      throw error;
+    }
   }
 }

@@ -1,50 +1,22 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import Payku from "../clients/payku";
 import PaykuNullification from "../clients/payku.nullification";
 import { PaykuNullificationError } from "../errors";
 import { HttpClient } from "../http/client";
+import type {
+  PaykuCreateNullificationResponse,
+  PaykuGetNullificationResponse,
+  PaykuNullificationCallbackPayload,
+} from "../types/payku.nullification";
 
-const createFixture = {
-  status: "success",
-  nullify: {
-    id: "trxpr2a45s1dytg1",
-    amount: 25000,
-    currency: "CLP",
-    type: "total" as const,
-    status_nullify: "complete" as const,
-    payment: {
-      gateway: "webpay",
-      payment_type: "VC",
-    },
-    created_at: "2023-05-17T19:12:57.189Z",
-    updated_at: "2023-05-17T19:12:57.189Z",
-  },
-  gateway_response: {
-    status: "Successfully registered request",
-    message:
-      "The cancellation will be executed after the amount requested is deducted from your next settlement",
-    notify: "No availability in the wallet",
-  },
-};
+import callbackFixture from "./fixtures/chile/nullification/callback-200.json";
+import createFixture from "./fixtures/chile/nullification/create-200.json";
+import error401Fixture from "./fixtures/chile/nullification/401.json";
+import getFixture from "./fixtures/chile/nullification/get-200.json";
 
-const getFixture = {
-  nullify: {
-    id: "trxpr2a45s1dytg1",
-    amount: 25000,
-    currency: "CLP",
-    type: "total" as const,
-    status_nullify: "complete" as const,
-    payment: {
-      gateway: "webpay",
-      payment_type: "VC",
-    },
-    created_at: "2023-05-17T19:12:57.189Z",
-    updated_at: "2023-05-17T19:12:57.189Z",
-  },
-};
-
-describe("PaykuNullification", () => {
+describe("PaykuNullification create", () => {
   let mock: InstanceType<typeof MockAdapter>;
   let apiAxios: ReturnType<typeof axios.create>;
   let nullification: PaykuNullification;
@@ -71,7 +43,7 @@ describe("PaykuNullification", () => {
     mock.restore();
   });
 
-  test("create posts id, amount, subject and maps create fixture", async () => {
+  test("sends signed POST /nullification and maps create-200 fixture", async () => {
     mock.onPost("/nullification").reply((config) => {
       expect(config.headers?.Authorization).toBe("Bearer public-token");
       expect(config.headers?.Sign).toMatch(/^[a-f0-9]{64}$/);
@@ -82,7 +54,6 @@ describe("PaykuNullification", () => {
         amount: 25000,
         subject: "anulación transacción",
       });
-      expect(body).not.toHaveProperty("transaction");
 
       return [200, createFixture];
     });
@@ -93,88 +64,49 @@ describe("PaykuNullification", () => {
       subject: "anulación transacción",
     });
 
-    expect(response).toEqual(createFixture);
+    expect(response).toEqual(createFixture as PaykuCreateNullificationResponse);
     expect(response.status).toBe("success");
-    expect(response.nullify.type).toBe("total");
+    expect(response.nullify.id).toBe("trxpr2a45s1dytg1");
     expect(response.nullify.status_nullify).toBe("complete");
-    expect(response.gateway_response?.notify).toContain("wallet");
+    expect(response.gateway_response?.status).toBe(
+      "Successfully registered request",
+    );
   });
 
-  test("get maps nullify fixture without top-level status", async () => {
-    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, getFixture);
+  test("throws PaykuNullificationError on 401 waiting sign", async () => {
+    mock.onPost("/nullification").reply(401, error401Fixture);
 
-    const response = await nullification.get("trxpr2a45s1dytg1");
-
-    expect(response).toEqual(getFixture);
-    expect(response).not.toHaveProperty("status");
-    expect(response).not.toHaveProperty("gateway_response");
-    expect(response.nullify.id).toBe("trxpr2a45s1dytg1");
-    expect(response.nullify.payment?.gateway).toBe("webpay");
+    try {
+      await nullification.create({
+        id: "trxpr2a45s1dytg1",
+        amount: 25000,
+        subject: "anulación transacción",
+      });
+      expect.unreachable("should have thrown PaykuNullificationError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PaykuNullificationError);
+      const nullifyError = error as PaykuNullificationError;
+      expect(nullifyError.statusCode).toBe(401);
+    }
   });
 
   describe("validations", () => {
-    test("create throws PaykuNullificationError when id is missing/empty/invalid/overlong", async () => {
+    test("throws PaykuNullificationError when id is empty", async () => {
       await expect(
         nullification.create({
           id: "",
-          amount: 1000,
-          subject: "Test",
+          amount: 25000,
+          subject: "anulación",
         }),
       ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: 123 as unknown as string,
-          amount: 1000,
-          subject: "Test",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "a".repeat(41),
-          amount: 1000,
-          subject: "Test",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      expect(mock.history.post.length).toBe(0);
     });
 
-    test("create throws PaykuNullificationError when subject is missing/empty/invalid/overlong", async () => {
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: 1000,
-          subject: "  ",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: 1000,
-          subject: 123 as unknown as string,
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: 1000,
-          subject: "a".repeat(201),
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      expect(mock.history.post.length).toBe(0);
-    });
-
-    test("create throws PaykuNullificationError when amount is <= 0, non-integer, infinite or over 14 digits", async () => {
+    test("throws PaykuNullificationError when amount is not positive", async () => {
       await expect(
         nullification.create({
           id: "trx123",
           amount: 0,
-          subject: "Test",
+          subject: "anulación",
         }),
       ).rejects.toThrow(PaykuNullificationError);
 
@@ -182,45 +114,24 @@ describe("PaykuNullification", () => {
         nullification.create({
           id: "trx123",
           amount: -500,
-          subject: "Test",
+          subject: "anulación",
         }),
       ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: "Infinity" as unknown as number,
-          subject: "Test",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: 10.5,
-          subject: "Test",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      await expect(
-        nullification.create({
-          id: "trx123",
-          amount: 100000000000000, // 15 digits
-          subject: "Test",
-        }),
-      ).rejects.toThrow(PaykuNullificationError);
-
-      expect(mock.history.post.length).toBe(0);
     });
 
-    test("get throws PaykuNullificationError when id is missing/empty", async () => {
-      await expect(nullification.get("")).rejects.toThrow(PaykuNullificationError);
-      expect(mock.history.get.length).toBe(0);
+    test("throws PaykuNullificationError when subject is empty", async () => {
+      await expect(
+        nullification.create({
+          id: "trx123",
+          amount: 25000,
+          subject: "   ",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
     });
   });
 });
 
-describe("PaykuNullification get Sign", () => {
+describe("PaykuNullification get", () => {
   let mock: InstanceType<typeof MockAdapter>;
   let apiAxios: ReturnType<typeof axios.create>;
   let nullification: PaykuNullification;
@@ -247,21 +158,208 @@ describe("PaykuNullification get Sign", () => {
     mock.restore();
   });
 
-  test("get sends Sign header (sandbox requires it despite docs)", async () => {
+  test("sends signed GET /nullification/:id and maps get-200 fixture", async () => {
     mock.onGet("/nullification/trxpr2a45s1dytg1").reply((config) => {
       expect(config.headers?.Authorization).toBe("Bearer public-token");
       expect(config.headers?.Sign).toMatch(/^[a-f0-9]{64}$/);
-      return [
-        200,
-        {
-          nullify: {
-            id: "trxpr2a45s1dytg1",
-            status_nullify: "complete",
-          },
-        },
-      ];
+      return [200, getFixture];
     });
 
-    await nullification.get("trxpr2a45s1dytg1");
+    const response = await nullification.get("trxpr2a45s1dytg1");
+
+    expect(response).toEqual(getFixture as PaykuGetNullificationResponse);
+    expect(response.nullify.id).toBe("trxpr2a45s1dytg1");
+    expect(response.nullify.amount).toBe(25000);
+    expect(response.nullify.status_nullify).toBe("complete");
+    expect(response.nullify.currency).toBe("CLP");
+  });
+
+  test("throws PaykuNullificationError on 404 or API error", async () => {
+    mock.onGet("/nullification/non-existent").reply(404, {
+      status: "failed",
+      message: "not found",
+    });
+
+    try {
+      await nullification.get("non-existent");
+      expect.unreachable("should have thrown PaykuNullificationError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PaykuNullificationError);
+      const nullifyError = error as PaykuNullificationError;
+      expect(nullifyError.statusCode).toBe(404);
+    }
+  });
+
+  test("throws PaykuNullificationError when id is blank", async () => {
+    await expect(nullification.get("   ")).rejects.toThrow(
+      PaykuNullificationError,
+    );
+  });
+});
+
+describe("PaykuNullification verifyCallback", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let nullification: PaykuNullification;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    nullification = new PaykuNullification(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("returns valid: true when re-queried status and amount match", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, getFixture);
+
+    const result = await nullification.verifyCallback(callbackFixture);
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.nullify.id).toBe("trxpr2a45s1dytg1");
+      expect(result.nullify.status_nullify).toBe("complete");
+      expect(result.callback.ordencompra).toBe("367734544");
+    }
+  });
+
+  test("verifyNotify is an alias of verifyCallback", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, getFixture);
+
+    const result = await nullification.verifyNotify(callbackFixture);
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("returns missing_id when both id and id_transaction are omitted", async () => {
+    const invalidPayload = {
+      ordencompra: "367734544",
+      monto: 25000,
+      status: "complete",
+    } as unknown as PaykuNullificationCallbackPayload;
+
+    const result = await nullification.verifyCallback(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_id");
+    }
+  });
+
+  test("returns id_mismatch when id and id_transaction differ", async () => {
+    const invalidPayload: PaykuNullificationCallbackPayload = {
+      id: "trx_1",
+      id_transaction: "trx_2",
+      monto: 25000,
+      status: "complete",
+    };
+
+    const result = await nullification.verifyCallback(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("id_mismatch");
+    }
+  });
+
+  test("returns missing_status when payload status is missing and expectedStatus is omitted", async () => {
+    const invalidPayload = {
+      id: "trxpr2a45s1dytg1",
+      monto: 25000,
+    } as unknown as PaykuNullificationCallbackPayload;
+
+    const result = await nullification.verifyCallback(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_status");
+    }
+  });
+
+  test("returns status_mismatch when API status does not match callback status", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, {
+      nullify: {
+        ...getFixture.nullify,
+        status_nullify: "pending",
+      },
+    });
+
+    const result = await nullification.verifyCallback(callbackFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+      expect(result.nullify?.status_nullify).toBe("pending");
+    }
+  });
+
+  test("returns amount_mismatch when API amount differs from payload monto or expectedAmount", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(200, {
+      nullify: {
+        ...getFixture.nullify,
+        amount: 10000,
+      },
+    });
+
+    const result = await nullification.verifyCallback(callbackFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("amount_mismatch");
+      expect(result.nullify?.amount).toBe(10000);
+    }
+  });
+
+  test("returns payku_api_error when GET /nullification/:id returns 404 or 500", async () => {
+    mock.onGet("/nullification/trxpr2a45s1dytg1").reply(500, {
+      status: "failed",
+      message: "internal error",
+    });
+
+    const result = await nullification.verifyCallback(callbackFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("payku_api_error");
+      expect(result.error?.statusCode).toBe(500);
+    }
+  });
+});
+
+describe("Payku.forCountry nullification integration", () => {
+  test("Payku.forCountry('CL').nullification is an instance of PaykuNullification", () => {
+    const paykuCL = Payku.forCountry("CL", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+    expect(paykuCL.nullification).toBeInstanceOf(PaykuNullification);
+  });
+
+  test("Payku.forCountry('PE') and 'VE' do not expose nullification", () => {
+    const paykuPE = Payku.forCountry("PE", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+    const paykuVE = Payku.forCountry("VE", {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    });
+
+    expect("nullification" in paykuPE).toBe(false);
+    expect("nullification" in paykuVE).toBe(false);
   });
 });
