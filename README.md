@@ -249,14 +249,22 @@ const allMethods = await payku.paymentMethods.list();
 Cada método de pago incluye un identificador numérico `payment` (ej. `1` para Webpay Plus, `4` para ETpay, `9` para MACH). Este código se utiliza en el campo `payment` al crear una transacción:
 
 ```typescript
-// 1. Obtener medios de pago disponibles
+import Payku from "@nicotordev/payku";
+
+const payku = Payku.fromEnvForCountry("CL");
+
+// 1. Obtener medios de pago disponibles para la cuenta
 const methods = await payku.paymentMethods.list();
 const webpay = methods.find((m) => m.payment === 1);
 
-// 2. Iniciar transacción fijando el medio de pago deseado
+if (!webpay) {
+  throw new Error("Webpay Plus no está habilitado para esta cuenta.");
+}
+
+// 2. Iniciar transacción fijando el medio de pago verificado
 const order = await payku.transactions.create({
   amount: 15000,
-  payment: webpay?.payment ?? 1, // Webpay Plus
+  payment: webpay.payment, // 1 (Webpay Plus)
   order: "orden-001",
   email: "cliente@example.com",
   subject: "Compra en línea",
