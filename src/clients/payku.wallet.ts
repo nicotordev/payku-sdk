@@ -184,9 +184,24 @@ export default class PaykuWallet {
     payload: PaykuPayoutNotifyPayload,
     options: PaykuVerifyPayoutNotifyOptions = {},
   ): Promise<PaykuVerifyPayoutNotifyResult> {
-    const payoutId = payload?.identifier_payout || payload?.id;
-    if (!payoutId) {
+    const rawId = payload?.id ? String(payload.id).trim() : "";
+    const rawIdentifierPayout = payload?.identifier_payout
+      ? String(payload.identifier_payout).trim()
+      : "";
+
+    if (!rawId && !rawIdentifierPayout) {
       return { valid: false, reason: "missing_id", notify: payload };
+    }
+
+    if (rawId && rawIdentifierPayout && rawId !== rawIdentifierPayout) {
+      return { valid: false, reason: "id_mismatch", notify: payload };
+    }
+
+    const payoutId = rawIdentifierPayout || rawId;
+
+    const expectedStatus = options.expectedStatus ?? payload?.status;
+    if (!expectedStatus || String(expectedStatus).trim() === "") {
+      return { valid: false, reason: "missing_status", notify: payload };
     }
 
     try {
@@ -195,7 +210,6 @@ export default class PaykuWallet {
         : await this.getPayout(payoutId);
 
       const payout = detailResponse.payout;
-      const expectedStatus = options.expectedStatus ?? payload.status;
 
       if (expectedStatus !== undefined && payout.status !== expectedStatus) {
         return {

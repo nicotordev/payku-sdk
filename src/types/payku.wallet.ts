@@ -185,6 +185,8 @@ export interface PaykuPayoutNotifyPayload {
 
 export type PaykuVerifyPayoutNotifyFailureReason =
   | "missing_id"
+  | "id_mismatch"
+  | "missing_status"
   | "status_mismatch"
   | "order_mismatch"
   | "payku_api_error";

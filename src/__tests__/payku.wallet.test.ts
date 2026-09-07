@@ -9,6 +9,7 @@ import {
   PAYKU_WALLET_SANDBOX_AMOUNTS,
   type PaykuGetPayoutResponse,
   type PaykuGetPayoutV3Response,
+  type PaykuPayoutNotifyPayload,
   type PaykuWalletBalanceResponse,
   type PaykuWalletListResponse,
 } from "../types/payku.wallet";
@@ -414,13 +415,44 @@ describe("PaykuWallet payouts.verifyNotify", () => {
     const invalidPayload = {
       order: "123",
       status: "success",
-    } as any;
+    } as unknown as PaykuPayoutNotifyPayload;
 
     const result = await wallet.payouts.verifyNotify(invalidPayload);
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.reason).toBe("missing_id");
+    }
+  });
+
+  test("returns id_mismatch when id and identifier_payout differ in payload", async () => {
+    const invalidPayload: PaykuPayoutNotifyPayload = {
+      id: "mor33e36b01e8a11b9ee",
+      identifier_payout: "different_id_999",
+      order: "367734544",
+      status: "success",
+    };
+
+    const result = await wallet.payouts.verifyNotify(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("id_mismatch");
+    }
+  });
+
+  test("returns missing_status when payload status is missing and expectedStatus is omitted", async () => {
+    const invalidPayload = {
+      id: "mor33e36b01e8a11b9ee",
+      identifier_payout: "mor33e36b01e8a11b9ee",
+      order: "367734544",
+    } as unknown as PaykuPayoutNotifyPayload;
+
+    const result = await wallet.payouts.verifyNotify(invalidPayload);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_status");
     }
   });
 
