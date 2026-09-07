@@ -8,6 +8,31 @@ const requireNonEmptyString = (field: string) =>
       message: `${field} is required`,
     });
 
+const PAYKU_DATETIME_FORMAT =
+  /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?$/;
+
+function parseEventDateTime(value: string): number | null {
+  const trimmed = value.trim();
+  if (!PAYKU_DATETIME_FORMAT.test(trimmed)) {
+    return null;
+  }
+  const isoCandidate = trimmed.includes(" ")
+    ? trimmed.replace(" ", "T")
+    : `${trimmed}T00:00:00`;
+  const timestamp = Date.parse(isoCandidate);
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+const requireEventDateTime = (field: string) =>
+  z
+    .string({ required_error: `${field} is required` })
+    .refine((val) => val.trim().length > 0, {
+      message: `${field} is required`,
+    })
+    .refine((val) => parseEventDateTime(val) !== null, {
+      message: `${field} must be a valid datetime (YYYY-MM-DD or YYYY-MM-DD HH:mm:ss)`,
+    });
+
 /**
  * Tupla de afiliado para eventos: [email, percent]
  */
@@ -30,20 +55,42 @@ export type PaykuEventAffiliationTuple = z.infer<
 
 /**
  * Esquema Zod para crear eventos (`POST /api/event`).
+ * Exige formato datetime válido y que date_closing_sales <= date_event < date_payment.
  */
 export const PaykuCreateEventSchema = z
   .object({
     event: requireNonEmptyString("event"),
     name: requireNonEmptyString("name"),
-    date_event: requireNonEmptyString("date_event"),
-    date_closing_sales: requireNonEmptyString("date_closing_sales"),
-    date_payment: requireNonEmptyString("date_payment"),
+    date_event: requireEventDateTime("date_event"),
+    date_closing_sales: requireEventDateTime("date_closing_sales"),
+    date_payment: requireEventDateTime("date_payment"),
     url_event: z.string().optional(),
     url_logo: z.string().optional(),
     service_sale: z.number().optional(),
     affiliation: z.array(PaykuEventAffiliationTupleSchema).optional(),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((data, ctx) => {
+    const tClosing = parseEventDateTime(data.date_closing_sales);
+    const tEvent = parseEventDateTime(data.date_event);
+    const tPayment = parseEventDateTime(data.date_payment);
+
+    if (tClosing !== null && tEvent !== null && tClosing > tEvent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "date_closing_sales must be less than or equal to date_event",
+        path: ["date_closing_sales"],
+      });
+    }
+
+    if (tPayment !== null && tEvent !== null && tPayment <= tEvent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "date_payment must be greater than date_event",
+        path: ["date_payment"],
+      });
+    }
+  });
 
 export type PaykuCreateEventRequestInput = z.infer<
   typeof PaykuCreateEventSchema

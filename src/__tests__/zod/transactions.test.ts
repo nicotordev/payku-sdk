@@ -299,7 +299,6 @@ describe("PaykuListTransactionsParamsSchema", () => {
     const res = PaykuListTransactionsParamsSchema.safeParse({
       per_page: 4000,
       page: 2,
-      order: "ord-1",
       date_init: "2026-01-01",
       date_end: "2026-01-31",
       success: true,

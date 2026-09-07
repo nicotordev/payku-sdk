@@ -365,7 +365,7 @@ El SDK provee esquemas Zod en `@nicotordev/payku/zod` para validar solicitudes d
 `zod` es una dependencia de pares opcional (`peerDependenciesMeta.zod.optional: true`):
 
 ```bash
-bun add @nicotordev/payku zod
+bun add @nicotordev/payku zod@^3.20.0
 ```
 
 Ejemplo rápido en un Route Handler de Next.js (`POST /api/webhooks/payku`):
@@ -390,7 +390,7 @@ export async function POST(req: Request) {
     toPaykuNotifyPayload(parsed.data),
   );
 
-  return NextResponse.json({ verified: result.verified });
+  return NextResponse.json({ valid: result.valid });
 }
 ```
 

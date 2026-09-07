@@ -8,17 +8,17 @@ Los esquemas están expuestos a través del subpath `@nicotordev/payku/zod`, man
 
 ## 📦 Instalación
 
-`zod` está configurado como una dependencia de pares opcional (`peerDependenciesMeta.zod.optional: true`). Si deseas utilizar los esquemas, instala `zod` (^3.20.0 o superior) en tu proyecto:
+`zod` está configurado como una dependencia de pares opcional (`peerDependenciesMeta.zod.optional: true`). Si deseas utilizar los esquemas, instala `zod@^3.20.0` en tu proyecto:
 
 ```bash
 # Con Bun
-bun add @nicotordev/payku zod
+bun add @nicotordev/payku zod@^3.20.0
 
 # Con pnpm
-pnpm add @nicotordev/payku zod
+pnpm add @nicotordev/payku zod@^3.20.0
 
 # Con npm
-npm install @nicotordev/payku zod
+npm install @nicotordev/payku zod@^3.20.0
 ```
 
 Si no utilizas Zod, puedes importar `@nicotordev/payku` con total normalidad; ningún archivo de Zod será incluido en tu bundle.
@@ -59,7 +59,7 @@ import {
 
 ### 1. Next.js App Router: Webhook Route Handler (`POST /api/webhooks/payku`)
 
-Valida el payload entrante de la notificación `urlnotify` de Payku y verifícalo contra la API oficial para evitar fraudes:
+Valida el payload entrante de la notificación `urlnotify` de Payku y verifícalo contra la API oficial para evitar fraudes, procesando los datos confirmados por la pasarela:
 
 ```typescript
 // app/api/webhooks/payku/route.ts
@@ -92,17 +92,18 @@ export async function POST(request: Request) {
       toPaykuNotifyPayload(payload),
     );
 
-    if (!verification.verified) {
+    if (!verification.valid) {
       console.warn("Webhook verification failed:", verification.reason);
       return NextResponse.json({ error: "Verification failed" }, { status: 401 });
     }
 
-    // 3. Procesar el resultado según el estado confirmado
-    if (verification.status === "success") {
-      console.log(`Pago recibido con éxito para orden ${payload.order}`);
-      // Actualizar pedido en base de datos...
+    // 3. Procesar datos verificados provistos directamente por la transacción en Payku
+    const tx = verification.transaction;
+    if (tx.status === "success") {
+      console.log(`Pago confirmado con éxito para orden ${tx.order} (id: ${tx.id})`);
+      // Actualizar pedido en base de datos con los datos seguros de la pasarela...
     } else {
-      console.log(`Transacción no exitosa: ${verification.status}`);
+      console.log(`Transacción no exitosa: estado ${tx.status} para orden ${tx.order}`);
     }
 
     return NextResponse.json({ status: "ok" });
@@ -173,16 +174,13 @@ export async function createCheckoutSession(formData: FormData) {
 
 ### 3. Hono / Express: Retorno de checkout (`GET /checkout/return`)
 
-Cuando el cliente finaliza o cancela el flujo en la pasarela de Payku, es redirigido a `urlreturn`. Usa `PaykuPaymentReturnQuerySchema` para interpretar la query string o URL completa, identificando transacciones expiradas o completadas:
+Cuando el cliente finaliza o cancela el flujo en la pasarela de Payku, es redirigido a `urlreturn`. Usa `PaykuPaymentReturnQuerySchema` para interpretar la query string o URL completa, normalizando `status`, `id`, `messageError` y el flag booleano `expired`:
 
 #### Ejemplo con Express:
 
 ```typescript
 import express from "express";
-import {
-  PaykuPaymentReturnQuerySchema,
-  isPaymentExpiredReturn,
-} from "@nicotordev/payku/zod";
+import { PaykuPaymentReturnQuerySchema } from "@nicotordev/payku/zod";
 
 const app = express();
 
@@ -194,18 +192,20 @@ app.get("/checkout/return", (req, res) => {
     return res.status(400).send("Parámetros de retorno inválidos");
   }
 
-  const { status, order, expired, message_error } = parsed.data;
+  const { id, status, expired, messageError } = parsed.data;
+  const safeId = encodeURIComponent(id ?? "");
 
-  // Detecta expiración según parámetro status o mensaje_error
-  if (expired || isPaymentExpiredReturn(parsed.data)) {
-    return res.redirect(`/checkout/expired?order=${order}`);
+  // Detecta expiración según el booleano normalizado expired
+  if (expired) {
+    return res.redirect(`/checkout/expired?id=${safeId}`);
   }
 
   if (status === "success") {
-    return res.redirect(`/checkout/success?order=${order}`);
+    return res.redirect(`/checkout/success?id=${safeId}`);
   }
 
-  return res.redirect(`/checkout/failed?order=${order}&reason=${message_error ?? "rejected"}`);
+  const safeReason = encodeURIComponent(messageError ?? status ?? "rejected");
+  return res.redirect(`/checkout/failed?id=${safeId}&reason=${safeReason}`);
 });
 ```
 
@@ -225,13 +225,15 @@ app.get("/checkout/return", (c) => {
     return c.text("Parámetros de retorno inválidos", 400);
   }
 
-  const { status, order, expired } = parsed.data;
+  const { id, status, expired } = parsed.data;
+  const safeId = encodeURIComponent(id ?? "");
 
   if (expired) {
-    return c.redirect(`/checkout/expired?order=${order}`);
+    return c.redirect(`/checkout/expired?id=${safeId}`);
   }
 
-  return c.redirect(`/checkout/result?status=${status}&order=${order}`);
+  const safeStatus = encodeURIComponent(status ?? "");
+  return c.redirect(`/checkout/result?status=${safeStatus}&id=${safeId}`);
 });
 ```
 

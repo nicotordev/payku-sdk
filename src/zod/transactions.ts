@@ -264,7 +264,6 @@ export const PaykuListTransactionsParamsSchema = z
     success: z.boolean().optional(),
     pending: z.boolean().optional(),
     rejected: z.boolean().optional(),
-    order: z.string().optional(),
   })
   .passthrough();
 
