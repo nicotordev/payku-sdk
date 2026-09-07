@@ -3,7 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMarketplace from "../clients/payku.marketplace";
 import { HttpClient } from "../http/client";
-import { PaykuError } from "../errors";
+import { PaykuError, PaykuMarketplaceError } from "../errors";
 import {
   buildMarketplaceAffiliation,
   validateMarketplaceAffiliationPercentages,
@@ -359,5 +359,99 @@ describe("PaykuMarketplace Sign flags", () => {
     });
 
     await marketplace.clients.delete("macl1");
+  });
+});
+
+describe("PaykuMarketplace validations", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let marketplace: PaykuMarketplace;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    marketplace = new PaykuMarketplace(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("clients.create throws PaykuMarketplaceError when required fields or bank details are missing", () => {
+    expect(
+      marketplace.clients.create({
+        email: "",
+        name: "John",
+        phone: "123",
+        bank: { sbif: "0001", type: "1", num: "1", rut: "1" },
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(
+      marketplace.clients.create({
+        email: "a@b.com",
+        name: "John",
+        phone: "123",
+        bank: { sbif: "", type: "1", num: "1", rut: "1" },
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(mock.history.post.length).toBe(0);
+  });
+
+  test("affiliations.create throws PaykuMarketplaceError when affiliation array or percentages are invalid", () => {
+    expect(
+      marketplace.affiliations.create({
+        name: "aff1",
+        percentage: "20",
+        affiliation: [],
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(
+      marketplace.affiliations.create({
+        name: "aff1",
+        percentage: "20",
+        affiliation: [["client1", "50"]],
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(mock.history.post.length).toBe(0);
+  });
+
+  test("transactions.create throws PaykuMarketplaceError when fields or amount are invalid", () => {
+    expect(
+      marketplace.transactions.create({
+        email: "a@b.com",
+        order: "ord1",
+        subject: "test",
+        amount: 0,
+        marketplace: "token123",
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(
+      marketplace.transactions.create({
+        email: "a@b.com",
+        order: "ord1",
+        subject: "test",
+        amount: 1000,
+        marketplace: "",
+      }),
+    ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(mock.history.post.length).toBe(0);
   });
 });
