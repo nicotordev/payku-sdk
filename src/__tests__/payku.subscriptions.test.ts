@@ -70,6 +70,21 @@ describe("PaykuSubscriptions sutransaction", () => {
     expect(response.verification_key).toBeTruthy();
   });
 
+  test("transactions.create rejects missing suscription or non-positive amount", async () => {
+    await expect(
+      subscriptions.transactions.create({
+        suscription: "",
+      }),
+    ).rejects.toThrow("suscription is required");
+
+    await expect(
+      subscriptions.transactions.create({
+        suscription: "suc123",
+        amount: "-100",
+      }),
+    ).rejects.toThrow("amount must be greater than 0");
+  });
+
   test("cards.register posts suscription key on /suinscriptionscards", async () => {
     mock.onPost("/suinscriptionscards").reply((config) => {
       const body = JSON.parse(String(config.data)) as Record<string, unknown>;
@@ -310,7 +325,7 @@ describe("PaykuSubscriptions suclient", () => {
     expect(response.update_at).toBe("2023-10-2 08:32:52");
   });
 
-  test("list clients maps Customers envelope", async () => {
+  test("list clients maps Customers envelope and forwards query params", async () => {
     const listFixture = [
       {
         Customers: [
@@ -324,12 +339,60 @@ describe("PaykuSubscriptions suclient", () => {
       },
     ];
 
-    mock.onGet("/suclient/customers").reply(200, listFixture);
+    mock.onGet("/suclient/customers").reply((config) => {
+      expect(config.params).toMatchObject({
+        page: 1,
+        per_page: 50,
+        date_init: "2023-01-01",
+        date_end: "2023-01-31",
+      });
+      return [200, listFixture];
+    });
 
-    const response = await subscriptions.clients.list();
+    const response = await subscriptions.clients.list({
+      page: 1,
+      per_page: 50,
+      date_init: "2023-01-01",
+      date_end: "2023-01-31",
+    });
     expect(response).toEqual(listFixture);
     expect(response[0]?.Customers[0]?.identifier).toBe(
       "surec804a8ed60c747cb8839",
+    );
+  });
+
+  test("clients.create rejects missing email, name or phone", async () => {
+    await expect(
+      subscriptions.clients.create({
+        email: "",
+        name: "John",
+        phone: "123",
+      }),
+    ).rejects.toThrow("email is required");
+
+    await expect(
+      subscriptions.clients.create({
+        email: "test@example.com",
+        name: "",
+        phone: "123",
+      }),
+    ).rejects.toThrow("name is required");
+
+    await expect(
+      subscriptions.clients.create({
+        email: "test@example.com",
+        name: "John",
+        phone: "   ",
+      }),
+    ).rejects.toThrow("phone is required");
+  });
+
+  test("clients.list rejects per_page above 100 or non-integer", async () => {
+    await expect(subscriptions.clients.list({ per_page: 101 })).rejects.toThrow(
+      "per_page must be between 1 and 100",
+    );
+    await expect(subscriptions.clients.list({ per_page: 1.5 })).rejects.toThrow(
+      "per_page must be between 1 and 100",
     );
   });
 });
@@ -371,6 +434,40 @@ describe("PaykuSubscriptions sususcription", () => {
 
     expect(response.status).toBe("register");
     expect(response.url).toContain("registrosuscripcion");
+  });
+
+  test("create rejects missing plan or client", async () => {
+    await expect(
+      subscriptions.subscriptions.create({
+        plan: "",
+        client: "cl1",
+      }),
+    ).rejects.toThrow("plan is required");
+
+    await expect(
+      subscriptions.subscriptions.create({
+        plan: "pl1",
+        client: "  ",
+      }),
+    ).rejects.toThrow("client is required");
+  });
+
+  test("create rejects non-positive or non-finite amount", async () => {
+    await expect(
+      subscriptions.subscriptions.create({
+        plan: "pl1",
+        client: "cl1",
+        amount: "0",
+      }),
+    ).rejects.toThrow("amount must be greater than 0");
+
+    await expect(
+      subscriptions.subscriptions.create({
+        plan: "pl1",
+        client: "cl1",
+        amount: "Infinity",
+      }),
+    ).rejects.toThrow("amount must be greater than 0");
   });
 
   test("get maps nested client/plan/active_cards", async () => {
