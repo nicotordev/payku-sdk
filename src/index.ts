@@ -18,6 +18,7 @@ export {
   PaykuEscrowError,
   PaykuGetTransactionError,
   PaykuListTransactionsError,
+  PaykuMarketplaceError,
   PaykuNullificationError,
   PaykuSubscriptionsError,
   PaykuUnsupportedFeatureError,
@@ -63,6 +64,8 @@ export {
   mapNotifyStatusToTransactionStatus,
   parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
+  validateCreateMarketplaceAffiliationRequest,
+  validateCreateMarketplaceClientRequest,
   validateCreateNullificationRequest,
   validateCreateSubscriptionClientRequest,
   validateCreateSubscriptionRequest,
@@ -72,6 +75,7 @@ export {
   validateGetNullificationParams,
   validateListSubscriptionClientsParams,
   validateMarketplaceAffiliationPercentages,
+  validateMarketplaceTransactionRequest,
 } from "./utils/payku.utils";
 export type {
   ClpPaymentCodeSet,
