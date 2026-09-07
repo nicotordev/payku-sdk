@@ -475,17 +475,17 @@ export function validateCreateEventRequest(
 
     for (let i = 0; i < params.affiliation.length; i++) {
       const item = params.affiliation[i];
-      if (!Array.isArray(item) || item.length < 2) {
+      if (!Array.isArray(item) || item.length !== 2) {
         throw new PaykuError(
-          `affiliation[${i}] must be a tuple [email, percent]`,
+          `affiliation[${i}] must be a 2-element tuple [email, percent]`,
         );
       }
       const [email, percent] = item;
       requireNonEmptyField(email, `affiliation[${i}].email`);
       const numPercent = Number(percent);
-      if (Number.isNaN(numPercent) || numPercent <= 0) {
+      if (!Number.isFinite(numPercent) || numPercent <= 0 || numPercent > 100) {
         throw new PaykuError(
-          `affiliation[${i}].percent must be greater than 0`,
+          `affiliation[${i}].percent must be a finite number between 0 and 100`,
         );
       }
     }
