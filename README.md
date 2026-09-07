@@ -358,6 +358,44 @@ const detail = await payku.events.get(created.id);
 
 > **Nota:** La respuesta de `events.create()` usa `affiliation`, mientras que el detalle obtenido con `events.get()` usa `affiliations`.
 
+## Validación con Zod (opcional)
+
+El SDK provee esquemas Zod en `@nicotordev/payku/zod` para validar solicitudes de pago, webhooks y retornos en Next.js, Express, Hono y Server Actions.
+
+`zod` es una dependencia de pares opcional (`peerDependenciesMeta.zod.optional: true`):
+
+```bash
+bun add @nicotordev/payku zod
+```
+
+Ejemplo rápido en un Route Handler de Next.js (`POST /api/webhooks/payku`):
+
+```typescript
+import { NextResponse } from "next/server";
+import Payku from "@nicotordev/payku";
+import {
+  PaykuTransactionNotifySchema,
+  toPaykuNotifyPayload,
+} from "@nicotordev/payku/zod";
+
+const payku = Payku.fromEnv();
+
+export async function POST(req: Request) {
+  const parsed = PaykuTransactionNotifySchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const result = await payku.webhooks.verifyNotify(
+    toPaykuNotifyPayload(parsed.data),
+  );
+
+  return NextResponse.json({ verified: result.verified });
+}
+```
+
+Para recetas completas de integración, Server Actions, Hono, Express y buenas prácticas, consulta [`docs/zod.md`](./docs/zod.md).
+
 ## Especificación del SDK
 
 Ver [`docs/sdk-spec.md`](./docs/sdk-spec.md) para arquitectura, convenciones y roadmap.
