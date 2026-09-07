@@ -8,6 +8,7 @@ import type {
   PaykuCreateTransactionResponse,
   PaykuListTransactionsParams,
 } from "../types/payku.transactions";
+import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
@@ -451,4 +452,25 @@ export function parsePaymentReturnQuery(
     expired: isExpired,
   };
 }
+
+export function validateCreateNullificationRequest(
+  params: PaykuNullificationCreateRequest,
+): void {
+  requireNonEmptyField(params.id, "id");
+  requireNonEmptyField(params.subject, "subject");
+
+  if (params.amount === undefined || params.amount === null) {
+    throw new PaykuError("amount is required");
+  }
+
+  const numAmount = Number(params.amount);
+  if (Number.isNaN(numAmount) || numAmount <= 0) {
+    throw new PaykuError("amount must be greater than 0");
+  }
+}
+
+export function validateGetNullificationParams(id: string): void {
+  requireNonEmptyField(id, "id");
+}
+
 

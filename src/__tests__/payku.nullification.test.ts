@@ -2,6 +2,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuNullification from "../clients/payku.nullification";
+import { PaykuNullificationError } from "../errors";
 import { HttpClient } from "../http/client";
 
 const createFixture = {
@@ -109,6 +110,54 @@ describe("PaykuNullification", () => {
     expect(response).not.toHaveProperty("gateway_response");
     expect(response.nullify.id).toBe("trxpr2a45s1dytg1");
     expect(response.nullify.payment?.gateway).toBe("webpay");
+  });
+
+  describe("validations", () => {
+    test("create throws PaykuNullificationError when id is missing/empty", () => {
+      expect(
+        nullification.create({
+          id: "",
+          amount: 1000,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("create throws PaykuNullificationError when subject is missing/empty", () => {
+      expect(
+        nullification.create({
+          id: "trx123",
+          amount: 1000,
+          subject: "  ",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("create throws PaykuNullificationError when amount is <= 0 or invalid", () => {
+      expect(
+        nullification.create({
+          id: "trx123",
+          amount: 0,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+
+      expect(
+        nullification.create({
+          id: "trx123",
+          amount: -500,
+          subject: "Test",
+        }),
+      ).rejects.toThrow(PaykuNullificationError);
+      expect(mock.history.post.length).toBe(0);
+    });
+
+    test("get throws PaykuNullificationError when id is missing/empty", () => {
+      expect(nullification.get("")).rejects.toThrow(PaykuNullificationError);
+      expect(mock.history.get.length).toBe(0);
+    });
   });
 });
 

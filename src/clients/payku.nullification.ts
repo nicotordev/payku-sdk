@@ -1,10 +1,14 @@
 import {
   createPaykuAPIError,
-  PaykuAPIError,
+  PaykuNullificationError,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  validateCreateNullificationRequest,
+  validateGetNullificationParams,
+} from "../utils/payku.utils";
 import type {
   PaykuCreateNullificationResponse,
   PaykuGetNullificationResponse,
@@ -20,42 +24,41 @@ export default class PaykuNullification {
     private readonly options?: PaykuClientOptions,
   ) {}
 
+  private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    return fn().catch((error) => {
+      throw createPaykuAPIError(
+        error,
+        operation,
+        PaykuNullificationError,
+        this.options,
+      );
+    });
+  }
+
   private createNullification(
     params: PaykuNullificationCreateRequest,
   ): Promise<PaykuCreateNullificationResponse> {
-    return this.http
-      .request<PaykuCreateNullificationResponse>({
+    return this.wrap("nullification.create", async () => {
+      validateCreateNullificationRequest(params);
+      return this.http.request<PaykuCreateNullificationResponse>({
         method: "POST",
         path: "/nullification",
         body: bodyAsRecord(params),
         signed: true,
-      })
-      .catch((error) => {
-        throw createPaykuAPIError(
-          error,
-          "nullification.create",
-          PaykuAPIError,
-          this.options,
-        );
       });
+    });
   }
 
   private getNullification(id: string): Promise<PaykuGetNullificationResponse> {
-    return this.http
-      .request<PaykuGetNullificationResponse>({
+    return this.wrap("nullification.get", async () => {
+      validateGetNullificationParams(id);
+      return this.http.request<PaykuGetNullificationResponse>({
         method: "GET",
         path: `/nullification/${id}`,
         // Docs omit Sign on GET examples, but sandbox returns 401
         // `error:waiting sign` without it — keep signed.
         signed: true,
-      })
-      .catch((error) => {
-        throw createPaykuAPIError(
-          error,
-          "nullification.get",
-          PaykuAPIError,
-          this.options,
-        );
       });
+    });
   }
 }
