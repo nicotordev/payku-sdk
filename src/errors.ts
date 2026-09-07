@@ -134,6 +134,16 @@ export class PaykuSubscriptionsError extends PaykuAPIError {
   }
 }
 
+export class PaykuEscrowError extends PaykuAPIError {
+  constructor(
+    message: string,
+    options?: ConstructorParameters<typeof PaykuAPIError>[1],
+  ) {
+    super(message, options);
+    this.name = "PaykuEscrowError";
+  }
+}
+
 export class PaykuNullificationError extends PaykuAPIError {
   constructor(
     message: string,

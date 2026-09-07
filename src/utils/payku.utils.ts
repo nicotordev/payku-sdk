@@ -2,6 +2,7 @@ import type { PaykuCurrency } from "../types/payku.common";
 import type { PaykuEventAffiliationTuple } from "../types/payku.events";
 import type { PaykuMallMerchantTuple } from "../types/payku.mall";
 import type { PaykuMarketplaceAffiliationPair } from "../types/payku.marketplace";
+import type { PaykuEscrowAuthorizeRequest } from "../types/payku.escrow";
 import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
@@ -472,6 +473,24 @@ export function parsePaymentReturnQuery(
   };
 }
 
+export function validateEscrowAuthorizeRequest(
+  params: PaykuEscrowAuthorizeRequest,
+): void {
+  if (
+    !params ||
+    !Array.isArray(params.transactions) ||
+    params.transactions.length === 0
+  ) {
+    throw new PaykuError("transactions must be a non-empty array");
+  }
+
+  for (const trxId of params.transactions) {
+    if (typeof trxId !== "string" || trxId.trim() === "") {
+      throw new PaykuError("each transaction id must be a non-empty string");
+    }
+  }
+}
+
 export function validateCreateNullificationRequest(
   params: PaykuNullificationCreateRequest,
 ): void {
@@ -500,7 +519,6 @@ export function validateCreateNullificationRequest(
 export function validateGetNullificationParams(id: string): void {
   requireNonEmptyField(id, "id");
 }
-
 export function validateCreateSubscriptionClientRequest(
   params: PaykuCreateSubscriptionClientRequest,
 ): void {
