@@ -1,0 +1,13 @@
+{
+  "id": "mor33e36b01e8a11b9ee",
+  "identifier_payout": "mor33e36b01e8a11b9ee",
+  "order": "367734544",
+  "status": "banking_error",
+  "update_at": "2023-08-24 12:29:35",
+  "customer": {
+    "name": "Jhon Doe",
+    "phone": "978456879",
+    "document": "111111111",
+    "number": "978456879"
+  }
+}

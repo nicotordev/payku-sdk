@@ -86,6 +86,7 @@ export {
   validateListSubscriptionClientsParams,
   validateMarketplaceAffiliationPercentages,
   validateMarketplaceTransactionRequest,
+  validateWalletPayoutRequest,
 } from "./utils/payku.utils";
 export type {
   ClpPaymentCodeSet,
@@ -94,3 +95,5 @@ export type {
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
 export type { PaykuListSubscriptionClientsParams } from "./types/payku.subscriptions";
+export { PAYKU_WALLET_SANDBOX_AMOUNTS } from "./types/payku.wallet";
+

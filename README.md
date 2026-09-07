@@ -368,12 +368,119 @@ function handleRawPaykuJson(data: unknown) {
 
 > **Nota:** el payload de `urlnotify` es manipulable. Para decidir si un pago es válido usa `payku.webhooks.verifyNotify()`, que reconsulta la API.
 
-## Wallet (Chile)
+## Wallet (Billetera Virtual)
+
+Permite operar con los fondos de tu billetera virtual Payku para consultar saldo, movimientos, realizar retiros a la cuenta bancaria del comercio y pagos a terceros (payouts).
+
+Para más detalles, consulta la [documentación oficial de Payku Wallet](https://docs.payku.cl/docs/wallet).
+
+### Disponibilidad por país
+
+| Operación | Chile (`CL`) | Perú (`PE`) | Venezuela (`VE`) |
+| --- | :---: | :---: | :---: |
+| `wallet.balance.get()` | ✓ | ✓ | ✓ |
+| `wallet.movements.list()` / `get()` | ✓ | ✓ | ✓ |
+| `wallet.payouts.create()` / `get()` / `getV3()` | ✓ | ✓ | ✓ |
+| `wallet.payouts.verifyNotify()` | ✓ | ✓ | ✓ |
+| `wallet.withdraw.create()` | ✓ | ✗ (`PaykuUnsupportedFeatureError`) | ✗ (`PaykuUnsupportedFeatureError`) |
 
 ```typescript
-const balance = await payku.wallet.balance.get();
-const movements = await payku.wallet.movements.list({ page: 1, per_page: 20 });
+import Payku from "@nicotordev/payku";
+
+const cl = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+// 1. Consultar saldo disponible
+const balance = await cl.wallet.balance.get();
+console.log(`Saldo disponible: ${balance.amount_available} ${balance.currency}`);
+
+// 2. Listar movimientos con paginación
+const movements = await cl.wallet.movements.list({ page: 1, per_page: 20 });
+
+// 3. Pago a terceros (Payout)
+const payout = await cl.wallet.payouts.create({
+  email: "destinatario@example.com",
+  subject: "Pago por servicios",
+  currency: "CLP",
+  order: "payout-001",
+  amount: 25000,
+  accountbank_name: "Juan Pérez",
+  accountbank_rut: "111111111",
+  accountbank_sbif: "0001", // Código SBIF del banco
+  accountbank_type: "1",    // "1" Corriente, "2" Vista / Cuenta RUT, "3" Ahorro
+  accountbank_num: "123456789",
+  url_notify: "https://tu-sitio.com/api/payout-notify",
+  order_ext: "ext-ref-456", // Opcional
+});
+
+// 4. Retiro a la cuenta bancaria del comercio (Solo Chile)
+const withdraw = await cl.wallet.withdraw.create({
+  subject: "Retiro a cuenta comercio",
+  currency: "CLP",
+  order: "withdraw-001",
+  amount: 50000,
+});
+
+// 5. Consultar estado de un Payout (v1 o v3 con reason_rejection)
+const payoutDetail = await cl.wallet.payouts.getV3(payout.identifier_payout);
+if (payoutDetail.payout.status === "banking_error") {
+  console.error("Rechazado por el banco:", payoutDetail.payout.reason_rejection);
+}
 ```
+
+### Verificación del callback `url_notify` de Payouts
+
+Al realizar pagos a terceros con `url_notify`, Payku enviará una notificación POST cuando el banco confirme o rechace la transferencia.
+
+> **Importante:** El webhook de payouts es diferente al de cobros/transacciones:
+> - Para **transacciones/cobros** (`urlnotify`): usa `payku.webhooks.verifyNotify(payload)`.
+> - Para **payouts** (`url_notify`): usa `cl.wallet.payouts.verifyNotify(payload, options)`.
+
+```typescript
+// En tu endpoint receptor (POST /api/payout-notify)
+const notifyPayload = req.body; // PaykuPayoutNotifyPayload
+
+const verification = await cl.wallet.payouts.verifyNotify(notifyPayload, {
+  useV3: true,                 // Consulta v3 para obtener reason_rejection si fue rechazado
+  expectedOrder: "payout-001", // Valida coincidencia de orden
+});
+
+if (!verification.valid) {
+  console.warn("Notificación de payout inválida:", verification.reason);
+  return res.status(400).send("Invalid notification");
+}
+
+// Seguro: datos revalidados contra el servidor de Payku
+if (verification.payout.status === "success") {
+  console.log("Transferencia completada:", verification.payout.id);
+} else {
+  console.log("Transferencia fallida:", verification.payout.status);
+}
+```
+
+### Reglas y validaciones de cuenta bancaria
+
+- **Banco Estado (SBIF `0012`):** El número de cuenta (`accountbank_num`) tiene un máximo de **12 dígitos**. El SDK valida esto automáticamente para evitar que los usuarios ingresen el número de tarjeta de débito (16 dígitos), el cual no es un número de cuenta válido.
+- Para el resto de los bancos en Chile, los números de cuenta no están estandarizados y pueden tener longitudes variables.
+
+### Ambiente Sandbox (`des.payku.cl`)
+
+En el ambiente de desarrollo (`sandbox`), Payku procesa los montos de payout de forma predecible para facilitar tus pruebas:
+
+| Montos | Resultado en Sandbox |
+| --- | --- |
+| `1000`, `2000`, `3000` | Auto-aprobados (`success`) |
+| `1500`, `2500`, `3500` | Auto-rechazados (`banking_error`) |
+
+También puedes importar la constante `PAYKU_WALLET_SANDBOX_AMOUNTS` desde `@nicotordev/payku`:
+
+```typescript
+import { PAYKU_WALLET_SANDBOX_AMOUNTS } from "@nicotordev/payku";
+```
+
 
 ## Anulación (Chile)
 

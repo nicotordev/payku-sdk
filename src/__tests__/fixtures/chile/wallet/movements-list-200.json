@@ -1,0 +1,30 @@
+{
+  "status": "success",
+  "current_id": "wa8a6171ab83323c37",
+  "amount_available": 1766,
+  "currency": "CLP",
+  "filter": {
+    "page": 1,
+    "per_page": 10,
+    "currency": "CLP",
+    "id": "wa8a6171ab83323c37"
+  },
+  "wallet_movements": [
+    {
+      "id": "wa8a6171ab83323c37",
+      "order": "tme5",
+      "subject": "tme5 asunto",
+      "created_at": "2023-06-09 20:07:02",
+      "income_expense": "expense",
+      "status": "current",
+      "amount": "3680",
+      "actual_amount": "1766",
+      "currency": "CLP",
+      "payout": {
+        "id": "war3999847529816f2",
+        "status": "pending",
+        "update_at": "2023-06-09 21:10:46"
+      }
+    }
+  ]
+}
