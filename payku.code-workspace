@@ -94,7 +94,6 @@
     // ── ESLint flat config (eslint.config.js) ──────────────────────────────
     "eslint.useFlatConfig": true,
     "eslint.validate": ["javascript", "typescript"],
-    "eslint.runtime": "node",
     "eslint.lintTask.enable": true,
 
     // ── Prettier (alinear extensión con el código del SDK) ─────────────────
