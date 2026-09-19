@@ -1,4 +1,5 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
+import { timingSafeEqual } from "node:crypto";
 import { PaykuAPIError } from "../errors";
 import type {
   PaykuNotifyPayload,
@@ -19,12 +20,14 @@ function nonEmptyVerificationKey(value: unknown): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
-function sha256Utf8(value: string): Uint8Array {
-  return createHash("sha256").update(value, "utf8").digest();
-}
-
 function verificationKeysEqual(left: string, right: string): boolean {
-  return timingSafeEqual(sha256Utf8(left), sha256Utf8(right));
+  const leftBytes = Buffer.from(left, "utf8");
+  const rightBytes = Buffer.from(right, "utf8");
+
+  return (
+    leftBytes.byteLength === rightBytes.byteLength &&
+    timingSafeEqual(leftBytes, rightBytes)
+  );
 }
 
 export default class PaykuWebhooks {
@@ -66,14 +69,14 @@ export default class PaykuWebhooks {
       }
 
       const notifyKey = nonEmptyVerificationKey(payload.verification_key);
-      const apiKey = nonEmptyVerificationKey(
+      const paymentVerificationKey = nonEmptyVerificationKey(
         transaction.payment?.verification_key,
       );
 
       if (
         notifyKey !== undefined &&
-        apiKey !== undefined &&
-        !verificationKeysEqual(notifyKey, apiKey)
+        paymentVerificationKey !== undefined &&
+        !verificationKeysEqual(notifyKey, paymentVerificationKey)
       ) {
         return {
           valid: false,
