@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { PaykuAPIError } from "../errors";
 import type {
   PaykuNotifyPayload,
@@ -18,6 +19,14 @@ function nonEmptyVerificationKey(value: unknown): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+function sha256Utf8(value: string): Uint8Array {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
+function verificationKeysEqual(left: string, right: string): boolean {
+  return timingSafeEqual(sha256Utf8(left), sha256Utf8(right));
+}
+
 export default class PaykuWebhooks {
   public verifyNotify = this.verifyNotification.bind(this);
   public verifyCallback = this.verifyNotification.bind(this);
@@ -30,8 +39,8 @@ export default class PaykuWebhooks {
    * Si no pasas `expectedStatus`, se deriva del `payload.status` mapeando
    * notify `failed` → API `rejected`.
    *
-   * Si el payload y `transaction.payment.verification_key` tienen valor,
-   * deben coincidir; si no, `reason` es `verification_key_mismatch`.
+   * Si `payload.verification_key` y `transaction.payment.verification_key`
+   * tienen valor, deben coincidir; si no, `reason` es `verification_key_mismatch`.
    */
   public async verifyNotification(
     payload: PaykuNotifyPayload,
@@ -64,7 +73,7 @@ export default class PaykuWebhooks {
       if (
         notifyKey !== undefined &&
         apiKey !== undefined &&
-        notifyKey !== apiKey
+        !verificationKeysEqual(notifyKey, apiKey)
       ) {
         return {
           valid: false,
