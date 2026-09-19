@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `mall.verifyNotify` / `verifyCallback`: reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` (#42).
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).
 - Validación `additional_parameters.payer_rut` obligatorio para CLP + payment Etpay/Fintoc/Floid (4/19/26).
 - `PAYKU_CLP_CREATE_PAYMENT_CODES` + opción `clpPaymentCodes` (`catalog` default / `create-docs`) en `transactions.create` y `forCountry("CL").transactions.create`.

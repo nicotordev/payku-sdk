@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMall from "../clients/payku.mall";
 import { HttpClient } from "../http/client";
 import { PaykuAPIError, PaykuMallError } from "../errors";
+import type { PaykuMallNotifyPayload } from "../types/payku.mall";
 import { buildMallMerchant } from "../utils/payku.utils";
 
 const createFixture = {
@@ -216,5 +217,192 @@ describe("PaykuMall", () => {
       await expect(mall.get("")).rejects.toThrow(PaykuMallError);
       expect(mock.history.get.length).toBe(0);
     });
+  });
+});
+
+const notifyFixture: PaykuMallNotifyPayload = {
+  id: "malld200058ab44739ddee2adcd2f5",
+  payment_key: "malld200058ab44739ddee2adcd2f5",
+  verification_key: "d60aaa661ea74d824373806c8aa38137",
+  amount: "30000",
+  status: "success",
+};
+
+describe("PaykuMall verifyNotify", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let mall: PaykuMall;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    mall = new PaykuMall(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("returns valid: true when GET /mall/{id} status, amount and verification_key match", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify(notifyFixture);
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.mall.id).toBe("malld200058ab44739ddee2adcd2f5");
+      expect(result.mall.payment.verification_key).toBe(
+        "d60aaa661ea74d824373806c8aa38137",
+      );
+    }
+  });
+
+  test("verifyCallback is an alias of verifyNotify", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyCallback(notifyFixture);
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("accepts payment_key as mall id when id is omitted", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify({
+      payment_key: "malld200058ab44739ddee2adcd2f5",
+      status: "success",
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("maps notify failed to API rejected", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, {
+      ...getFixture,
+      status: "rejected",
+    });
+
+    const result = await mall.verifyNotify({
+      id: "malld200058ab44739ddee2adcd2f5",
+      status: "failed",
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("returns missing_id when id and payment_key are omitted", async () => {
+    const result = await mall.verifyNotify({ status: "success" });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_id");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns id_mismatch when id and payment_key differ", async () => {
+    const result = await mall.verifyNotify({
+      id: "mall_1",
+      payment_key: "mall_2",
+      status: "success",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("id_mismatch");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns missing_status when payload status and expectedStatus are omitted", async () => {
+    const result = await mall.verifyNotify({
+      id: "malld200058ab44739ddee2adcd2f5",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_status");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns status_mismatch when GET status differs", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, {
+      ...getFixture,
+      status: "pending",
+    });
+
+    const result = await mall.verifyNotify(notifyFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+    }
+  });
+
+  test("returns amount_mismatch when GET amount differs", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify(notifyFixture, {
+      expectedAmount: 1,
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("amount_mismatch");
+    }
+  });
+
+  test("returns verification_key_mismatch when keys differ", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify({
+      ...notifyFixture,
+      verification_key: "forged-key",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("verification_key_mismatch");
+    }
+  });
+
+  test("skips verification_key when GET payment has no key", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, {
+      ...getFixture,
+      payment: { media: "Webpay" },
+    });
+
+    const result = await mall.verifyNotify(notifyFixture);
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("returns payku_api_error when GET /mall/{id} fails", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(404, {
+      status: "failed",
+      type: "Not Found",
+      message_error: "id:it is not valid",
+    });
+
+    const result = await mall.verifyNotify(notifyFixture);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("payku_api_error");
+      expect(result.error).toBeInstanceOf(PaykuAPIError);
+    }
   });
 });
