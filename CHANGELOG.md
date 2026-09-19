@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`).
+
 ### Added
 
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).

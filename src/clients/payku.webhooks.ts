@@ -9,6 +9,15 @@ import type PaykuTransactions from "./payku.transactions";
 
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
 
+function nonEmptyVerificationKey(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
 export default class PaykuWebhooks {
   public verifyNotify = this.verifyNotification.bind(this);
   public verifyCallback = this.verifyNotification.bind(this);
@@ -20,6 +29,9 @@ export default class PaykuWebhooks {
    *
    * Si no pasas `expectedStatus`, se deriva del `payload.status` mapeando
    * notify `failed` → API `rejected`.
+   *
+   * Si el payload y `transaction.payment.verification_key` tienen valor,
+   * deben coincidir; si no, `reason` es `verification_key_mismatch`.
    */
   public async verifyNotification(
     payload: PaykuNotifyPayload,
@@ -39,6 +51,24 @@ export default class PaykuWebhooks {
         return {
           valid: false,
           reason: "status_mismatch",
+          notify: payload,
+          transaction,
+        };
+      }
+
+      const notifyKey = nonEmptyVerificationKey(payload.verification_key);
+      const apiKey = nonEmptyVerificationKey(
+        transaction.payment?.verification_key,
+      );
+
+      if (
+        notifyKey !== undefined &&
+        apiKey !== undefined &&
+        notifyKey !== apiKey
+      ) {
+        return {
+          valid: false,
+          reason: "verification_key_mismatch",
           notify: payload,
           transaction,
         };

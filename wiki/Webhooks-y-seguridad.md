@@ -4,7 +4,7 @@
 
 1. Payku envía POST a tu `urlnotify`
 2. **No confíes** solo en el payload
-3. Usa `payku.webhooks.verifyNotify()` — reconsulta `GET /api/transaction/{payment_key}`
+3. Usa `payku.webhooks.verifyNotify()` — reconsulta `GET /api/transaction/{payment_key}` y, si ambos lados tienen `verification_key`, exige que coincidan (`verification_key_mismatch` si no).
 
 ```typescript
 const result = await payku.webhooks.verifyNotify(payload, {
@@ -24,7 +24,7 @@ if (result.valid) {
 | Payload `urlnotify` | `success` \| `failed`                              |
 | GET transacción     | `register` \| `pending` \| `success` \| `rejected` |
 
-Ten cuidado al comparar `failed` (notify) con `rejected` (API). Ver issues #8–#10 en el roadmap CL.
+Ten cuidado al comparar `failed` (notify) con `rejected` (API). El helper `mapNotifyStatusToTransactionStatus` hace ese mapeo.
 
 ## Firma HMAC (`Sign`)
 

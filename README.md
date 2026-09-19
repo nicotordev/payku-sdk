@@ -295,7 +295,7 @@ Payku usa nombres distintos para el mismo rechazo:
 | Payload `urlnotify`            | `success` \| `failed`                                |
 | `GET /api/transaction` (API)   | `register` \| `pending` \| `success` \| `rejected`   |
 
-`verifyNotify` reconsulta la API. Si no pasas `expectedStatus`, deriva el esperado del `payload.status` (`failed` → `rejected`). También puedes usar `mapNotifyStatusToTransactionStatus`.
+`verifyNotify` reconsulta la API. Si no pasas `expectedStatus`, deriva el esperado del `payload.status` (`failed` → `rejected`). También puedes usar `mapNotifyStatusToTransactionStatus`. Si el payload y `transaction.payment.verification_key` tienen valor, deben coincidir; si no, el resultado es `{ valid: false, reason: "verification_key_mismatch" }`.
 
 ## Errores y respuestas
 
