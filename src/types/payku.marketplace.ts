@@ -85,7 +85,24 @@ export interface PaykuDeleteMarketplaceClientResponse {
 export type PaykuMarketplaceUntypedResponse = Record<string, unknown>;
 
 /** Par `[clientId, percentage]` en wire `affiliation`. */
-export type PaykuMarketplaceAffiliationPair = [string, string];
+export type PaykuMarketplaceAffiliationPair = [
+  clientId: string,
+  percentage: string,
+];
+
+/** Objeto nombrado; el cliente lo serializa a tupla wire. */
+export interface PaykuMarketplaceAffiliationMemberInput {
+  clientId: string;
+  percentage: string | number;
+}
+
+/**
+ * Input de `affiliation[]`: tupla wire o `{ clientId, percentage }`.
+ * `percentage` en tupla puede ser number; el wire siempre es string.
+ */
+export type PaykuMarketplaceAffiliationInput =
+  | readonly [clientId: string, percentage: string | number]
+  | PaykuMarketplaceAffiliationMemberInput;
 
 /**
  * `POST /api/maaffiliation` — crear afiliación.
@@ -93,8 +110,8 @@ export type PaykuMarketplaceAffiliationPair = [string, string];
 export interface PaykuCreateMarketplaceAffiliationRequest {
   name: string;
   /** % del comercio (usuario Payku). */
-  percentage: string;
-  affiliation: PaykuMarketplaceAffiliationPair[];
+  percentage: string | number;
+  affiliation: PaykuMarketplaceAffiliationInput[];
 }
 
 /** @deprecated Preferir `PaykuCreateMarketplaceAffiliationRequest`. */

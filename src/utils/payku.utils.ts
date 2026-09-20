@@ -12,6 +12,8 @@ import type {
 import type {
   PaykuCreateMarketplaceAffiliationRequest,
   PaykuCreateMarketplaceClientRequest,
+  PaykuMarketplaceAffiliationInput,
+  PaykuMarketplaceAffiliationMemberInput,
   PaykuMarketplaceAffiliationPair,
   PaykuMarketplaceTransactionRequest,
 } from "../types/payku.marketplace";
@@ -483,6 +485,52 @@ export function buildMarketplaceAffiliation(
   return members.map((member) => [member.clientId, String(member.percentage)]);
 }
 
+function isMarketplaceAffiliationMember(
+  item: PaykuMarketplaceAffiliationInput,
+): item is PaykuMarketplaceAffiliationMemberInput {
+  return !Array.isArray(item);
+}
+
+function toMarketplaceAffiliationPair(
+  item: PaykuMarketplaceAffiliationInput,
+  index: number,
+): PaykuMarketplaceAffiliationPair {
+  if (isMarketplaceAffiliationMember(item)) {
+    if (typeof item.clientId !== "string") {
+      throw new PaykuError(
+        `affiliation[${index}].clientId must be a non-empty string`,
+      );
+    }
+    return [item.clientId, String(item.percentage)];
+  }
+
+  if (item.length !== 2) {
+    throw new PaykuError(
+      `affiliation[${index}] must be a tuple [clientId, percentage]`,
+    );
+  }
+
+  const clientId = item[0];
+  if (typeof clientId !== "string") {
+    throw new PaykuError(
+      `affiliation[${index}].clientId must be a non-empty string`,
+    );
+  }
+  return [clientId, String(item[1])];
+}
+
+/** Serializa objetos/tuplas de `affiliation` al wire `[[clientId, percentage], ...]`. */
+export function normalizeMarketplaceAffiliation(
+  affiliation: PaykuMarketplaceAffiliationInput[],
+): PaykuMarketplaceAffiliationPair[] {
+  if (!Array.isArray(affiliation)) {
+    throw new PaykuError("affiliation must be an array");
+  }
+  return affiliation.map((item, index) =>
+    toMarketplaceAffiliationPair(item, index),
+  );
+}
+
 /**
  * Valida que % comercio + % clientes ≈ 100 (tolerancia 0.01).
  * Docs: percentage es del comercio; affiliation[] son clientes.
@@ -710,7 +758,7 @@ export function validateCreateMarketplaceAffiliationRequest(
 
   validateMarketplaceAffiliationPercentages(
     params.percentage,
-    params.affiliation,
+    normalizeMarketplaceAffiliation(params.affiliation),
   );
 }
 

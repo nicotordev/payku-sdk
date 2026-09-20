@@ -243,6 +243,37 @@ describe("PaykuMarketplaceAffiliationSchema", () => {
     expect(resWhitespace.success).toBe(false);
   });
 
+  test("accepts named affiliation objects and transforms to wire tuples", () => {
+    const res = PaykuMarketplaceAffiliationSchema.safeParse({
+      name: "Split Rule Objects",
+      percentage: 20,
+      affiliation: [{ clientId: "client-1", percentage: 80 }],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.percentage).toBe("20");
+      expect(res.data.affiliation).toEqual([["client-1", "80"]]);
+    }
+  });
+
+  test("accepts mixed tuple and object affiliation", () => {
+    const res = PaykuMarketplaceAffiliationSchema.safeParse({
+      name: "Split Rule Mix",
+      percentage: "20",
+      affiliation: [
+        ["client-a", 50],
+        { clientId: "client-b", percentage: "30" },
+      ],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.affiliation).toEqual([
+        ["client-a", "50"],
+        ["client-b", "30"],
+      ]);
+    }
+  });
+
   test("rejects empty affiliation array", () => {
     const res = PaykuMarketplaceAffiliationSchema.safeParse({
       name: "Split",

@@ -211,6 +211,52 @@ describe("PaykuMarketplace maaffiliation", () => {
     expect(response.token).toBeTruthy();
   });
 
+  test("create accepts named affiliation objects and posts wire tuples", async () => {
+    mock.onPost("/maaffiliation").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({
+        name: "name",
+        percentage: "20",
+        affiliation: [["ma9fd16221a9645b0036", "80"]],
+      });
+      return [200, affiliationFixture];
+    });
+
+    const response = await marketplace.affiliations.create({
+      name: "name",
+      percentage: 20,
+      affiliation: [{ clientId: "ma9fd16221a9645b0036", percentage: 80 }],
+    });
+
+    expect(response).toEqual(affiliationFixture);
+  });
+
+  test("create accepts mixed tuple and object affiliation and posts wire tuples", async () => {
+    mock.onPost("/maaffiliation").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual({
+        name: "name",
+        percentage: "20",
+        affiliation: [
+          ["client-a", "50"],
+          ["client-b", "30"],
+        ],
+      });
+      return [200, affiliationFixture];
+    });
+
+    const response = await marketplace.affiliations.create({
+      name: "name",
+      percentage: "20",
+      affiliation: [
+        ["client-a", 50],
+        { clientId: "client-b", percentage: "30" },
+      ],
+    });
+
+    expect(response).toEqual(affiliationFixture);
+  });
+
   test("delete returns suspended status and id", async () => {
     mock.onDelete("/maaffiliation/sucaab7865dceaff49d8b3").reply(200, {
       status: "suspended",

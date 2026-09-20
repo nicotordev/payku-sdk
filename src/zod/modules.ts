@@ -163,25 +163,43 @@ export type PaykuCreateMallTransaction =
 /**
  * Par de afiliación para Marketplace: [clientId, percentage]
  */
+const marketplaceMemberPercentageSchema = z
+  .union([
+    z.number(),
+    z
+      .string()
+      .refine((s) => s.trim().length > 0, "percentage is required"),
+  ])
+  .transform((val) => String(val))
+  .refine((val) => {
+    const num = Number(val);
+    return Number.isFinite(num) && num > 0 && num <= 100;
+  }, "percentage must be a finite number between 0 and 100");
+
 export const PaykuMarketplaceAffiliationPairSchema = z.tuple([
   z
     .string({ message: "clientId must be a non-empty string" })
     .refine((s) => s.trim().length > 0, "clientId must be a non-empty string"),
-  z
-    .union([
-      z.number(),
-      z
-        .string()
-        .refine(
-          (s) => s.trim().length > 0,
-          "percentage is required",
-        ),
-    ])
-    .transform((val) => String(val))
-    .refine((val) => {
-      const num = Number(val);
-      return Number.isFinite(num) && num > 0 && num <= 100;
-    }, "percentage must be a finite number between 0 and 100"),
+  marketplaceMemberPercentageSchema,
+]);
+
+export const PaykuMarketplaceAffiliationObjectSchema = z
+  .object({
+    clientId: z
+      .string({ message: "clientId must be a non-empty string" })
+      .refine(
+        (s) => s.trim().length > 0,
+        "clientId must be a non-empty string",
+      ),
+    percentage: marketplaceMemberPercentageSchema,
+  })
+  .transform(
+    (member): [string, string] => [member.clientId, member.percentage],
+  );
+
+export const PaykuMarketplaceAffiliationItemSchema = z.union([
+  PaykuMarketplaceAffiliationPairSchema,
+  PaykuMarketplaceAffiliationObjectSchema,
 ]);
 
 export type PaykuMarketplaceAffiliationPair = z.infer<
@@ -211,7 +229,7 @@ export const PaykuMarketplaceAffiliationSchema = z
         return Number.isFinite(num) && num >= 0 && num <= 100;
       }, "merchant percentage must be a finite number between 0 and 100"),
     affiliation: z
-      .array(PaykuMarketplaceAffiliationPairSchema)
+      .array(PaykuMarketplaceAffiliationItemSchema)
       .min(1, "affiliation must be a non-empty array"),
   })
   .loose()
