@@ -73,7 +73,7 @@ export type {
   PaykuPaymentSlug,
   PaykuPenPaymentSlug,
   PaykuVesPaymentSlug,
-} from "./constants/payku.constants";
+} from "./types/payku.transactions";
 export {
   buildPaymentRedirectUrl,
   buildConsumptionGatewayUrl,

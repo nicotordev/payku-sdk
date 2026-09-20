@@ -1,8 +1,22 @@
-import type {
-  PaykuClpPaymentSlug,
-  PaykuPaymentMethodInput,
-} from "../constants/payku.constants";
 import type { PaykuCurrency } from "./payku.common";
+
+type PaykuPaymentMethodsCatalog =
+  typeof import("../constants/payku.constants").PAYKU_PAYMENT_METHODS;
+
+export type PaykuClpPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["CLP"]
+>;
+export type PaykuPenPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["PEN"]
+>;
+export type PaykuVesPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["VES"]
+>;
+export type PaykuPaymentSlug =
+  | PaykuClpPaymentSlug
+  | PaykuPenPaymentSlug
+  | PaykuVesPaymentSlug;
+export type PaykuPaymentMethodInput = PaykuPaymentSlug | number;
 import type {
   PaykuGatewayStatus,
   PaykuNullifyStatus,

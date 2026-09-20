@@ -43,21 +43,7 @@ export const PAYKU_PAYMENT_METHODS = {
   },
 } as const satisfies Record<PaykuCurrency, Record<string, number>>;
 
-export type PaykuClpPaymentSlug = Lowercase<
-  keyof typeof PAYKU_PAYMENT_METHODS.CLP
->;
-export type PaykuPenPaymentSlug = Lowercase<
-  keyof typeof PAYKU_PAYMENT_METHODS.PEN
->;
-export type PaykuVesPaymentSlug = Lowercase<
-  keyof typeof PAYKU_PAYMENT_METHODS.VES
->;
-export type PaykuPaymentSlug =
-  | PaykuClpPaymentSlug
-  | PaykuPenPaymentSlug
-  | PaykuVesPaymentSlug;
-export type PaykuPaymentMethodInput = PaykuPaymentSlug | number;
-
+/** Mapa slug lowercase → código numérico. */
 function paymentSlugsFromMethods(
   methods: Record<string, number>,
 ): Record<string, number> {
@@ -68,6 +54,7 @@ function paymentSlugsFromMethods(
   return slugs;
 }
 
+/** Mapa código → slug canónico (no pisa aliases posteriores). */
 function paymentCodesToSlug(
   methods: Record<string, number>,
 ): Record<number, string> {

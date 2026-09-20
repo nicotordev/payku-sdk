@@ -23,6 +23,7 @@ import type {
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
   PaykuListTransactionsParams,
+  PaykuPaymentMethodInput,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
@@ -42,7 +43,6 @@ import {
   PAYKU_PAYMENT_METHODS,
   PAYKU_PAYMENT_SLUGS,
   PAYKU_VES_GATEWAYS,
-  type PaykuPaymentMethodInput,
 } from "../constants/payku.constants";
 import { PaykuError } from "../errors";
 import type { PaykuTransactionStatus } from "../types/payku.responses";
@@ -416,6 +416,7 @@ export function paymentMethodToSlug(
   return PAYKU_PAYMENT_CODE_TO_SLUG[currency][code];
 }
 
+/** Copia el request con `payment` resuelto a código numérico. */
 export function resolveCreateTransactionPayment(
   params: PaykuCreateTransactionRequest,
 ): PaykuCreateTransactionRequest {
