@@ -1,7 +1,7 @@
 import {
-  createPaykuAPIError,
   PaykuAPIError,
   PaykuWalletError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
@@ -51,133 +51,88 @@ export default class PaykuWallet {
     private readonly options?: PaykuClientOptions,
   ) {}
 
-  private async createPayout(
+  private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    return wrapOperation(operation, PaykuWalletError, this.options, fn);
+  }
+
+  private createPayout(
     params: PaykuWalletPayoutRequest,
   ): Promise<PaykuCreateWalletPayoutResponse> {
-    try {
+    return this.wrap("wallet.payouts.create", () => {
       validateWalletPayoutRequest(params);
-      return await this.http.request<PaykuCreateWalletPayoutResponse>({
+      return this.http.request<PaykuCreateWalletPayoutResponse>({
         method: "POST",
         path: "/wallet/payout",
         body: bodyAsRecord(params),
         signed: true,
       });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.payouts.create",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+    });
   }
 
-  private async createWithdraw(
+  private createWithdraw(
     params: PaykuWalletWithdrawRequest,
   ): Promise<PaykuCreateWalletWithdrawResponse> {
-    try {
-      return await this.http.request<PaykuCreateWalletWithdrawResponse>({
+    return this.wrap("wallet.withdraw.create", () =>
+      this.http.request<PaykuCreateWalletWithdrawResponse>({
         method: "POST",
         path: "/wallet/withdraw",
         body: bodyAsRecord(params),
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.withdraw.create",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
-  private async getBalance(): Promise<PaykuWalletBalanceResponse> {
-    try {
-      return await this.http.request<PaykuWalletBalanceResponse>({
+  private getBalance(): Promise<PaykuWalletBalanceResponse> {
+    return this.wrap("wallet.balance.get", () =>
+      this.http.request<PaykuWalletBalanceResponse>({
         method: "GET",
         path: "/wallet",
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.balance.get",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
-  private async listMovements(
+  private listMovements(
     params: PaykuWalletListParams = {},
   ): Promise<PaykuWalletListResponse> {
-    try {
-      return await this.http.request<PaykuWalletListResponse>({
+    return this.wrap("wallet.movements.list", () =>
+      this.http.request<PaykuWalletListResponse>({
         method: "GET",
         path: "/wallet/list",
         query: toQueryRecord(params),
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.movements.list",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
-  private async getMovement(id: string): Promise<PaykuWalletListResponse> {
-    try {
-      return await this.http.request<PaykuWalletListResponse>({
+  private getMovement(id: string): Promise<PaykuWalletListResponse> {
+    return this.wrap("wallet.movements.get", () =>
+      this.http.request<PaykuWalletListResponse>({
         method: "GET",
         path: `/wallet/${id}`,
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.movements.get",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
-  private async getPayout(id: string): Promise<PaykuGetPayoutResponse> {
-    try {
-      return await this.http.request<PaykuGetPayoutResponse>({
+  private getPayout(id: string): Promise<PaykuGetPayoutResponse> {
+    return this.wrap("wallet.payouts.get", () =>
+      this.http.request<PaykuGetPayoutResponse>({
         method: "GET",
         path: `/payout/${id}`,
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.payouts.get",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
-  private async getPayoutV3(id: string): Promise<PaykuGetPayoutV3Response> {
-    try {
-      return await this.http.request<PaykuGetPayoutV3Response>({
+  private getPayoutV3(id: string): Promise<PaykuGetPayoutV3Response> {
+    return this.wrap("wallet.payouts.getV3", () =>
+      this.http.request<PaykuGetPayoutV3Response>({
         method: "GET",
         path: `/payoutv3/${id}`,
         signed: true,
-      });
-    } catch (error) {
-      throw createPaykuAPIError(
-        error,
-        "wallet.payouts.getV3",
-        PaykuWalletError,
-        this.options,
-      );
-    }
+      }),
+    );
   }
 
   private async verifyPayoutNotify(

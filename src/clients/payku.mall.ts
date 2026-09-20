@@ -1,15 +1,17 @@
 import {
-  createPaykuAPIError,
   PaykuAPIError,
   PaykuMallError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
   mapNotifyStatusToTransactionStatus,
+  nonEmptyString,
   validateCreateMallTransactionRequest,
   validateGetMallTransactionParams,
+  verificationKeysEqual,
 } from "../utils/payku.utils";
 import type {
   PaykuMallCreateResponse,
@@ -19,15 +21,6 @@ import type {
   PaykuVerifyMallNotifyOptions,
   PaykuVerifyMallNotifyResult,
 } from "../types/payku.mall";
-
-function nonEmptyString(value: unknown): string | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  const trimmed = String(value).trim();
-  return trimmed === "" ? undefined : trimmed;
-}
 
 export default class PaykuMall {
   public create = this.createTransaction.bind(this);
@@ -41,14 +34,7 @@ export default class PaykuMall {
   ) {}
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error) => {
-      throw createPaykuAPIError(
-        error,
-        operation,
-        PaykuMallError,
-        this.options,
-      );
-    });
+    return wrapOperation(operation, PaykuMallError, this.options, fn);
   }
 
   private createTransaction(
@@ -128,7 +114,7 @@ export default class PaykuMall {
       if (
         notifyKey !== undefined &&
         apiKey !== undefined &&
-        notifyKey !== apiKey
+        !verificationKeysEqual(notifyKey, apiKey)
       ) {
         return {
           valid: false,

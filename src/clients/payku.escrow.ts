@@ -1,6 +1,6 @@
 import {
-  createPaykuAPIError,
   PaykuEscrowError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
@@ -22,14 +22,7 @@ export default class PaykuEscrow {
   ) {}
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error) => {
-      throw createPaykuAPIError(
-        error,
-        operation,
-        PaykuEscrowError,
-        this.options,
-      );
-    });
+    return wrapOperation(operation, PaykuEscrowError, this.options, fn);
   }
 
   private authorizeSettlement(params: PaykuEscrowAuthorizeRequest) {
