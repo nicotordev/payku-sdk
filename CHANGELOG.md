@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `buildConsumptionGatewayUrl`: construye `{rootUrl}/suscripcion/index` (pasarela Webpay `direct_full`) (#68).
 - `subscriptions.verifyActivationNotify` y `subscriptions.verifyPaymentNotify`: reconsultan `GET /api/sususcription/{id}` para `urlnotifysuscription` y `urlnotifypayment` (#59).
 - `mall.verifyNotify` / `verifyCallback`: reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` (#42).
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).

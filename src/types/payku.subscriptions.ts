@@ -407,6 +407,25 @@ export interface PaykuCreateConsumptionPlanResponse {
 }
 
 /**
+ * Params de `buildConsumptionGatewayUrl`.
+ * Construye `GET {rootUrl}/suscripcion/index` (pasarela Webpay, sin API previa).
+ */
+export interface PaykuBuildConsumptionGatewayUrlParams {
+  /** `payku.rootUrl` (`https://des.payku.cl` o `https://app.payku.cl`). */
+  rootUrl: string;
+  planId: string | number;
+  verif: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | number;
+  /** Default `true` (`direct_full=true`). */
+  directFull?: boolean;
+  /** Query extra; no pisa `idplan`, `verif`, `nombre`, `apellido`, `email`, `telefono`, `direct_full`. */
+  extra?: Record<string, string | number | boolean>;
+}
+
+/**
  * `POST /urlnotifysuscription` — activación de suscripción.
  * Docs: `{ id, status }` (register | active | finish | delete | cancel | suspended).
  */
