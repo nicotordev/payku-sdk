@@ -309,7 +309,7 @@ if (!mallResult.valid) {
 }
 ```
 
-Suscripciones Chile tienen **dos** callbacks distintos de `urlnotify` de transacciones:
+Las suscripciones de Chile tienen **dos** callbacks propios, distintos del `urlnotify` de transacciones:
 
 | Callback | Payload | Verificación |
 | --- | --- | --- |
