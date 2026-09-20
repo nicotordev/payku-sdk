@@ -85,6 +85,8 @@ src/
 | Wallet                                       | full | partial | partial |
 | Escrow, Anulación, Marketplace, Mall, Evento |  ✓   |    —    |    —    |
 | Suscripción / Consumo                        |  ✓   |    —    |    —    |
+
+`PaykuChile.subscriptions` vs `PaykuChile.consumptionSubscriptions`: el de consumo solo expone create (más `plans.create` y `transactions.create` con `marketplace`/`card`) y firma paths con trailing slash. Get/list, cards.register y planes ya existentes van por `subscriptions`. Callbacks de plan (`urlnotifysuscription` / `urlnotifypayment`) se verifican con `subscriptions.verifyActivationNotify` / `verifyPaymentNotify` (#59).
 | Conciliación                                 |  ✓   |    —    |    —    |
 | Webhooks (`urlnotify`)                       |  ✓   |    ✓    |    ✓    |
 

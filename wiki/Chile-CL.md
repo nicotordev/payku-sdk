@@ -71,6 +71,10 @@ await payku.subscriptions.verifyPaymentNotify({
 });
 ```
 
+## Consumo vs suscripción
+
+`consumptionSubscriptions` (cargos únicos, paths con `/` final, `plans.create`) no reemplaza a `subscriptions` (CRUD, get/list, `cards.register`). Los notify de activación/cobro se verifican igual: `subscriptions.verifyActivationNotify` / `verifyPaymentNotify`.
+
 ## Solo Chile
 
 También expuestos en `PaykuChile`: marketplace, mall, eventos, escrow, anulación, conciliación, consumo por suscripción.
