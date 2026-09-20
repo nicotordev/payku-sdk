@@ -63,6 +63,7 @@ export {
 } from "./constants/payku.constants";
 export {
   buildPaymentRedirectUrl,
+  buildConsumptionGatewayUrl,
   buildMallMerchant,
   buildEventAffiliation,
   buildMarketplaceAffiliation,

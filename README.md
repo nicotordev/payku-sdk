@@ -680,6 +680,29 @@ if (payment.valid && payment.transaction.status === "success") {
 }
 ```
 
+## Suscripción de consumo (Chile)
+
+Cargos únicos (delivery / producto). El CRUD usa paths con trailing slash (`/suclient/`, `/suplan/`, …) vía `payku.consumptionSubscriptions`.
+
+Para mandar al cliente **directo a Webpay** sin crear la transacción por API, construye `GET {rootUrl}/suscripcion/index`:
+
+```typescript
+import { buildConsumptionGatewayUrl } from "@nicotordev/payku";
+
+const gatewayUrl = buildConsumptionGatewayUrl({
+  rootUrl: payku.rootUrl,
+  planId: 607,
+  verif: "b4280f5e",
+  firstName: "vicente",
+  lastName: "borjas",
+  email: "cliente@example.com",
+  phone: "986523565",
+});
+// https://des.payku.cl/suscripcion/index?idplan=607&verif=…&direct_full=true
+```
+
+`directFull` default `true`. Query extra en `extra` (no pisa `idplan` / `verif` / datos del cliente).
+
 ## Eventos (Chile)
 
 Crear un evento y consultar su detalle:
