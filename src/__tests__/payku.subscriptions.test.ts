@@ -2,7 +2,13 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuSubscriptions from "../clients/payku.subscriptions";
+import { PaykuAPIError } from "../errors";
 import { HttpClient } from "../http/client";
+import type {
+  PaykuGetSubscriptionResponse,
+  PaykuSubscriptionActivationNotifyPayload,
+  PaykuSubscriptionPaymentNotifyPayload,
+} from "../types/payku.subscriptions";
 
 describe("PaykuSubscriptions sutransaction", () => {
   let mock: InstanceType<typeof MockAdapter>;
@@ -647,5 +653,475 @@ describe("PaykuSubscriptions plans", () => {
     const response = await subscriptions.plans.list();
     expect(Array.isArray(response.plans)).toBe(true);
     expect(response.plans[0]?.name).toBe("Test plan");
+  });
+});
+
+const activationNotifyFixture: PaykuSubscriptionActivationNotifyPayload = {
+  id: "su74866857980c7d2b4306",
+  status: "active",
+};
+
+const paymentNotifyFixture: PaykuSubscriptionPaymentNotifyPayload = {
+  transaction_id: 9123123,
+  verification_key: "2ba83615f863e72sdca5dfd0a6df2782",
+  order: "1568041684",
+  status: "success",
+  subscriptions: {
+    id: "su3ce571420e90b600eafb",
+    client: "cl795704ece0a3690baaf",
+  },
+};
+
+function getSubscriptionFixture(
+  overrides: Partial<PaykuGetSubscriptionResponse> = {},
+): PaykuGetSubscriptionResponse {
+  return {
+    id: "su3ce571420e90b600eafb",
+    status: "active",
+    start: "2019-07-22 18:34:49",
+    end: "2023-06-12 00:00:00",
+    client: {
+      id: "cl795704ece0a3690baaf",
+      name: "name",
+      email: "joedoe@example.com",
+    },
+    plan: { id: "pl1", name: "test plan", currency: "CLP" },
+    transactions: [
+      {
+        created_at: "2023-09-30 19:58:35",
+        amount: 10000,
+        transaction: 9123123,
+        authorization_code: "1234",
+        order: "1568041684",
+        description: "descripcion",
+        status: "success",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+describe("PaykuSubscriptions verifyActivationNotify", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let subscriptions: PaykuSubscriptions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    subscriptions = new PaykuSubscriptions(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("returns valid: true when GET /sususcription/{id} status matches", async () => {
+    mock
+      .onGet("/sususcription/su74866857980c7d2b4306")
+      .reply(200, getSubscriptionFixture({
+        id: "su74866857980c7d2b4306",
+        status: "active",
+      }));
+
+    const result = await subscriptions.verifyActivationNotify(
+      activationNotifyFixture,
+    );
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.subscription.id).toBe("su74866857980c7d2b4306");
+      expect(result.subscription.status).toBe("active");
+    }
+    expect(mock.history.get[0]?.headers?.Authorization).toBe(
+      "Bearer public-token",
+    );
+    expect(String(mock.history.get[0]?.headers?.Sign ?? "")).toMatch(
+      /^[a-f0-9]{64}$/,
+    );
+  });
+
+  test("returns missing_id when id is omitted", async () => {
+    const result = await subscriptions.verifyActivationNotify({
+      status: "active",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_id");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns missing_status when payload status and expectedStatus are omitted", async () => {
+    const result = await subscriptions.verifyActivationNotify({
+      id: "su74866857980c7d2b4306",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_status");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns status_mismatch when GET status differs", async () => {
+    mock
+      .onGet("/sususcription/su74866857980c7d2b4306")
+      .reply(200, getSubscriptionFixture({
+        id: "su74866857980c7d2b4306",
+        status: "register",
+      }));
+
+    const result = await subscriptions.verifyActivationNotify(
+      activationNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+    }
+  });
+
+  test("uses expectedStatus over payload status", async () => {
+    mock
+      .onGet("/sususcription/su74866857980c7d2b4306")
+      .reply(200, getSubscriptionFixture({
+        id: "su74866857980c7d2b4306",
+        status: "suspended",
+      }));
+
+    const result = await subscriptions.verifyActivationNotify(
+      activationNotifyFixture,
+      { expectedStatus: "suspended" },
+    );
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("does not map notify failed to rejected for activation", async () => {
+    mock
+      .onGet("/sususcription/su74866857980c7d2b4306")
+      .reply(200, getSubscriptionFixture({
+        id: "su74866857980c7d2b4306",
+        status: "rejected",
+      }));
+
+    const result = await subscriptions.verifyActivationNotify({
+      id: "su74866857980c7d2b4306",
+      status: "failed",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+    }
+  });
+
+  test("returns payku_api_error when GET /sususcription/{id} fails", async () => {
+    mock.onGet("/sususcription/su74866857980c7d2b4306").reply(404, {
+      status: "failed",
+      type: "Not Found",
+      message_error: "id:it is not valid",
+    });
+
+    const result = await subscriptions.verifyActivationNotify(
+      activationNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("payku_api_error");
+      expect(result.error).toBeInstanceOf(PaykuAPIError);
+    }
+  });
+});
+
+describe("PaykuSubscriptions verifyPaymentNotify", () => {
+  let mock: InstanceType<typeof MockAdapter>;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let subscriptions: PaykuSubscriptions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    subscriptions = new PaykuSubscriptions(http);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("returns valid: true when GET nested transaction matches", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.subscription.id).toBe("su3ce571420e90b600eafb");
+      expect(result.transaction.transaction).toBe(9123123);
+    }
+  });
+
+  test("returns missing_id when subscriptions.id is omitted", async () => {
+    const result = await subscriptions.verifyPaymentNotify({
+      transaction_id: 9123123,
+      status: "success",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_id");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns missing_transaction_id when transaction_id is omitted", async () => {
+    const result = await subscriptions.verifyPaymentNotify({
+      status: "success",
+      subscriptions: { id: "su3ce571420e90b600eafb" },
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_transaction_id");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns missing_status when payload status and expectedStatus are omitted", async () => {
+    const result = await subscriptions.verifyPaymentNotify({
+      transaction_id: 9123123,
+      subscriptions: { id: "su3ce571420e90b600eafb" },
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("missing_status");
+    }
+    expect(mock.history.get.length).toBe(0);
+  });
+
+  test("returns client_mismatch when notify client differs from GET", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const result = await subscriptions.verifyPaymentNotify({
+      ...paymentNotifyFixture,
+      subscriptions: {
+        id: "su3ce571420e90b600eafb",
+        client: "cl-other",
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("client_mismatch");
+    }
+  });
+
+  test("returns transaction_not_found when nested transaction is missing", async () => {
+    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(
+      200,
+      getSubscriptionFixture({ transactions: [] }),
+    );
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("transaction_not_found");
+    }
+  });
+
+  test("maps notify failed to API rejected", async () => {
+    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(
+      200,
+      getSubscriptionFixture({
+        transactions: [
+          {
+            transaction: 9123123,
+            order: "1568041684",
+            status: "rejected",
+            amount: 10000,
+          },
+        ],
+      }),
+    );
+
+    const result = await subscriptions.verifyPaymentNotify({
+      ...paymentNotifyFixture,
+      status: "failed",
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("returns status_mismatch when nested transaction status differs", async () => {
+    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(
+      200,
+      getSubscriptionFixture({
+        transactions: [
+          {
+            transaction: 9123123,
+            order: "1568041684",
+            status: "pending",
+            amount: 10000,
+          },
+        ],
+      }),
+    );
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("status_mismatch");
+    }
+  });
+
+  test("returns order_mismatch when nested order differs", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const result = await subscriptions.verifyPaymentNotify({
+      ...paymentNotifyFixture,
+      order: "other-order",
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("order_mismatch");
+    }
+  });
+
+  test("returns amount_mismatch when expectedAmount differs", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+      { expectedAmount: 1 },
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("amount_mismatch");
+    }
+  });
+
+  test("skips verification_key when GET nested transaction has no key", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("returns verification_key_mismatch when GET nested key differs", async () => {
+    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(
+      200,
+      getSubscriptionFixture({
+        transactions: [
+          {
+            transaction: 9123123,
+            order: "1568041684",
+            status: "success",
+            amount: 10000,
+            verification_key: "api-key",
+          },
+        ],
+      }),
+    );
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("verification_key_mismatch");
+    }
+  });
+
+  test("compares expectedVerificationKey when GET has no key", async () => {
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture());
+
+    const mismatch = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+      { expectedVerificationKey: "forged-key" },
+    );
+    expect(mismatch.valid).toBe(false);
+    if (!mismatch.valid) {
+      expect(mismatch.reason).toBe("verification_key_mismatch");
+    }
+
+    const match = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+      {
+        expectedVerificationKey: "2ba83615f863e72sdca5dfd0a6df2782",
+      },
+    );
+    expect(match.valid).toBe(true);
+  });
+
+  test("returns payku_api_error when GET /sususcription/{id} fails", async () => {
+    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(404, {
+      status: "failed",
+      type: "Not Found",
+      message_error: "id:it is not valid",
+    });
+
+    const result = await subscriptions.verifyPaymentNotify(
+      paymentNotifyFixture,
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("payku_api_error");
+      expect(result.error).toBeInstanceOf(PaykuAPIError);
+    }
   });
 });

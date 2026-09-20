@@ -1,3 +1,4 @@
+import type { PaykuAPIError } from "../errors";
 import type { PaykuSuccessResponse } from "./payku.responses";
 
 /**
@@ -160,11 +161,13 @@ export interface PaykuSubscriptionDetailTransaction {
   created_at?: string;
   date_payment?: string;
   amount?: number;
-  transaction?: number;
+  transaction?: number | string;
   authorization_code?: string;
-  order?: string;
+  order?: string | number;
   description?: string;
   status?: string;
+  /** Presente en algunos cobros; se compara en `verifyPaymentNotify` si ambos lados la envían. */
+  verification_key?: string;
 }
 
 export interface PaykuSubscriptionStatusLog {
@@ -402,3 +405,93 @@ export interface PaykuCreateConsumptionPlanResponse {
   status: string;
   id: string;
 }
+
+/**
+ * `POST /urlnotifysuscription` — activación de suscripción.
+ * Docs: `{ id, status }` (register | active | finish | delete | cancel | suspended).
+ */
+export interface PaykuSubscriptionActivationNotifyPayload {
+  id?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Bloque `subscriptions` de `POST /urlnotifypayment`.
+ */
+export interface PaykuSubscriptionPaymentNotifySubscriptions {
+  id?: string;
+  client?: string;
+}
+
+/**
+ * `POST /urlnotifypayment` — cobro automático de suscripción.
+ * Distinto de `urlnotify` de transacciones (`trx…`).
+ */
+export interface PaykuSubscriptionPaymentNotifyPayload {
+  transaction_id?: number | string;
+  verification_key?: string;
+  order?: string | number;
+  status?: string;
+  subscriptions?: PaykuSubscriptionPaymentNotifySubscriptions;
+  [key: string]: unknown;
+}
+
+export type PaykuVerifySubscriptionActivationNotifyFailureReason =
+  | "missing_id"
+  | "missing_status"
+  | "status_mismatch"
+  | "payku_api_error";
+
+export interface PaykuVerifySubscriptionActivationNotifyOptions {
+  expectedStatus?: string;
+}
+
+export type PaykuVerifySubscriptionActivationNotifyResult =
+  | {
+      valid: true;
+      subscription: PaykuGetSubscriptionResponse;
+      notify: PaykuSubscriptionActivationNotifyPayload;
+    }
+  | {
+      valid: false;
+      reason: PaykuVerifySubscriptionActivationNotifyFailureReason;
+      notify: PaykuSubscriptionActivationNotifyPayload;
+      subscription?: PaykuGetSubscriptionResponse;
+      error?: PaykuAPIError;
+    };
+
+export type PaykuVerifySubscriptionPaymentNotifyFailureReason =
+  | "missing_id"
+  | "missing_transaction_id"
+  | "missing_status"
+  | "client_mismatch"
+  | "transaction_not_found"
+  | "status_mismatch"
+  | "order_mismatch"
+  | "amount_mismatch"
+  | "verification_key_mismatch"
+  | "payku_api_error";
+
+export interface PaykuVerifySubscriptionPaymentNotifyOptions {
+  expectedStatus?: string;
+  expectedOrder?: string | number;
+  expectedAmount?: number | string;
+  expectedVerificationKey?: string;
+}
+
+export type PaykuVerifySubscriptionPaymentNotifyResult =
+  | {
+      valid: true;
+      subscription: PaykuGetSubscriptionResponse;
+      transaction: PaykuSubscriptionDetailTransaction;
+      notify: PaykuSubscriptionPaymentNotifyPayload;
+    }
+  | {
+      valid: false;
+      reason: PaykuVerifySubscriptionPaymentNotifyFailureReason;
+      notify: PaykuSubscriptionPaymentNotifyPayload;
+      subscription?: PaykuGetSubscriptionResponse;
+      transaction?: PaykuSubscriptionDetailTransaction;
+      error?: PaykuAPIError;
+    };

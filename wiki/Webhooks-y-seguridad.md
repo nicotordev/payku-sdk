@@ -6,6 +6,8 @@
 2. **No confíes** solo en el payload
 3. Transacciones (`trx…`): `payku.webhooks.verifyNotify()` — reconsulta `GET /api/transaction/{payment_key}` y, si ambos lados tienen `verification_key`, exige que coincidan (`verification_key_mismatch` si no).
 4. Mall (`mall…`): `payku.mall.verifyNotify()` — reconsulta `GET /api/mall/{id}`
+5. Suscripción activación (`urlnotifysuscription`, id `su…`): `payku.subscriptions.verifyActivationNotify()` — reconsulta `GET /api/sususcription/{id}`
+6. Suscripción cobro (`urlnotifypayment`): `payku.subscriptions.verifyPaymentNotify()` — reconsulta `GET /api/sususcription/{id}` y valida el cobro anidado (`transaction_id`, status, `order`, `verification_key` si aplica)
 
 ```typescript
 const result = await payku.webhooks.verifyNotify(payload, {

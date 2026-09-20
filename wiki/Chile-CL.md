@@ -56,6 +56,19 @@ const subscription = await payku.subscriptions.subscriptions.create({
   plan: "pl...",
   client: client.id as string,
 });
+
+// urlnotifysuscription vs urlnotifypayment (no son urlnotify de trx…)
+await payku.subscriptions.verifyActivationNotify({
+  id: subscription.id,
+  status: "active",
+});
+await payku.subscriptions.verifyPaymentNotify({
+  transaction_id: 9123123,
+  verification_key: "…",
+  order: "1568041684",
+  status: "success",
+  subscriptions: { id: subscription.id, client: client.id },
+});
 ```
 
 ## Solo Chile

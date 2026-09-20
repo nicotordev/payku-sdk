@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`), con HMAC y `crypto.timingSafeEqual`.
+- `subscriptions.verifyPaymentNotify` compara `verification_key` del notify con la del cobro GET o `expectedVerificationKey` cuando ambos existen, con HMAC y `crypto.timingSafeEqual`.
 
 ### Added
 
+- `subscriptions.verifyActivationNotify` y `subscriptions.verifyPaymentNotify`: reconsultan `GET /api/sususcription/{id}` para `urlnotifysuscription` y `urlnotifypayment` (#59).
 - `mall.verifyNotify` / `verifyCallback`: reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` (#42).
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).
 - Validación `additional_parameters.payer_rut` obligatorio para CLP + payment Etpay/Fintoc/Floid (4/19/26).
