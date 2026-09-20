@@ -1,5 +1,5 @@
 import { URL } from "node:url";
-import type { PaykuCurrency } from "../types/payku.common";
+import type { PaykuCurrency, PaykuDefaultsConfig } from "../types/payku.common";
 import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
   PaykuCreateEventRequest,
@@ -359,6 +359,8 @@ export type ValidateCreateTransactionOptions = {
   now?: Date;
   /** Set de códigos CLP al validar `payment` en create. Por defecto `catalog`. */
   clpPaymentCodes?: ClpPaymentCodeSet;
+  /** URLs por defecto para `urlreturn` y `urlnotify`. */
+  defaults?: PaykuDefaultsConfig;
 };
 
 function resolveClpPaymentCodes(
@@ -454,19 +456,20 @@ export function validateChileCreateTransactionRequest(
   params: PaykuChileCreateTransactionRequest,
   options: ValidateCreateTransactionOptions = {},
 ): void {
-  for (const field of [
-    "email",
-    "order",
-    "subject",
-    "urlreturn",
-    "urlnotify",
-  ] as const) {
+  const urlreturn = params.urlreturn ?? options.defaults?.urlreturn;
+  const urlnotify = params.urlnotify ?? options.defaults?.urlnotify;
+
+  for (const field of ["email", "order", "subject"] as const) {
     requireNonEmptyField(params[field], field);
   }
+  requireNonEmptyField(urlreturn, "urlreturn");
+  requireNonEmptyField(urlnotify, "urlnotify");
 
   validateCreateTransactionRequest(
     {
       ...params,
+      urlreturn,
+      urlnotify,
       currency: "CLP",
     },
     options,

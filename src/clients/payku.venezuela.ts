@@ -1,5 +1,8 @@
 import type { PaykuClientOptions } from "../errors";
-import type { PaykuEnvironment } from "../types/payku.common";
+import type {
+  PaykuDefaultsConfig,
+  PaykuEnvironment,
+} from "../types/payku.common";
 import type {
   PaykuCountryCore,
   PaykuCountryClient,
@@ -19,6 +22,7 @@ export class PaykuVenezuela implements PaykuCountryClient {
   readonly privateToken: string;
   readonly environment: PaykuEnvironment;
   readonly options: PaykuClientOptions;
+  readonly defaults?: PaykuDefaultsConfig;
 
   readonly transactions: PaykuVenezuelaTransactions;
   readonly wallet: PaykuSharedWallet;
@@ -34,7 +38,11 @@ export class PaykuVenezuela implements PaykuCountryClient {
     this.privateToken = core.privateToken;
     this.environment = core.environment;
     this.options = core.options;
-    this.transactions = new PaykuVenezuelaTransactions(core.transactions);
+    this.defaults = core.defaults;
+    this.transactions = new PaykuVenezuelaTransactions(
+      core.transactions,
+      core.defaults,
+    );
     this.wallet = new PaykuSharedWallet(core.wallet, "VE");
     this.banks = new PaykuScopedBanks(core.banks, "VE");
     this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "VE");

@@ -1,6 +1,10 @@
 export { buildSign } from "./http/sign";
 export { default } from "./clients/payku";
-export type { PaykuConfig, PaykuForCountryClient } from "./clients/payku";
+export type {
+  PaykuConfig,
+  PaykuDefaultsConfig,
+  PaykuForCountryClient,
+} from "./clients/payku";
 export {
   PaykuChile,
   PaykuPeru,

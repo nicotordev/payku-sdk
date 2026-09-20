@@ -37,8 +37,8 @@ export interface PaykuChileCreateTransactionRequest {
   order: string;
   subject: string;
   amount: number;
-  urlreturn: string;
-  urlnotify: string;
+  urlreturn?: string;
+  urlnotify?: string;
   payment?: number;
   expired?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;

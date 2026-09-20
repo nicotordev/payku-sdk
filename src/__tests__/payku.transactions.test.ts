@@ -686,3 +686,190 @@ describe("PaykuTransactions fixtures", () => {
   });
 });
 
+describe("client defaults (issue #168)", () => {
+  let axiosInstance: ReturnType<typeof axios.create>;
+  let mock: MockAdapter;
+  let http: HttpClient;
+
+  beforeEach(() => {
+    axiosInstance = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(axiosInstance);
+    http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance,
+      rootAxiosInstance: axiosInstance,
+    });
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("uses defaults for urlreturn and urlnotify when omitted in transactions.create", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://default.example.com/return");
+      expect(data.urlnotify).toBe("https://default.example.com/notify");
+      return [200, createSuccessFixture];
+    });
+
+    const transactions = new PaykuTransactions(
+      http,
+      {},
+      {
+        urlreturn: "https://default.example.com/return",
+        urlnotify: "https://default.example.com/notify",
+      },
+    );
+
+    const res = await transactions.create({
+      amount: 1000,
+      currency: "CLP",
+    });
+
+    expect(res.id).toBe(createSuccessFixture.id);
+  });
+
+  test("explicit urlreturn overrides client default", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://override.example.com/return");
+      expect(data.urlnotify).toBe("https://default.example.com/notify");
+      return [200, createSuccessFixture];
+    });
+
+    const transactions = new PaykuTransactions(
+      http,
+      {},
+      {
+        urlreturn: "https://default.example.com/return",
+        urlnotify: "https://default.example.com/notify",
+      },
+    );
+
+    await transactions.create({
+      amount: 1000,
+      currency: "CLP",
+      urlreturn: "https://override.example.com/return",
+    });
+  });
+
+  test("Chile transactions.create works with client defaults without repeating urlreturn/urlnotify", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://default.example.com/return");
+      expect(data.urlnotify).toBe("https://default.example.com/notify");
+      expect(data.currency).toBe("CLP");
+      return [200, createSuccessFixture];
+    });
+
+    const defaults = {
+      urlreturn: "https://default.example.com/return",
+      urlnotify: "https://default.example.com/notify",
+    };
+    const baseTransactions = new PaykuTransactions(http, {}, defaults);
+    const chileTransactions = new PaykuChileTransactions(
+      baseTransactions,
+      defaults,
+    );
+
+    const res = await chileTransactions.create({
+      email: "cliente@example.com",
+      order: "orden-defaults",
+      subject: "Pago defaults",
+      amount: 5000,
+    });
+
+    expect(res.id).toBe(createSuccessFixture.id);
+  });
+
+  test("options.defaults overrides constructor defaults in HTTP payload", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://option.example.com/return");
+      expect(data.urlnotify).toBe("https://option.example.com/notify");
+      return [200, createSuccessFixture];
+    });
+
+    const transactions = new PaykuTransactions(
+      http,
+      {},
+      {
+        urlreturn: "https://constructor.example.com/return",
+        urlnotify: "https://constructor.example.com/notify",
+      },
+    );
+
+    await transactions.create(
+      {
+        amount: 1000,
+        currency: "CLP",
+      },
+      {
+        defaults: {
+          urlreturn: "https://option.example.com/return",
+          urlnotify: "https://option.example.com/notify",
+        },
+      },
+    );
+  });
+
+  test("Chile transactions.create uses options.defaults over constructor defaults", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://chile-option.example.com/return");
+      expect(data.urlnotify).toBe("https://chile-option.example.com/notify");
+      expect(data.currency).toBe("CLP");
+      return [200, createSuccessFixture];
+    });
+
+    const constructorDefaults = {
+      urlreturn: "https://constructor.example.com/return",
+      urlnotify: "https://constructor.example.com/notify",
+    };
+    const baseTransactions = new PaykuTransactions(
+      http,
+      {},
+      constructorDefaults,
+    );
+    const chileTransactions = new PaykuChileTransactions(
+      baseTransactions,
+      constructorDefaults,
+    );
+
+    await chileTransactions.create(
+      {
+        email: "cliente@example.com",
+        order: "orden-option-defaults",
+        subject: "Pago option defaults",
+        amount: 5000,
+      },
+      {
+        defaults: {
+          urlreturn: "https://chile-option.example.com/return",
+          urlnotify: "https://chile-option.example.com/notify",
+        },
+      },
+    );
+  });
+
+  test("Chile transactions.create fails when urlreturn is omitted and no defaults are configured", async () => {
+    const baseTransactions = new PaykuTransactions(http);
+    const chileTransactions = new PaykuChileTransactions(baseTransactions);
+
+    await expect(
+      chileTransactions.create({
+        email: "cliente@example.com",
+        order: "orden-defaults",
+        subject: "Pago defaults",
+        amount: 5000,
+      }),
+    ).rejects.toThrow("urlreturn is required");
+  });
+});
+

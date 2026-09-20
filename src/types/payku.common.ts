@@ -9,6 +9,11 @@ export type PaykuCountry = "CL" | "PE" | "VE";
 
 export type PaykuOptions = PaykuClientOptions;
 
+export interface PaykuDefaultsConfig {
+  urlreturn?: string;
+  urlnotify?: string;
+}
+
 export const PAYKU_COUNTRY_CURRENCY = {
   CL: "CLP",
   PE: "PEN",

@@ -11,6 +11,7 @@ import type {
 import {
   PAYKU_COUNTRY_CURRENCY,
   type PaykuCountry,
+  type PaykuDefaultsConfig,
 } from "../types/payku.common";
 import { assertFeature } from "../utils/payku.country";
 import {
@@ -31,18 +32,25 @@ export class PaykuScopedTransactions {
   constructor(
     private readonly inner: PaykuTransactions,
     private readonly country: PaykuCountry,
+    private readonly defaults?: PaykuDefaultsConfig,
   ) {}
 
   create(
     params: PaykuScopedCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
+    const effectiveOptions: ValidateCreateTransactionOptions = {
+      ...options,
+      defaults: options?.defaults ?? this.defaults,
+    };
     return this.inner.create(
       {
         ...params,
+        urlreturn: params.urlreturn ?? effectiveOptions.defaults?.urlreturn,
+        urlnotify: params.urlnotify ?? effectiveOptions.defaults?.urlnotify,
         currency: PAYKU_COUNTRY_CURRENCY[this.country],
       },
-      options,
+      effectiveOptions,
     );
   }
 
@@ -59,21 +67,30 @@ export class PaykuScopedTransactions {
  * Transacciones Chile: create con campos requeridos de docs CLP.
  */
 export class PaykuChileTransactions extends PaykuScopedTransactions {
-  constructor(private readonly transactions: PaykuTransactions) {
-    super(transactions, "CL");
+  constructor(
+    private readonly transactions: PaykuTransactions,
+    private readonly defaultsConfig?: PaykuDefaultsConfig,
+  ) {
+    super(transactions, "CL", defaultsConfig);
   }
 
   override async create(
     params: PaykuChileCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
-    validateChileCreateTransactionRequest(params, options);
+    const effectiveOptions: ValidateCreateTransactionOptions = {
+      ...options,
+      defaults: options?.defaults ?? this.defaultsConfig,
+    };
+    validateChileCreateTransactionRequest(params, effectiveOptions);
     return this.transactions.create(
       {
         ...params,
+        urlreturn: params.urlreturn ?? effectiveOptions.defaults?.urlreturn,
+        urlnotify: params.urlnotify ?? effectiveOptions.defaults?.urlnotify,
         currency: PAYKU_COUNTRY_CURRENCY.CL,
       },
-      options,
+      effectiveOptions,
     );
   }
 }
@@ -82,8 +99,11 @@ export class PaykuChileTransactions extends PaykuScopedTransactions {
  * Transacciones Venezuela: compartidas + confirmación On-Site.
  */
 export class PaykuVenezuelaTransactions extends PaykuScopedTransactions {
-  constructor(private readonly transactions: PaykuTransactions) {
-    super(transactions, "VE");
+  constructor(
+    private readonly transactions: PaykuTransactions,
+    defaults?: PaykuDefaultsConfig,
+  ) {
+    super(transactions, "VE", defaults);
   }
 
   confirmOnSite(
