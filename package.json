@@ -114,6 +114,7 @@
     "docs:api": "typedoc",
     "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "lint:duplication": "jscpd ./src --ignore '**/__tests__/**'",
     "prepare": "husky",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
     "prepublishOnly": "bun run build"
@@ -142,6 +143,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "husky": "^9.1.7",
+    "jscpd": "^5.3.0",
     "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
     "typedoc": "^0.28.19",
