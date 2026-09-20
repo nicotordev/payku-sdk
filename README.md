@@ -684,7 +684,20 @@ if (payment.valid && payment.transaction.status === "success") {
 
 ## Suscripción de consumo (Chile)
 
-Cargos únicos (delivery / producto). El CRUD usa paths con trailing slash (`/suclient/`, `/suplan/`, …) vía `payku.consumptionSubscriptions`.
+Hay **dos** clientes Chile que hablan endpoints parecidos. No son intercambiables: consumo firma paths **con** trailing slash (`/suclient/`, `/suplan/`, …); la suscripción regular usa paths **sin** slash.
+
+| | `payku.subscriptions` | `payku.consumptionSubscriptions` |
+| --- | --- | --- |
+| Cuándo | Planes recurrentes (el plan suele existir ya en Payku) | Cargos únicos (delivery / producto) |
+| `suclient` | CRUD + list | solo `create` |
+| `suplan` | `get` / `list` | **`create`** |
+| `sususcription` | CRUD + list / listV3 | solo `create` |
+| `sutransaction` | `create` | `create` (docs de consumo: `marketplace` / `card`) |
+| `cards` | `register` + `delete` | solo `delete` |
+
+Usa `Payku.forCountry("CL").consumptionSubscriptions` cuando el flujo es **plan de consumo → cliente → suscripción → un `sutransaction` por cada cargo**. El CRUD de consulta (get/list, afiliar tarjeta, planes ya creados) sigue en `subscriptions`.
+
+Los callbacks `urlnotifysuscription` / `urlnotifypayment` son los mismos que en suscripción regular: verifícalos con `payku.subscriptions.verifyActivationNotify` y `verifyPaymentNotify` ([#59](https://github.com/nicotordev/payku-sdk/issues/59), [sección Callbacks](#callbacks-urlnotifysuscription-y-urlnotifypayment)). Docs Payku: [suscripción de consumo](https://docs.payku.com/).
 
 Para mandar al cliente **directo a Webpay** sin crear la transacción por API, construye `GET {rootUrl}/suscripcion/index`:
 
