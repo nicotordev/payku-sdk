@@ -73,7 +73,7 @@ await payku.subscriptions.verifyPaymentNotify({
 
 ## Consumo vs suscripción
 
-`consumptionSubscriptions` (cargos únicos, paths con `/` final, `plans.create`) no reemplaza a `subscriptions` (CRUD, get/list, `cards.register`). Los notify de activación/cobro se verifican igual: `subscriptions.verifyActivationNotify` / `verifyPaymentNotify`.
+`consumptionSubscriptions` (cargos únicos, paths con `/` final) no reemplaza a `subscriptions` (CRUD, get/list, `cards.register`). Superficie de consumo: `clients.create`, `plans.create`, `subscriptions.create`, `transactions.create`, `cards.delete`. Flujo: plan → cliente → suscripción → un `sutransaction` por cargo. Los notify de activación/cobro se verifican igual: `subscriptions.verifyActivationNotify` / `verifyPaymentNotify`.
 
 ## Solo Chile
 
