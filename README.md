@@ -309,6 +309,31 @@ if (!mallResult.valid) {
 }
 ```
 
+Suscripciones Chile tienen **dos** callbacks distintos de `urlnotify` de transacciones:
+
+| Callback | Payload | Verificación |
+| --- | --- | --- |
+| `urlnotifysuscription` | `{ id: "su…", status }` | `payku.subscriptions.verifyActivationNotify` → `GET /api/sususcription/{id}` |
+| `urlnotifypayment` | `{ transaction_id, verification_key, order, status, subscriptions: { id, client } }` | `payku.subscriptions.verifyPaymentNotify` → `GET /api/sususcription/{id}` y el cobro anidado |
+
+```typescript
+const activation = await payku.subscriptions.verifyActivationNotify({
+  id: "su74866857980c7d2b4306",
+  status: "active",
+});
+
+const payment = await payku.subscriptions.verifyPaymentNotify({
+  transaction_id: 9123123,
+  verification_key: "2ba83615f863e72sdca5dfd0a6df2782",
+  order: "1568041684",
+  status: "success",
+  subscriptions: {
+    id: "su3ce571420e90b600eafb",
+    client: "cl795704ece0a3690baaf",
+  },
+});
+```
+
 ## Errores y respuestas
 
 Según la [introducción de la API Payku](https://docs.payku.com/), **no confíes solo en el código HTTP** (p. ej. 200). Muchas respuestas de error llegan con HTTP 200 y un JSON de negocio:
@@ -634,6 +659,25 @@ const subscription = await payku.subscriptions.subscriptions.create({
   plan: "pl...",
   client: client.id as string,
 });
+```
+
+### Callbacks `urlnotifysuscription` y `urlnotifypayment`
+
+No uses `payku.webhooks.verifyNotify` para estos POST: no son `trx…` ni `mall…`.
+
+1. **Activación** (`url_notify_suscription` → `POST /urlnotifysuscription`): Payku avisa el estado de la suscripción (`register` \| `active` \| `finish` \| `delete` \| `cancel` \| `suspended`). `verifyActivationNotify` reconsulta `GET /api/sususcription/{id}` (con `Sign`) y compara `status`.
+2. **Cobro** (`url_notify_payment` → `POST /urlnotifypayment`): Payku avisa un cargo automático. `verifyPaymentNotify` reconsulta la misma GET, busca `transactions[]` por `transaction_id` y valida status, `order` y `verification_key` cuando ambos lados la envían (o `expectedVerificationKey`). Notify `failed` se mapea a API `rejected`.
+
+```typescript
+const activation = await payku.subscriptions.verifyActivationNotify(req.body);
+if (!activation.valid) {
+  console.warn("Notify de activación inválido:", activation.reason);
+}
+
+const payment = await payku.subscriptions.verifyPaymentNotify(req.body);
+if (payment.valid && payment.transaction.status === "success") {
+  // Cobro confirmado contra GET /api/sususcription/{id}
+}
 ```
 
 ## Eventos (Chile)

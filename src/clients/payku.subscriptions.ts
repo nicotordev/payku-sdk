@@ -1,11 +1,15 @@
+import { Buffer } from "node:buffer";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   createPaykuAPIError,
+  PaykuAPIError,
   PaykuSubscriptionsError,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  mapNotifyStatusToTransactionStatus,
   validateCreateSubscriptionClientRequest,
   validateCreateSubscriptionRequest,
   validateCreateSubscriptionTransactionRequest,
@@ -32,9 +36,37 @@ import type {
   PaykuListSubscriptionsV3Response,
   PaykuRegisterCardRequest,
   PaykuRegisterCardResponse,
+  PaykuSubscriptionActivationNotifyPayload,
   PaykuSubscriptionClientResponse,
+  PaykuSubscriptionDetailTransaction,
+  PaykuSubscriptionPaymentNotifyPayload,
   PaykuUpdateSubscriptionClientRequest,
+  PaykuVerifySubscriptionActivationNotifyOptions,
+  PaykuVerifySubscriptionActivationNotifyResult,
+  PaykuVerifySubscriptionPaymentNotifyOptions,
+  PaykuVerifySubscriptionPaymentNotifyResult,
 } from "../types/payku.subscriptions";
+
+const verificationCompareKey = randomBytes(32);
+
+function nonEmptyString(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const trimmed = String(value).trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function hmacSha256(value: string): Buffer {
+  return createHmac("sha256", verificationCompareKey)
+    .update(value, "utf8")
+    .digest();
+}
+
+function verificationKeysEqual(left: string, right: string): boolean {
+  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
+}
 
 export default class PaykuSubscriptions {
   public clients = {
@@ -66,6 +98,9 @@ export default class PaykuSubscriptions {
     register: this.registerCard.bind(this),
     delete: this.deleteCard.bind(this),
   };
+
+  public verifyActivationNotify = this.verifyActivationNotification.bind(this);
+  public verifyPaymentNotify = this.verifyPaymentNotification.bind(this);
 
   constructor(
     private readonly http: HttpClient,
@@ -252,4 +287,222 @@ export default class PaykuSubscriptions {
       }),
     );
   }
+
+  /**
+   * Verifica `POST /urlnotifysuscription` reconsultando `GET /api/sususcription/{id}`.
+   * El payload no trae `verification_key`; la fuente de verdad es el GET.
+   */
+  private async verifyActivationNotification(
+    payload: PaykuSubscriptionActivationNotifyPayload,
+    options: PaykuVerifySubscriptionActivationNotifyOptions = {},
+  ): Promise<PaykuVerifySubscriptionActivationNotifyResult> {
+    const subscriptionId = nonEmptyString(payload.id);
+    if (subscriptionId === undefined) {
+      return { valid: false, reason: "missing_id", notify: payload };
+    }
+
+    const expectedStatus = nonEmptyString(
+      options.expectedStatus ?? payload.status,
+    );
+    if (expectedStatus === undefined) {
+      return { valid: false, reason: "missing_status", notify: payload };
+    }
+
+    try {
+      const subscription = await this.getSubscription(subscriptionId);
+
+      if (subscription.status !== expectedStatus) {
+        return {
+          valid: false,
+          reason: "status_mismatch",
+          notify: payload,
+          subscription,
+        };
+      }
+
+      return { valid: true, subscription, notify: payload };
+    } catch (error) {
+      if (error instanceof PaykuAPIError) {
+        return {
+          valid: false,
+          reason: "payku_api_error",
+          notify: payload,
+          error,
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica `POST /urlnotifypayment` reconsultando `GET /api/sususcription/{id}`.
+   * No uses `webhooks.verifyNotify` (ese reconsulta `/transaction/{payment_key}`).
+   *
+   * Si no pasas `expectedStatus`, se deriva del `payload.status` mapeando
+   * notify `failed` → API `rejected`.
+   *
+   * Si `payload.verification_key` y la transacción del GET (o
+   * `expectedVerificationKey`) tienen valor, deben coincidir.
+   */
+  private async verifyPaymentNotification(
+    payload: PaykuSubscriptionPaymentNotifyPayload,
+    options: PaykuVerifySubscriptionPaymentNotifyOptions = {},
+  ): Promise<PaykuVerifySubscriptionPaymentNotifyResult> {
+    const subscriptionId = nonEmptyString(payload.subscriptions?.id);
+    if (subscriptionId === undefined) {
+      return { valid: false, reason: "missing_id", notify: payload };
+    }
+
+    const transactionId = nonEmptyString(payload.transaction_id);
+    if (transactionId === undefined) {
+      return {
+        valid: false,
+        reason: "missing_transaction_id",
+        notify: payload,
+      };
+    }
+
+    const rawStatus = options.expectedStatus ?? payload.status;
+    if (nonEmptyString(rawStatus) === undefined) {
+      return { valid: false, reason: "missing_status", notify: payload };
+    }
+
+    const expectedStatus = mapNotifyStatusToTransactionStatus(
+      String(rawStatus).trim(),
+    );
+
+    try {
+      const subscription = await this.getSubscription(subscriptionId);
+
+      const notifyClient = nonEmptyString(payload.subscriptions?.client);
+      const apiClient = nonEmptyString(subscription.client?.id);
+      if (
+        notifyClient !== undefined &&
+        apiClient !== undefined &&
+        notifyClient !== apiClient
+      ) {
+        return {
+          valid: false,
+          reason: "client_mismatch",
+          notify: payload,
+          subscription,
+        };
+      }
+
+      const transaction = findSubscriptionTransaction(
+        subscription,
+        transactionId,
+      );
+      if (transaction === undefined) {
+        return {
+          valid: false,
+          reason: "transaction_not_found",
+          notify: payload,
+          subscription,
+        };
+      }
+
+      const actualStatus = nonEmptyString(transaction.status);
+      if (actualStatus !== expectedStatus) {
+        return {
+          valid: false,
+          reason: "status_mismatch",
+          notify: payload,
+          subscription,
+          transaction,
+        };
+      }
+
+      const expectedOrder =
+        nonEmptyString(options.expectedOrder) ??
+        nonEmptyString(payload.order);
+      const actualOrder = nonEmptyString(transaction.order);
+      if (expectedOrder !== undefined && actualOrder !== expectedOrder) {
+        return {
+          valid: false,
+          reason: "order_mismatch",
+          notify: payload,
+          subscription,
+          transaction,
+        };
+      }
+
+      const expectedAmount = nonEmptyString(options.expectedAmount);
+      const actualAmount = nonEmptyString(transaction.amount);
+      if (expectedAmount !== undefined && actualAmount !== expectedAmount) {
+        return {
+          valid: false,
+          reason: "amount_mismatch",
+          notify: payload,
+          subscription,
+          transaction,
+        };
+      }
+
+      const notifyKey = nonEmptyString(payload.verification_key);
+      const apiKey = nonEmptyString(transaction.verification_key);
+      const expectedKey = nonEmptyString(options.expectedVerificationKey);
+      const referenceKey = apiKey ?? expectedKey;
+
+      if (
+        notifyKey !== undefined &&
+        referenceKey !== undefined &&
+        !verificationKeysEqual(notifyKey, referenceKey)
+      ) {
+        return {
+          valid: false,
+          reason: "verification_key_mismatch",
+          notify: payload,
+          subscription,
+          transaction,
+        };
+      }
+
+      if (
+        expectedKey !== undefined &&
+        apiKey !== undefined &&
+        !verificationKeysEqual(expectedKey, apiKey)
+      ) {
+        return {
+          valid: false,
+          reason: "verification_key_mismatch",
+          notify: payload,
+          subscription,
+          transaction,
+        };
+      }
+
+      return {
+        valid: true,
+        subscription,
+        transaction,
+        notify: payload,
+      };
+    } catch (error) {
+      if (error instanceof PaykuAPIError) {
+        return {
+          valid: false,
+          reason: "payku_api_error",
+          notify: payload,
+          error,
+        };
+      }
+
+      throw error;
+    }
+  }
+}
+
+function findSubscriptionTransaction(
+  subscription: PaykuGetSubscriptionResponse,
+  transactionId: string,
+): PaykuSubscriptionDetailTransaction | undefined {
+  if (!Array.isArray(subscription.transactions)) {
+    return undefined;
+  }
+
+  return subscription.transactions.find(
+    (item) => nonEmptyString(item.transaction) === transactionId,
+  );
 }

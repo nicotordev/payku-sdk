@@ -67,7 +67,7 @@ src/
 | Variantes | objetos anidados                           | `wallet.payouts.create`         |
 | Tipos     | `Payku{Action}{Entity}{Request\|Response}` | `PaykuCreateTransactionRequest` |
 | Errores   | `{Operation}Error` extends `PaykuAPIError` | `PaykuCreateTransactionError`   |
-| Webhooks  | union `{ valid, reason }`                  | `payku.webhooks.verifyNotify()`, `payku.mall.verifyNotify()` |
+| Webhooks  | union `{ valid, reason }`                  | `payku.webhooks.verifyNotify()`, `payku.mall.verifyNotify()`, `payku.subscriptions.verifyActivationNotify()`, `payku.subscriptions.verifyPaymentNotify()` |
 
 ## 4. Autenticación y firma
 
@@ -102,7 +102,9 @@ src/
 
 Mall (`urlnotify` con id `mall…`): `payku.mall.verifyNotify()` reconsulta `GET /api/mall/{id}` (no `/transaction/{payment_key}`).
 
-Notify `status: "failed"` corresponde a API `rejected`. El helper `mapNotifyStatusToTransactionStatus` (y el default de `verifyNotify`) hace ese mapeo.
+Suscripciones Chile: `urlnotifysuscription` → `payku.subscriptions.verifyActivationNotify()` (GET `/api/sususcription/{id}`, estados de suscripción). `urlnotifypayment` → `payku.subscriptions.verifyPaymentNotify()` (misma GET, cobro anidado por `transaction_id`; `verification_key` si ambos lados la envían).
+
+Notify `status: "failed"` corresponde a API `rejected` en cobros/transacciones (no en activación de suscripción). El helper `mapNotifyStatusToTransactionStatus` (y el default de `verifyNotify` / `verifyPaymentNotify`) hace ese mapeo.
 
 ## 7.1 Códigos `payment` CLP
 
