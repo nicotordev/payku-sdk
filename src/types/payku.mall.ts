@@ -1,3 +1,5 @@
+import type { PaykuAPIError } from "../errors";
+
 /** Tupla wire de un beneficiario Mall: [token|afiliación, amount, subject, eventId|null, individualOrder]. */
 export type PaykuMallMerchantTuple = [
   tokenOrAffiliationId: string,
@@ -68,6 +70,48 @@ export interface PaykuMallGetResponse {
   payment: PaykuMallGetPayment;
   merchant: PaykuMallGetMerchant[];
 }
+
+/**
+ * Payload de `urlnotify` para Mall. Docs no publican el JSON exacto;
+ * el id de recurso es `mall…` (`id` o `payment_key`), no un `trx…`.
+ */
+export interface PaykuMallNotifyPayload {
+  id?: string;
+  payment_key?: string;
+  verification_key?: string;
+  order?: string | number;
+  amount?: number | string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export type PaykuVerifyMallNotifyFailureReason =
+  | "missing_id"
+  | "id_mismatch"
+  | "missing_status"
+  | "status_mismatch"
+  | "amount_mismatch"
+  | "verification_key_mismatch"
+  | "payku_api_error";
+
+export interface PaykuVerifyMallNotifyOptions {
+  expectedStatus?: string;
+  expectedAmount?: number | string;
+}
+
+export type PaykuVerifyMallNotifyResult =
+  | {
+      valid: true;
+      mall: PaykuMallGetResponse;
+      notify: PaykuMallNotifyPayload;
+    }
+  | {
+      valid: false;
+      reason: PaykuVerifyMallNotifyFailureReason;
+      notify: PaykuMallNotifyPayload;
+      mall?: PaykuMallGetResponse;
+      error?: PaykuAPIError;
+    };
 
 /** @deprecated Prefer PaykuMallCreateResponse / PaykuMallGetResponse */
 export type PaykuMallTransactionResponse =

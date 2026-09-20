@@ -4,7 +4,8 @@
 
 1. Payku envía POST a tu `urlnotify`
 2. **No confíes** solo en el payload
-3. Usa `payku.webhooks.verifyNotify()` — reconsulta `GET /api/transaction/{payment_key}` y, si ambos lados tienen `verification_key`, exige que coincidan (`verification_key_mismatch` si no).
+3. Transacciones (`trx…`): `payku.webhooks.verifyNotify()` — reconsulta `GET /api/transaction/{payment_key}` y, si ambos lados tienen `verification_key`, exige que coincidan (`verification_key_mismatch` si no).
+4. Mall (`mall…`): `payku.mall.verifyNotify()` — reconsulta `GET /api/mall/{id}`
 
 ```typescript
 const result = await payku.webhooks.verifyNotify(payload, {

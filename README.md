@@ -297,6 +297,18 @@ Payku usa nombres distintos para el mismo rechazo:
 
 `verifyNotify` reconsulta la API. Si no pasas `expectedStatus`, deriva el esperado del `payload.status` (`failed` → `rejected`). También puedes usar `mapNotifyStatusToTransactionStatus`. Si `payload.verification_key` y `transaction.payment.verification_key` tienen valor, deben coincidir; si no, el resultado es `{ valid: false, reason: "verification_key_mismatch" }`.
 
+Mall no usa `GET /transaction/{payment_key}`: los ids son `mall…`. Confirma el callback con `payku.mall.verifyNotify(payload)`, que reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` si vienen.
+
+```typescript
+const mallResult = await payku.mall.verifyNotify(payload, {
+  expectedAmount: 30000,
+});
+
+if (!mallResult.valid) {
+  console.warn("Notify Mall inválido:", mallResult.reason);
+}
+```
+
 ## Errores y respuestas
 
 Según la [introducción de la API Payku](https://docs.payku.com/), **no confíes solo en el código HTTP** (p. ej. 200). Muchas respuestas de error llegan con HTTP 200 y un JSON de negocio:
