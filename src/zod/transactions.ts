@@ -10,6 +10,7 @@ import type { PaykuCurrency } from "../types/payku.common";
 import {
   formatPaykuExpiredInSantiago,
   parsePaykuExpiredInSantiago,
+  resolvePaymentMethod,
   type ClpPaymentCodeSet,
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
@@ -88,7 +89,7 @@ export function createTransactionSchema(
       subject: z.string().optional(),
       amount: z.number().positive("amount must be greater than 0"),
       currency: z.enum(["CLP", "PEN", "VES"]),
-      payment: z.number().int().optional(),
+      payment: z.union([z.number().int(), z.string()]).optional(),
       expired: PaykuExpirationInputSchema.optional(),
       payerRut: z.string().optional(),
       urlreturn: z.string().optional(),
@@ -166,28 +167,42 @@ export function createTransactionSchema(
       }
 
       // 2. Validación de payment según moneda
+      let paymentCode: number | undefined;
       if (data.payment !== undefined) {
-        const validCodes: readonly number[] =
-          data.currency === "CLP"
-            ? resolveClpPaymentCodes(options.clpPaymentCodes)
-            : Object.values(
-                PAYKU_PAYMENT_METHODS[data.currency as PaykuCurrency],
-              );
-
-        if (!validCodes.includes(data.payment)) {
+        try {
+          paymentCode = resolvePaymentMethod(data.payment, data.currency);
+        } catch (error) {
           ctx.addIssue({
             code: "custom",
-            message: `payment ${data.payment} is not valid for currency ${data.currency}`,
+            message:
+              error instanceof Error ? error.message : String(error),
             path: ["payment"],
           });
+        }
+
+        if (paymentCode !== undefined) {
+          const validCodes: readonly number[] =
+            data.currency === "CLP"
+              ? resolveClpPaymentCodes(options.clpPaymentCodes)
+              : Object.values(
+                  PAYKU_PAYMENT_METHODS[data.currency as PaykuCurrency],
+                );
+
+          if (!validCodes.includes(paymentCode)) {
+            ctx.addIssue({
+              code: "custom",
+              message: `payment ${paymentCode} is not valid for currency ${data.currency}`,
+              path: ["payment"],
+            });
+          }
         }
       }
 
       // 3. Validación de payer_rut para pagos CLP específicos
-      if (data.currency === "CLP" && data.payment !== undefined) {
+      if (data.currency === "CLP" && paymentCode !== undefined) {
         if (
           PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT.includes(
-            data.payment as (typeof PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT)[number],
+            paymentCode as (typeof PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT)[number],
           )
         ) {
           const payerRut =
@@ -223,6 +238,15 @@ export function createTransactionSchema(
           });
         }
       }
+    })
+    .transform((data) => {
+      if (data.payment === undefined) {
+        return data;
+      }
+      return {
+        ...data,
+        payment: resolvePaymentMethod(data.payment, data.currency),
+      };
     });
 }
 
@@ -267,7 +291,7 @@ export function createChileTransactionSchema(
       amount: z.number().positive("amount must be greater than 0"),
       urlreturn: resolveUrlSchema("urlreturn", options.defaults?.urlreturn),
       urlnotify: resolveUrlSchema("urlnotify", options.defaults?.urlnotify),
-      payment: z.number().int().optional(),
+      payment: z.union([z.number().int(), z.string()]).optional(),
       expired: PaykuExpirationInputSchema.optional(),
       payerRut: z.string().optional(),
       additional_parameters:
@@ -293,6 +317,15 @@ export function createChileTransactionSchema(
           });
         }
       }
+    })
+    .transform((data) => {
+      if (data.payment === undefined) {
+        return data;
+      }
+      return {
+        ...data,
+        payment: resolvePaymentMethod(data.payment, "CLP"),
+      };
     });
 }
 
