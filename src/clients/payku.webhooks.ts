@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { PaykuAPIError } from "../errors";
 import type {
   PaykuNotifyPayload,
@@ -11,6 +11,8 @@ import type PaykuTransactions from "./payku.transactions";
 
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
 
+const verificationCompareKey = randomBytes(32);
+
 function nonEmptyVerificationKey(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -20,14 +22,14 @@ function nonEmptyVerificationKey(value: unknown): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
-function verificationKeysEqual(left: string, right: string): boolean {
-  const leftBytes = Buffer.from(left, "utf8");
-  const rightBytes = Buffer.from(right, "utf8");
+function hmacSha256(value: string): Buffer {
+  return createHmac("sha256", verificationCompareKey)
+    .update(value, "utf8")
+    .digest();
+}
 
-  return (
-    leftBytes.byteLength === rightBytes.byteLength &&
-    timingSafeEqual(leftBytes, rightBytes)
-  );
+function verificationKeysEqual(left: string, right: string): boolean {
+  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
 }
 
 export default class PaykuWebhooks {

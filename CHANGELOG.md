@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`), con `crypto.timingSafeEqual`.
+- `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`), con HMAC y `crypto.timingSafeEqual`.
 
 ### Added
 
