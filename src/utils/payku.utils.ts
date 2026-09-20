@@ -59,6 +59,14 @@ const CONSUMPTION_GATEWAY_RESERVED_KEYS = new Set([
   "direct_full",
 ]);
 
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 /**
  * URL de pasarela de consumo: `{rootUrl}/suscripcion/index?idplan&verif&nombre&apellido&email&telefono&direct_full`.
  * No llama a la API; el comercio redirige al cliente a Webpay.
@@ -78,7 +86,7 @@ export function buildConsumptionGatewayUrl(
   try {
     url = new URL(
       CONSUMPTION_GATEWAY_PATH,
-      `${String(params.rootUrl).trim().replace(/\/+$/, "")}/`,
+      `${stripTrailingSlashes(String(params.rootUrl).trim())}/`,
     );
   } catch {
     throw new PaykuError("rootUrl is not a valid URL");

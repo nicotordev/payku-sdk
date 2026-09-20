@@ -218,6 +218,17 @@ describe("buildConsumptionGatewayUrl", () => {
     expect(url).toContain("direct_full=true");
   });
 
+  test("collapses repeated trailing slashes on rootUrl without regex", () => {
+    const url = buildConsumptionGatewayUrl({
+      ...gatewayFixture,
+      rootUrl: "https://des.payku.cl///",
+    });
+
+    expect(url.startsWith("https://des.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+  });
+
   test("sets direct_full=false when directFull is false", () => {
     const url = buildConsumptionGatewayUrl({
       ...gatewayFixture,
