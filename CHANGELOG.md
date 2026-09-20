@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `marketplace.affiliations.create` acepta `{ clientId, percentage }` además de tuplas `[clientId, percentage]`; el body HTTP sigue siendo array de pares (#179).
 - README Chile: Marketplace, Mall, flujo de suscripción (8 pasos), flujo de consumo y tarjetas sandbox Webpay (#36, #44, #62, #71, #98).
 - README / sdk-spec: cuándo usar `consumptionSubscriptions` vs `subscriptions` (#69).

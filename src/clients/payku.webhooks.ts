@@ -5,6 +5,8 @@ import type {
   PaykuNotifyPayload,
   PaykuVerifyNotifyOptions,
   PaykuVerifyNotifyResult,
+  PaykuWebhookRequestInput,
+  PaykuWebhookVerificationFailureReason,
 } from "../types/payku.webhooks";
 import { mapNotifyStatusToTransactionStatus } from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
@@ -32,9 +34,14 @@ function verificationKeysEqual(left: string, right: string): boolean {
   return timingSafeEqual(hmacSha256(left), hmacSha256(right));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export default class PaykuWebhooks {
   public verifyNotify = this.verifyNotification.bind(this);
   public verifyCallback = this.verifyNotification.bind(this);
+  public handleRequest = this.handleWebhookRequest.bind(this);
 
   constructor(private readonly transactions: PaykuTransactionsClient) {}
 
@@ -126,5 +133,54 @@ export default class PaykuWebhooks {
 
       throw error;
     }
+  }
+
+  /**
+   * Parsea un `Request` (Web API) o un payload ya leído y corre `verifyNotify`.
+   */
+  private async handleWebhookRequest(
+    requestOrPayload: PaykuWebhookRequestInput,
+    options: PaykuVerifyNotifyOptions = {},
+  ): Promise<PaykuVerifyNotifyResult> {
+    const parsed = await this.readNotifyPayload(requestOrPayload);
+    if (!parsed.ok) {
+      return {
+        valid: false,
+        reason: parsed.reason,
+      };
+    }
+
+    return this.verifyNotification(parsed.payload, options);
+  }
+
+  private async readNotifyPayload(
+    input: PaykuWebhookRequestInput,
+  ): Promise<
+    | { ok: true; payload: PaykuNotifyPayload }
+    | { ok: false; reason: PaykuWebhookVerificationFailureReason }
+  > {
+    if (
+      typeof globalThis.Request !== "undefined" &&
+      input instanceof globalThis.Request
+    ) {
+      let json: unknown;
+      try {
+        json = await input.json();
+      } catch {
+        return { ok: false, reason: "invalid_json" };
+      }
+
+      if (!isRecord(json)) {
+        return { ok: false, reason: "invalid_payload" };
+      }
+
+      return { ok: true, payload: json as unknown as PaykuNotifyPayload };
+    }
+
+    if (!isRecord(input)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+
+    return { ok: true, payload: input as PaykuNotifyPayload };
   }
 }
