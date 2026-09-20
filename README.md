@@ -143,6 +143,30 @@ const sign = buildSign(
 
 Referencia oficial y colección Postman: [docs.payku.com](https://docs.payku.com/) · [colección CL](https://docs.payku.com/postman/payku-cl-es.postman_collection.json) · [environment](https://docs.payku.com/postman/payku-environment.postman_environment.json).
 
+## Sandbox Chile
+
+`environment: "sandbox"` usa `https://des.payku.cl` (producción: `https://app.payku.cl`). Las URLs ya están en [`.env.example`](./.env.example).
+
+### Tarjetas de prueba (Webpay)
+
+Valores publicados por Payku para `des.payku.cl`. Cualquier fecha de expiración futura; CVV `123` (AMEX `1234`).
+
+| Tipo | PAN | Resultado |
+| --- | --- | --- |
+| VISA | `4051 8856 0044 6623` | aprobada |
+| AMEX | `3700 0000 0002 032` | aprobada |
+| MASTERCARD | `5186 0595 5959 0568` | rechazada |
+| Redcompra | `4051 8842 3993 7763` | aprobada (débito / prepago) |
+| Redcompra | `5186 0085 4123 3829` | rechazada (débito / prepago) |
+| Prepago VISA | `4051 8860 0005 6590` | aprobada |
+| Prepago MASTERCARD | `5186 1741 1062 9480` | rechazada |
+
+### Autenticación del formulario Webpay
+
+Cuando Payku pide RUT y clave: RUT `11.111.111-1`, clave `123`.
+
+Montos de payout en sandbox: ver [Wallet → Ambiente Sandbox](#ambiente-sandbox-despaykucl). Docs Payku: [introducción / tarjetas de prueba](https://docs.payku.com/).
+
 ## Transacciones
 
 ```typescript
@@ -649,18 +673,164 @@ Cada transacción autorizada dentro de `result.transactions` retorna uno de los 
 | `paid` | Fondos ya depositados previamente en la cuenta de destino. |
 | `not found` | Identificador no encontrado o no asociado a una custodia válida. |
 
-## Suscripciones (Chile)
+## Marketplace (Chile)
+
+Reparto de un cobro entre el comercio y vendedores (`maclient` → `maaffiliation` → transacción con token de afiliación). Solo `Payku.forCountry("CL")`. Diagrama Payku: [Marketplace](https://docs.payku.com/img/diagrams/Diagrama-Marketplace.png).
+
+> [!NOTE]
+> - **Sign:** solo `marketplace.clients.update` (`PUT /api/maclient/{id}`). Create/get/delete de cliente, afiliaciones y la transacción van con Bearer.
+> - El campo `marketplace` en el cobro es el **token** de la afiliación (`aff.token`), no el `id` del cliente.
 
 ```typescript
+import Payku, {
+  buildMarketplaceAffiliation,
+  PaykuMarketplaceError,
+} from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+try {
+  const client = await payku.marketplace.clients.create({
+    email: "vendedor@example.com",
+    name: "Vendedor Test",
+    phone: "923122312",
+    bank: {
+      sbif: "0001",
+      type: "1",
+      num: "12312313121",
+      rut: "111111111",
+    },
+  });
+
+  const aff = await payku.marketplace.affiliations.create({
+    name: "market1",
+    percentage: "20",
+    affiliation: buildMarketplaceAffiliation([
+      { clientId: client.id, percentage: "80" },
+    ]),
+  });
+
+  const order = await payku.marketplace.transactions.create({
+    email: "comprador@example.com",
+    order: "mkt-001",
+    subject: "Pedido marketplace",
+    amount: 10000,
+    payment: 1,
+    urlreturn: "https://tu-sitio.com/return",
+    urlnotify: "https://tu-sitio.com/notify",
+    marketplace: aff.token,
+  });
+
+  // Redirect order.url → confirmar con webhooks.verifyNotify / transactions.get
+  console.log(order.url);
+} catch (error) {
+  if (error instanceof PaykuMarketplaceError) {
+    console.error(`Marketplace (${error.statusCode}):`, error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+`percentage` es el % del comercio; los pares en `affiliation` son `[idCliente, %vendedor]` y deben sumar 100 con el comercio (`validateMarketplaceAffiliationPercentages`).
+
+## Mall (Chile)
+
+Agrupa varias tiendas en **una** pasarela (`POST /api/mall`). Los ids son `mall…`, no `trx…`. Solo Chile. Diagrama Payku: [Mall](https://docs.payku.com/img/diagrams/Diagrama-Mall.png).
+
+> [!NOTE]
+> - **Sign** en `mall.create`. `mall.get` va solo con Bearer (sandbox no exige Sign).
+> - Cada fila `merchant` es `[token público o id de afiliación, monto, descripción, eventId|null, orden individual]`.
+> - El callback `urlnotify` se verifica con `payku.mall.verifyNotify`, no con `webhooks.verifyNotify`. Ver [Webhooks](#webhooks).
+
+```typescript
+import Payku, { buildMallMerchant, PaykuMallError } from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+try {
+  const mall = await payku.mall.create({
+    email: "comprador@example.com",
+    payment: 1,
+    merchant: [
+      buildMallMerchant({
+        tokenOrAffiliationId: "TOKEN_O_AFILIACION",
+        amount: 30000,
+        subject: "item1",
+        eventId: null,
+        individualOrder: "4545",
+      }),
+      ["81b6179e4feeef2b50af71d66f7830de", 25000, "item2", null, "4546"],
+    ],
+    order: 123,
+    urlreturn: "https://tu-sitio.com/return",
+    urlnotify: "https://tu-sitio.com/notify",
+  });
+
+  // Redirect mall.url → confirmar con mall.get(mall.id) o mall.verifyNotify
+  const current = await payku.mall.get(mall.id);
+  console.log(mall.url, current.status);
+} catch (error) {
+  if (error instanceof PaykuMallError) {
+    console.error(`Mall (${error.statusCode}):`, error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+## Suscripciones (Chile)
+
+Planes **recurrentes** (monto fijo o variable). El plan suele existir ya en Payku; el SDK lo consulta, no lo crea. Diagrama Payku: [Suscripción](https://docs.payku.com/img/diagrams/Diagrama-Suscripcion.png).
+
+Cargos únicos / delivery van en [`consumptionSubscriptions`](#suscripción-de-consumo-chile) (#71), no en `subscriptions.transactions.create`.
+
+La API usa typos en el wire (`suscription`, `subcriptions`, `url_notify_suscription`, `update_at`). El SDK replica esas keys.
+
+### Flujo (8 pasos)
+
+1. Crear cliente (`subscriptions.clients.create`).
+2. Listar o obtener el plan (`subscriptions.plans.list` / `get`).
+3. Crear la suscripción (`subscriptions.subscriptions.create`) → `url` de 3DS.
+4. Redirigir al pagador. El **primer** alta cobra **$50 CLP** para validar la tarjeta.
+5. Callback de activación `urlnotifysuscription` → `verifyActivationNotify`.
+6. En plan fijo, Payku cobra el servicio desde el **mes siguiente**. Cada cobro llega a `urlnotifypayment` → `verifyPaymentNotify`.
+7. Consultar o listar (`subscriptions.subscriptions.get` / `list` / `listV3`).
+8. Opcional: renovar tarjeta (`subscriptions.cards.register`) o eliminar (`cards.delete`).
+
+```typescript
+import Payku from "@nicotordev/payku";
+
+const payku = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
 const client = await payku.subscriptions.clients.create({
   email: "cliente@example.com",
   name: "Cliente Test",
+  phone: "923122312",
 });
 
+const { plans } = await payku.subscriptions.plans.list();
+const plan = plans[0];
+
 const subscription = await payku.subscriptions.subscriptions.create({
-  plan: "pl...",
+  plan: plan.id,
   client: client.id as string,
+  // amount: "15000", // solo planes de monto variable (CLP)
 });
+
+console.log(subscription.url); // 3DS / Webpay
 ```
 
 ### Callbacks `urlnotifysuscription` y `urlnotifypayment`
@@ -695,7 +865,49 @@ Hay **dos** clientes Chile que hablan endpoints parecidos. No son intercambiable
 | `sutransaction` | `create` | `create` (docs de consumo: `marketplace` / `card`) |
 | `cards` | `register` + `delete` | solo `delete` |
 
-Usa `Payku.forCountry("CL").consumptionSubscriptions` cuando el flujo es **plan de consumo → cliente → suscripción → un `sutransaction` por cada cargo**. El CRUD de consulta (get/list, afiliar tarjeta, planes ya creados) sigue en `subscriptions`.
+Usa `Payku.forCountry("CL").consumptionSubscriptions` cuando el flujo es **plan de consumo → cliente → suscripción → un `sutransaction` por cada cargo**. El CRUD de consulta (get/list, afiliar tarjeta, planes ya creados) sigue en `subscriptions`. Tipos P0 de consumo: [#63](https://github.com/nicotordev/payku-sdk/issues/63), [#64](https://github.com/nicotordev/payku-sdk/issues/64), [#65](https://github.com/nicotordev/payku-sdk/issues/65), [#66](https://github.com/nicotordev/payku-sdk/issues/66), [#67](https://github.com/nicotordev/payku-sdk/issues/67).
+
+Diagrama Payku del cargo: [sutransaction](https://docs.payku.com/img/diagrams/Diagrama-Sutransaction.png).
+
+### Flujo delivery / cargo único
+
+El alta de la suscripción también cobra **$50 CLP** para validar la tarjeta. Cada delivery posterior es un `transactions.create` (wire `suscription`, no `subscription`). Opcionales de docs de consumo: `marketplace` (token de afiliación) y `card`.
+
+```typescript
+import Payku from "@nicotordev/payku";
+
+const cl = Payku.forCountry("CL", {
+  publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
+  privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
+  environment: "sandbox",
+});
+
+const plan = await cl.consumptionSubscriptions.plans.create({
+  name: "Delivery",
+  url_notify_suscription: "https://tu-sitio.com/notify-suscription",
+  url_notify_payment: "https://tu-sitio.com/notify-payment",
+});
+
+const client = await cl.consumptionSubscriptions.clients.create({
+  email: "cliente@example.com",
+  name: "Cliente Test",
+  phone: "923122312",
+});
+
+const sub = await cl.consumptionSubscriptions.subscriptions.create({
+  plan: plan.id,
+  client: client.id as string,
+});
+// redirect sub.url  — o buildConsumptionGatewayUrl (abajo)
+
+const charge = await cl.consumptionSubscriptions.transactions.create({
+  suscription: sub.id,
+  amount: "10000",
+  order: "001",
+  marketplace: "ma…", // opcional: token de afiliación
+  // card: "sure…",  // opcional: tarjeta activa
+});
+```
 
 Los callbacks `urlnotifysuscription` / `urlnotifypayment` son los mismos que en suscripción regular: verifícalos con `payku.subscriptions.verifyActivationNotify` y `verifyPaymentNotify` ([#59](https://github.com/nicotordev/payku-sdk/issues/59), [sección Callbacks](#callbacks-urlnotifysuscription-y-urlnotifypayment)). Docs Payku: [suscripción de consumo](https://docs.payku.com/).
 
