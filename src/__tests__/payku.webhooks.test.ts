@@ -251,4 +251,91 @@ describe("PaykuWebhooks", () => {
 
     expect(result.valid).toBe(true);
   });
+
+  test("handleRequest verifies a parsed payload", async () => {
+    const webhooks = new PaykuWebhooks({
+      get: async () =>
+        ({
+          status: "success",
+          id: "trx1",
+          order: "order-1",
+          amount: "1000",
+        }) as PaykuGetTransactionResponse,
+    });
+
+    const result = await webhooks.handleRequest({
+      transaction_id: "1",
+      payment_key: "trx1",
+      transaction_key: "2",
+      verification_key: "3",
+      order: "order-1",
+      status: "success",
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.transaction.id).toBe("trx1");
+    }
+  });
+
+  test("handleRequest accepts a Web Request and reuses verifyNotify", async () => {
+    const webhooks = new PaykuWebhooks({
+      get: async () =>
+        ({
+          status: "success",
+          id: "trx1",
+          order: "order-1",
+          amount: "1000",
+        }) as PaykuGetTransactionResponse,
+    });
+
+    const request = new globalThis.Request("https://tu-sitio.com/api/webhooks/payku", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        transaction_id: "1",
+        payment_key: "trx1",
+        transaction_key: "2",
+        verification_key: "3",
+        order: "order-1",
+        status: "success",
+      }),
+    });
+
+    const result = await webhooks.handleRequest(request);
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.transaction.id).toBe("trx1");
+    }
+  });
+
+  test("handleRequest rejects invalid JSON and non-object bodies", async () => {
+    const webhooks = new PaykuWebhooks({
+      get: async () => ({}) as PaykuGetTransactionResponse,
+    });
+
+    const invalidJson = await webhooks.handleRequest(
+      new globalThis.Request("https://tu-sitio.com/notify", {
+        method: "POST",
+        body: "{",
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    expect(invalidJson.valid).toBe(false);
+    if (!invalidJson.valid) {
+      expect(invalidJson.reason).toBe("invalid_json");
+    }
+
+    const arrayBody = await webhooks.handleRequest(
+      new globalThis.Request("https://tu-sitio.com/notify", {
+        method: "POST",
+        body: JSON.stringify(["not", "an", "object"]),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    expect(arrayBody.valid).toBe(false);
+    if (!arrayBody.valid) {
+      expect(arrayBody.reason).toBe("invalid_payload");
+    }
+  });
 });
