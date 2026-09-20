@@ -1,9 +1,12 @@
+import { URL } from "node:url";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuConsumptionSubscriptions from "../clients/payku.consumption-subscriptions";
+import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
 import { buildSign } from "../http/sign";
+import { buildConsumptionGatewayUrl } from "../utils/payku.utils";
 
 describe("PaykuConsumptionSubscriptions wire format", () => {
   let mock: InstanceType<typeof MockAdapter>;
@@ -181,5 +184,99 @@ describe("PaykuConsumptionSubscriptions wire format", () => {
       status: "Delete",
       card: "surec804a8ed60c747cb8839",
     });
+  });
+});
+
+const gatewayFixture = {
+  rootUrl: "https://des.payku.cl",
+  planId: 607,
+  verif: "b4280f5e",
+  firstName: "vicente",
+  lastName: "borjas",
+  email: "example@example.com",
+  phone: "986523565",
+} as const;
+
+describe("buildConsumptionGatewayUrl", () => {
+  test("builds suscripcion/index query in docs order with encoded email", () => {
+    const url = buildConsumptionGatewayUrl(gatewayFixture);
+
+    expect(url).toBe(
+      "https://des.payku.cl/suscripcion/index?idplan=607&verif=b4280f5e&nombre=vicente&apellido=borjas&email=example%40example.com&telefono=986523565&direct_full=true",
+    );
+  });
+
+  test("defaults direct_full to true and accepts production rootUrl with trailing slash", () => {
+    const url = buildConsumptionGatewayUrl({
+      ...gatewayFixture,
+      rootUrl: "https://app.payku.cl/",
+    });
+
+    expect(url.startsWith("https://app.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+    expect(url).toContain("direct_full=true");
+  });
+
+  test("collapses repeated trailing slashes on rootUrl without regex", () => {
+    const url = buildConsumptionGatewayUrl({
+      ...gatewayFixture,
+      rootUrl: "https://des.payku.cl///",
+    });
+
+    expect(url.startsWith("https://des.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+  });
+
+  test("sets direct_full=false when directFull is false", () => {
+    const url = buildConsumptionGatewayUrl({
+      ...gatewayFixture,
+      directFull: false,
+    });
+
+    expect(url).toContain("direct_full=false");
+    expect(url).not.toContain("direct_full=true");
+  });
+
+  test("appends extra query params without overriding reserved keys", () => {
+    const url = buildConsumptionGatewayUrl({
+      ...gatewayFixture,
+      extra: {
+        rut: "11111111-1",
+        idplan: "999",
+        verif: "forged",
+      },
+    });
+
+    const parsed = new URL(url);
+    expect(parsed.searchParams.get("idplan")).toBe("607");
+    expect(parsed.searchParams.get("verif")).toBe("b4280f5e");
+    expect(parsed.searchParams.get("rut")).toBe("11111111-1");
+  });
+
+  test("rejects missing required fields", () => {
+    expect(() =>
+      buildConsumptionGatewayUrl({
+        ...gatewayFixture,
+        email: "  ",
+      }),
+    ).toThrow(PaykuError);
+
+    expect(() =>
+      buildConsumptionGatewayUrl({
+        ...gatewayFixture,
+        rootUrl: "",
+      }),
+    ).toThrow("rootUrl is required");
+  });
+
+  test("rejects invalid rootUrl", () => {
+    expect(() =>
+      buildConsumptionGatewayUrl({
+        ...gatewayFixture,
+        rootUrl: "not-a-url",
+      }),
+    ).toThrow("rootUrl is not a valid URL");
   });
 });

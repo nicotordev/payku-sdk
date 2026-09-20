@@ -1,3 +1,4 @@
+import { URL } from "node:url";
 import type { PaykuCurrency, PaykuDefaultsConfig } from "../types/payku.common";
 import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
@@ -24,6 +25,7 @@ import type {
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
 import type {
+  PaykuBuildConsumptionGatewayUrlParams,
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
   PaykuCreateSubscriptionTransactionRequest,
@@ -44,6 +46,84 @@ export function buildPaymentRedirectUrl(
   response: Pick<PaykuCreateTransactionResponse, "url">,
 ): string {
   return response.url;
+}
+
+const CONSUMPTION_GATEWAY_PATH = "/suscripcion/index";
+const CONSUMPTION_GATEWAY_RESERVED_KEYS = new Set([
+  "idplan",
+  "verif",
+  "nombre",
+  "apellido",
+  "email",
+  "telefono",
+  "direct_full",
+]);
+
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
+/**
+ * URL de pasarela de consumo: `{rootUrl}/suscripcion/index?idplan&verif&nombre&apellido&email&telefono&direct_full`.
+ * No llama a la API; el comercio redirige al cliente a Webpay.
+ */
+export function buildConsumptionGatewayUrl(
+  params: PaykuBuildConsumptionGatewayUrlParams,
+): string {
+  requireNonEmptyField(params.rootUrl, "rootUrl");
+  requireNonEmptyField(params.planId, "planId");
+  requireStringField(params.verif, "verif");
+  requireStringField(params.firstName, "firstName");
+  requireStringField(params.lastName, "lastName");
+  requireStringField(params.email, "email");
+  requireNonEmptyField(params.phone, "phone");
+
+  let url: URL;
+  try {
+    url = new URL(
+      CONSUMPTION_GATEWAY_PATH,
+      `${stripTrailingSlashes(String(params.rootUrl).trim())}/`,
+    );
+  } catch {
+    throw new PaykuError("rootUrl is not a valid URL");
+  }
+
+  url.searchParams.set("idplan", String(params.planId).trim());
+  url.searchParams.set("verif", params.verif.trim());
+  url.searchParams.set("nombre", params.firstName.trim());
+  url.searchParams.set("apellido", params.lastName.trim());
+  url.searchParams.set("email", params.email.trim());
+  url.searchParams.set("telefono", String(params.phone).trim());
+  url.searchParams.set(
+    "direct_full",
+    params.directFull === false ? "false" : "true",
+  );
+
+  if (params.extra !== undefined) {
+    for (const [key, value] of Object.entries(params.extra)) {
+      const trimmedKey = key.trim();
+      if (
+        trimmedKey === "" ||
+        CONSUMPTION_GATEWAY_RESERVED_KEYS.has(trimmedKey)
+      ) {
+        continue;
+      }
+
+      const serialized =
+        typeof value === "boolean" ? String(value) : String(value).trim();
+      if (serialized === "") {
+        continue;
+      }
+
+      url.searchParams.set(trimmedKey, serialized);
+    }
+  }
+
+  return url.toString();
 }
 
 /** Construye la tupla `merchant[]` esperada por `POST /api/mall`. */
