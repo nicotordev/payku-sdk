@@ -63,6 +63,42 @@ describe("PaykuCreateTransactionSchema", () => {
     }
   });
 
+  test("accepts payment slugs and transforms them to codes", () => {
+    const res = PaykuCreateTransactionSchema.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      payment: "webpay",
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.payment).toBe(1);
+    }
+
+    const pen = PaykuCreateTransactionSchema.safeParse({
+      amount: 1000,
+      currency: "PEN",
+      payment: "ligopay",
+    });
+    expect(pen.success).toBe(true);
+    if (pen.success) {
+      expect(pen.data.payment).toBe(28);
+    }
+  });
+
+  test("rejects unknown payment slugs", () => {
+    const res = PaykuCreateTransactionSchema.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      payment: "paypal",
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues[0]?.message).toContain(
+        'payment slug "paypal" is not valid for currency CLP',
+      );
+    }
+  });
+
   test("rejects CLP Etpay/Fintoc/Floid without payer_rut", () => {
     for (const payment of [4, 19, 26]) {
       const res = PaykuCreateTransactionSchema.safeParse({

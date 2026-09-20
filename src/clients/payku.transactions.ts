@@ -21,6 +21,7 @@ import type {
 import {
   bodyAsRecord,
   isNoRecordsErrorMessage,
+  resolveCreateTransactionPayment,
   toQueryRecord,
   validateCreateTransactionRequest,
   validateListTransactionsParams,
@@ -59,11 +60,11 @@ export default class PaykuTransactions {
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
     const effectiveDefaults = options?.defaults ?? this.defaults;
-    const mergedParams: PaykuCreateTransactionRequest = {
+    const mergedParams = resolveCreateTransactionPayment({
       ...params,
       urlreturn: params.urlreturn ?? effectiveDefaults?.urlreturn,
       urlnotify: params.urlnotify ?? effectiveDefaults?.urlnotify,
-    };
+    });
     validateCreateTransactionRequest(mergedParams, {
       ...options,
       defaults: effectiveDefaults,

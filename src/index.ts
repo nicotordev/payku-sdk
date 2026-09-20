@@ -62,8 +62,17 @@ export {
   PAYKU_BANK_ACCOUNT_TYPES,
   PAYKU_CLP_CREATE_PAYMENT_CODES,
   PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
+  PAYKU_PAYMENT_CODE_TO_SLUG,
   PAYKU_PAYMENT_METHODS,
+  PAYKU_PAYMENT_SLUGS,
   PAYKU_VES_GATEWAYS,
+} from "./constants/payku.constants";
+export type {
+  PaykuClpPaymentSlug,
+  PaykuPaymentMethodInput,
+  PaykuPaymentSlug,
+  PaykuPenPaymentSlug,
+  PaykuVesPaymentSlug,
 } from "./constants/payku.constants";
 export {
   buildPaymentRedirectUrl,
@@ -73,6 +82,8 @@ export {
   buildMarketplaceAffiliation,
   mapNotifyStatusToTransactionStatus,
   parsePaymentReturnQuery,
+  paymentMethodToSlug,
+  resolvePaymentMethod,
   validateChileCreateTransactionRequest,
   validateConciliationRequest,
   validateCreateEventRequest,

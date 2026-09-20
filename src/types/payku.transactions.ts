@@ -1,3 +1,7 @@
+import type {
+  PaykuClpPaymentSlug,
+  PaykuPaymentMethodInput,
+} from "../constants/payku.constants";
 import type { PaykuCurrency } from "./payku.common";
 import type {
   PaykuGatewayStatus,
@@ -21,7 +25,7 @@ export interface PaykuCreateTransactionRequest {
   subject?: string;
   amount: number;
   currency: PaykuCurrency;
-  payment?: number;
+  payment?: PaykuPaymentMethodInput;
   expired?: string;
   urlreturn?: string;
   urlnotify?: string;
@@ -39,7 +43,7 @@ export interface PaykuChileCreateTransactionRequest {
   amount: number;
   urlreturn?: string;
   urlnotify?: string;
-  payment?: number;
+  payment?: PaykuClpPaymentSlug | number;
   expired?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;
 }
