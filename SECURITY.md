@@ -30,7 +30,7 @@ In scope:
 
 - Credential handling in the SDK
 - HMAC signing (`Sign`) correctness
-- Webhook / `urlnotify` verification logic (`webhooks.verifyNotify` reconsulta la transacción y compara `verification_key` si ambos lados la envían; `mall.verifyNotify` reconsulta GET `/mall/{id}`)
+- Webhook / `urlnotify` verification logic (`webhooks.verifyNotify` reconsulta la transacción y compara `verification_key` si ambos lados la envían; `mall.verifyNotify` reconsulta GET `/api/mall/{id}`)
 - Accidental secret logging
 
 Out of scope:
