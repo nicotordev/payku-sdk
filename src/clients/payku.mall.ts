@@ -138,12 +138,13 @@ export default class PaykuMall {
         };
       }
 
-      const expectedAmount = options.expectedAmount ?? payload.amount;
+      const expectedAmount =
+        nonEmptyString(options.expectedAmount) ??
+        nonEmptyString(payload.amount);
+      const actualAmount = nonEmptyString(mall.amount);
       if (
         expectedAmount !== undefined &&
-        expectedAmount !== null &&
-        String(expectedAmount).trim() !== "" &&
-        String(mall.amount) !== String(expectedAmount)
+        actualAmount !== expectedAmount
       ) {
         return {
           valid: false,

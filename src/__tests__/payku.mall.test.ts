@@ -365,6 +365,40 @@ describe("PaykuMall verifyNotify", () => {
     }
   });
 
+  test("falls back to payload.amount when expectedAmount is blank", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify(notifyFixture, {
+      expectedAmount: "   ",
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  test("uses payload.amount when expectedAmount is blank and amounts differ", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify(
+      { ...notifyFixture, amount: "1" },
+      { expectedAmount: "" },
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.reason).toBe("amount_mismatch");
+    }
+  });
+
+  test("trims expectedAmount before comparing", async () => {
+    mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
+
+    const result = await mall.verifyNotify(notifyFixture, {
+      expectedAmount: "  30000  ",
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
   test("returns verification_key_mismatch when keys differ", async () => {
     mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply(200, getFixture);
 
