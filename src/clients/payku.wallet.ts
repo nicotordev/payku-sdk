@@ -51,10 +51,12 @@ export default class PaykuWallet {
     private readonly options?: PaykuClientOptions,
   ) {}
 
+  /** Ejecuta una operación de wallet con errores tipados y logging común. */
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     return wrapOperation(operation, PaykuWalletError, this.options, fn);
   }
 
+  /** Crea un payout de wallet después de validar sus datos. */
   private createPayout(
     params: PaykuWalletPayoutRequest,
   ): Promise<PaykuCreateWalletPayoutResponse> {
@@ -69,6 +71,7 @@ export default class PaykuWallet {
     });
   }
 
+  /** Crea un retiro firmado desde el saldo de wallet. */
   private createWithdraw(
     params: PaykuWalletWithdrawRequest,
   ): Promise<PaykuCreateWalletWithdrawResponse> {
@@ -82,6 +85,7 @@ export default class PaykuWallet {
     );
   }
 
+  /** Obtiene el saldo actual de wallet. */
   private getBalance(): Promise<PaykuWalletBalanceResponse> {
     return this.wrap("wallet.balance.get", () =>
       this.http.request<PaykuWalletBalanceResponse>({
@@ -92,6 +96,7 @@ export default class PaykuWallet {
     );
   }
 
+  /** Lista los movimientos de wallet usando los filtros indicados. */
   private listMovements(
     params: PaykuWalletListParams = {},
   ): Promise<PaykuWalletListResponse> {
@@ -105,6 +110,7 @@ export default class PaykuWallet {
     );
   }
 
+  /** Obtiene el detalle de un movimiento de wallet. */
   private getMovement(id: string): Promise<PaykuWalletListResponse> {
     return this.wrap("wallet.movements.get", () =>
       this.http.request<PaykuWalletListResponse>({
@@ -115,6 +121,7 @@ export default class PaykuWallet {
     );
   }
 
+  /** Obtiene un payout mediante el endpoint vigente. */
   private getPayout(id: string): Promise<PaykuGetPayoutResponse> {
     return this.wrap("wallet.payouts.get", () =>
       this.http.request<PaykuGetPayoutResponse>({
@@ -125,6 +132,7 @@ export default class PaykuWallet {
     );
   }
 
+  /** Obtiene un payout mediante el endpoint v3. */
   private getPayoutV3(id: string): Promise<PaykuGetPayoutV3Response> {
     return this.wrap("wallet.payouts.getV3", () =>
       this.http.request<PaykuGetPayoutV3Response>({
@@ -202,4 +210,3 @@ export default class PaykuWallet {
     }
   }
 }
-

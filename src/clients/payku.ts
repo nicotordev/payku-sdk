@@ -42,6 +42,9 @@ export type PaykuCountryClientMap = {
 export type PaykuForCountryClient<C extends PaykuCountry> =
   PaykuCountryClientMap[C];
 
+/**
+ * Resuelve credenciales, entorno y URLs predeterminadas desde variables de entorno.
+ */
 export function resolvePaykuConfigFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): PaykuConfig {

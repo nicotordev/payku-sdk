@@ -74,6 +74,7 @@ export abstract class PaykuCountryBase implements PaykuCountryClient {
 
   protected readonly core: PaykuCountryCore;
 
+  /** Inicializa las propiedades compartidas por todos los clientes de país. */
   constructor(core: PaykuCountryCore) {
     this.core = core;
     this.publicToken = core.publicToken;
@@ -84,10 +85,12 @@ export abstract class PaykuCountryBase implements PaykuCountryClient {
     this.webhooks = core.webhooks;
   }
 
+  /** URL base de la API para el entorno configurado. */
   get baseUrl(): string {
     return this.core.baseUrl;
   }
 
+  /** URL raíz de Payku para el entorno configurado. */
   get rootUrl(): string {
     return this.core.rootUrl;
   }

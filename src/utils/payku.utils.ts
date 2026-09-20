@@ -188,10 +188,12 @@ export function bodyAsRecord<T extends object>(
   return value as unknown as Record<string, unknown>;
 }
 
+/** Indica si un valor es un objeto record no nulo y no es un arreglo. */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Convierte un valor presente a string sin espacios, u omite valores vacíos. */
 export function nonEmptyString(value: unknown): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
@@ -203,6 +205,7 @@ export function nonEmptyString(value: unknown): string | undefined {
 
 const verificationCompareKey = randomBytes(32);
 
+/** Normaliza una clave de verificación a un digest de longitud fija. */
 function hmacSha256(value: string): Buffer {
   return createHmac("sha256", verificationCompareKey)
     .update(value, "utf8")
@@ -254,7 +257,9 @@ export function parseQueryToRecord(
     const params = new URLSearchParams(extractQueryString(input));
     const obj: Record<string, string> = {};
     params.forEach((value, key) => {
-      obj[key] = value;
+      if (!Object.hasOwn(obj, key)) {
+        obj[key] = value;
+      }
     });
     return obj;
   }
@@ -265,7 +270,9 @@ export function parseQueryToRecord(
   ) {
     const obj: Record<string, string> = {};
     input.forEach((value, key) => {
-      obj[key] = value;
+      if (!Object.hasOwn(obj, key)) {
+        obj[key] = value;
+      }
     });
     return obj;
   }
@@ -273,9 +280,8 @@ export function parseQueryToRecord(
   if (isRecord(input)) {
     const obj: Record<string, string | undefined> = {};
     for (const [key, val] of Object.entries(input)) {
-      obj[key] = Array.isArray(val)
-        ? (val[0] as string | undefined)
-        : (val as string | undefined);
+      const candidate = Array.isArray(val) ? val[0] : val;
+      obj[key] = typeof candidate === "string" ? candidate : undefined;
     }
     return obj;
   }
@@ -1257,4 +1263,3 @@ export function validateWalletPayoutRequest(
     }
   }
 }
-

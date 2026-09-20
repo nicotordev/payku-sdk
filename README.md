@@ -314,6 +314,23 @@ if (result.valid) {
 }
 ```
 
+En un Route Handler puedes pasar el `Request` (o el JSON ya parseado). La respuesta HTTP la arma el framework:
+
+```typescript
+export async function POST(req: Request) {
+  const result = await payku.webhooks.handleRequest(req);
+
+  if (!result.valid) {
+    return Response.json({ error: result.reason }, { status: 400 });
+  }
+
+  await markOrderPaid(result.transaction.order);
+  return Response.json({ received: true });
+}
+```
+
+`handleRequest` acepta un `Request` o el payload ya parseado; por dentro usa `verifyNotify`.
+
 Payku usa nombres distintos para el mismo rechazo:
 
 | Origen                         | Valores                                              |

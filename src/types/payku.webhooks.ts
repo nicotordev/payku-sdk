@@ -10,7 +10,9 @@ export type PaykuWebhookVerificationFailureReason =
   | "order_mismatch"
   | "amount_mismatch"
   | "verification_key_mismatch"
-  | "payku_api_error";
+  | "payku_api_error"
+  | "invalid_json"
+  | "invalid_payload";
 
 export interface PaykuVerifyNotifyOptions {
   expectedStatus?: string;
@@ -31,5 +33,7 @@ export type PaykuVerifyNotifyResult =
       transaction?: PaykuGetTransactionResponse;
       error?: unknown;
     };
+
+export type PaykuWebhookRequestInput = globalThis.Request | PaykuNotifyPayload;
 
 export type { PaykuNotifyPayload, PaykuGetTransactionResponse };

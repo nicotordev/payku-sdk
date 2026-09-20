@@ -114,7 +114,7 @@
     "docs:api": "typedoc",
     "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "lint:duplication": "jscpd ./src --ignore '**/__tests__/**'",
+    "lint:duplication": "jscpd ./src --ignore '**/__tests__/**' --threshold 2",
     "prepare": "husky",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,scss,md}'",
     "prepublishOnly": "bun run build"
