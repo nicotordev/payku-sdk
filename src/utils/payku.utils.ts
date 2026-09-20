@@ -24,6 +24,7 @@ import type {
   PaykuCreateTransactionResponse,
   PaykuExpirationInput,
   PaykuListTransactionsParams,
+  PaykuPaymentMethodInput,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
@@ -39,7 +40,9 @@ import {
   PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT,
   PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE,
   PAYKU_MALL_PAYMENT_CODES,
+  PAYKU_PAYMENT_CODE_TO_SLUG,
   PAYKU_PAYMENT_METHODS,
+  PAYKU_PAYMENT_SLUGS,
   PAYKU_VES_GATEWAYS,
 } from "../constants/payku.constants";
 import { PaykuError } from "../errors";
@@ -491,6 +494,58 @@ function resolveClpPaymentCodes(
 }
 
 /**
+ * Resuelve `payment` (código o slug) al código numérico de Payku para esa moneda.
+ */
+export function resolvePaymentMethod(
+  payment: PaykuPaymentMethodInput | string,
+  currency: PaykuCurrency,
+): number {
+  if (typeof payment === "number") {
+    if (!Number.isInteger(payment)) {
+      throw new PaykuError(
+        `payment ${payment} is not valid for currency ${currency}`,
+      );
+    }
+    return payment;
+  }
+
+  if (typeof payment !== "string" || payment.trim() === "") {
+    throw new PaykuError("payment must be a number or a non-empty slug");
+  }
+
+  const slug = payment.trim().toLowerCase();
+  const code = PAYKU_PAYMENT_SLUGS[currency][slug];
+  if (code === undefined) {
+    throw new PaykuError(
+      `payment slug "${payment}" is not valid for currency ${currency}`,
+    );
+  }
+  return code;
+}
+
+/** Código numérico → slug canónico (`1` → `"webpay"` en CLP). */
+export function paymentMethodToSlug(
+  code: number,
+  currency: PaykuCurrency,
+): string | undefined {
+  return PAYKU_PAYMENT_CODE_TO_SLUG[currency][code];
+}
+
+/** Copia el request con `payment` resuelto a código numérico. */
+export function resolveCreateTransactionPayment(
+  params: PaykuCreateTransactionRequest,
+): PaykuCreateTransactionRequest {
+  if (params.payment === undefined) {
+    return params;
+  }
+
+  return {
+    ...params,
+    payment: resolvePaymentMethod(params.payment, params.currency),
+  };
+}
+
+/**
  * Mapea `status` del payload `urlnotify` al status de `GET /transaction`.
  * Docs: notify usa `failed`; la API usa `rejected`.
  */
@@ -537,15 +592,20 @@ export function validateCreateTransactionRequest(
     options.now ?? new Date(),
   );
 
-  if (params.payment !== undefined) {
+  const payment =
+    params.payment === undefined
+      ? undefined
+      : resolvePaymentMethod(params.payment, params.currency);
+
+  if (payment !== undefined) {
     const validCodes: readonly number[] =
       params.currency === "CLP"
         ? resolveClpPaymentCodes(options.clpPaymentCodes)
         : Object.values(PAYKU_PAYMENT_METHODS[params.currency as PaykuCurrency]);
 
-    if (!validCodes.includes(params.payment)) {
+    if (!validCodes.includes(payment)) {
       throw new PaykuError(
-        `payment ${params.payment} is not valid for currency ${params.currency}`,
+        `payment ${payment} is not valid for currency ${params.currency}`,
       );
     }
   }
@@ -554,7 +614,7 @@ export function validateCreateTransactionRequest(
     const payerRut =
       params.payerRut ?? params.additional_parameters?.payer_rut;
     validateClpPayerRutRequirement(
-      params.payment,
+      payment,
       payerRut,
     );
   }

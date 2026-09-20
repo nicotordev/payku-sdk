@@ -5,6 +5,24 @@ import type {
   PaykuTransactionStatus,
 } from "./payku.responses";
 
+type PaykuPaymentMethodsCatalog =
+  typeof import("../constants/payku.constants").PAYKU_PAYMENT_METHODS;
+
+export type PaykuClpPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["CLP"]
+>;
+export type PaykuPenPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["PEN"]
+>;
+export type PaykuVesPaymentSlug = Lowercase<
+  keyof PaykuPaymentMethodsCatalog["VES"]
+>;
+export type PaykuPaymentSlug =
+  | PaykuClpPaymentSlug
+  | PaykuPenPaymentSlug
+  | PaykuVesPaymentSlug;
+export type PaykuPaymentMethodInput = PaykuPaymentSlug | number;
+
 export interface PaykuTransactionAdditionalParameters {
   parameters1?: string;
   parameters2?: string;
@@ -39,7 +57,7 @@ export interface PaykuCreateTransactionRequest {
   subject?: string;
   amount: number;
   currency: PaykuCurrency;
-  payment?: number;
+  payment?: PaykuPaymentMethodInput;
   expired?: PaykuExpirationInput;
   payerRut?: string;
   urlreturn?: string;
@@ -58,7 +76,7 @@ export interface PaykuChileCreateTransactionRequest {
   amount: number;
   urlreturn?: string;
   urlnotify?: string;
-  payment?: number;
+  payment?: PaykuClpPaymentSlug | number;
   expired?: PaykuExpirationInput;
   payerRut?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;

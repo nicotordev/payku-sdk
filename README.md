@@ -40,7 +40,7 @@ const payku = Payku.forCountry("CL", {
 // currency implícita: CLP — y urlreturn/urlnotify opcionales si usas defaults:
 await payku.transactions.create({
   amount: 1000,
-  payment: 1,
+  payment: "webpay",
   order: "orden-001",
   email: "cliente@example.com",
   subject: "Compra test",
@@ -176,7 +176,7 @@ const order = await payku.transactions.create({
   order: "orden-001",
   subject: "Compra test",
   amount: 1000,
-  payment: 1,
+  payment: "webpay",
   urlreturn: "https://tu-sitio.com/return",
   urlnotify: "https://tu-sitio.com/notify",
 });
@@ -272,7 +272,7 @@ const allMethods = await payku.paymentMethods.list();
 
 #### Uso en creación de transacciones (`transactions.create`)
 
-Cada método de pago incluye un identificador numérico `payment` (ej. `1` para Webpay Plus, `4` para ETpay, `9` para MACH). Este código se utiliza en el campo `payment` al crear una transacción:
+Cada método de pago incluye un identificador numérico `payment` (ej. `1` para Webpay Plus, `4` para ETpay, `9` para MACH). En `transactions.create` puedes pasar ese código **o** el slug (`"webpay"`, `"etpay"`, `"fintoc"`, `"safety_pay"`, `"vepuy"`, …); el SDK lo resuelve al número antes de firmar y enviar. `payment: 1` sigue válido.
 
 ```typescript
 import Payku from "@nicotordev/payku";
