@@ -1,4 +1,8 @@
-import { PaykuAuthenticationError, type PaykuClientOptions } from "../errors";
+import {
+  PaykuAuthenticationError,
+  PaykuError,
+  type PaykuClientOptions,
+} from "../errors";
 import { HttpClient } from "../http/client";
 import {
   getBaseUrl,
@@ -50,8 +54,15 @@ export function resolvePaykuConfigFromEnv(
 ): PaykuConfig {
   const publicToken = env.PAYKU_PUBLIC_TOKEN;
   const privateToken = env.PAYKU_PRIVATE_TOKEN;
-  const environment = (env.PAYKU_ENVIRONMENT ??
-    "sandbox") as PaykuEnvironment;
+  const environmentValue = env.PAYKU_ENVIRONMENT ?? "sandbox";
+
+  if (environmentValue !== "sandbox" && environmentValue !== "production") {
+    throw new PaykuError(
+      `Payku: invalid PAYKU_ENVIRONMENT "${environmentValue}"`,
+    );
+  }
+
+  const environment: PaykuEnvironment = environmentValue;
 
   if (!publicToken || !privateToken) {
     throw new PaykuAuthenticationError();
