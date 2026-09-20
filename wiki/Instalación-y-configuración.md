@@ -61,6 +61,8 @@ En modo global debes pasar `currency: "CLP" | "PEN" | "VES"` en cada request.
 
 Perú y Venezuela comparten la misma base URL documentada por Payku.
 
+Tarjetas de prueba y RUT del formulario Webpay (`11.111.111-1` / `123`): [README → Sandbox Chile](https://github.com/nicotordev/payku-sdk/blob/main/README.md#sandbox-chile) y [Chile (CL)](Chile-CL).
+
 ## Verificación local
 
 ```bash

@@ -122,6 +122,8 @@ Notify `status: "failed"` corresponde a API `rejected` en cobros/transacciones (
 
 - **Unit** (`bun run test` / `test:unit`): firma, errores, webhooks con mock, guards de auth. Bare `bun test` también es unit-only gracias a `bunfig.toml`.
 - **Integración** (`bun run test:integration`): smoke sandbox por módulo en `src/__tests__/integration/` si hay tokens reales en `.env` y `PAYKU_ENVIRONMENT=sandbox`; CI no lo ejecuta.
+- **Sandbox Chile (docs):** tarjetas de prueba y RUT Webpay (`11.111.111-1` / `123`) en README; `des.payku.cl` vs `app.payku.cl` en `.env.example` (#98).
+- **README por módulo Chile:** Marketplace (`maclient` → `maaffiliation` → tx con `aff.token`, #36), Mall (`merchant[]` + `mall.verifyNotify`, #44), suscripción recurrente 8 pasos (#62), consumo plan → cliente → suscripción → `sutransaction` (#71).
 
 ## 9. Roadmap por fases
 

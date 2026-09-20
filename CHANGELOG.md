@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- README Chile: Marketplace, Mall, flujo de suscripción (8 pasos), flujo de consumo y tarjetas sandbox Webpay (#36, #44, #62, #71, #98).
 - README / sdk-spec: cuándo usar `consumptionSubscriptions` vs `subscriptions` (#69).
 - `buildConsumptionGatewayUrl`: construye `{rootUrl}/suscripcion/index` (pasarela Webpay `direct_full`) (#68).
 - `subscriptions.verifyActivationNotify` y `subscriptions.verifyPaymentNotify`: reconsultan `GET /api/sususcription/{id}` para `urlnotifysuscription` y `urlnotifypayment` (#59).
