@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { PaykuAPIError } from "../errors";
 import type {
   PaykuNotifyPayload,
@@ -8,6 +10,27 @@ import { mapNotifyStatusToTransactionStatus } from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
+
+const verificationCompareKey = randomBytes(32);
+
+function nonEmptyVerificationKey(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function hmacSha256(value: string): Buffer {
+  return createHmac("sha256", verificationCompareKey)
+    .update(value, "utf8")
+    .digest();
+}
+
+function verificationKeysEqual(left: string, right: string): boolean {
+  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
+}
 
 export default class PaykuWebhooks {
   public verifyNotify = this.verifyNotification.bind(this);
@@ -20,6 +43,9 @@ export default class PaykuWebhooks {
    *
    * Si no pasas `expectedStatus`, se deriva del `payload.status` mapeando
    * notify `failed` → API `rejected`.
+   *
+   * Si `payload.verification_key` y `transaction.payment.verification_key`
+   * tienen valor, deben coincidir; si no, `reason` es `verification_key_mismatch`.
    */
   public async verifyNotification(
     payload: PaykuNotifyPayload,
@@ -39,6 +65,24 @@ export default class PaykuWebhooks {
         return {
           valid: false,
           reason: "status_mismatch",
+          notify: payload,
+          transaction,
+        };
+      }
+
+      const notifyKey = nonEmptyVerificationKey(payload.verification_key);
+      const paymentVerificationKey = nonEmptyVerificationKey(
+        transaction.payment?.verification_key,
+      );
+
+      if (
+        notifyKey !== undefined &&
+        paymentVerificationKey !== undefined &&
+        !verificationKeysEqual(notifyKey, paymentVerificationKey)
+      ) {
+        return {
+          valid: false,
+          reason: "verification_key_mismatch",
           notify: payload,
           transaction,
         };

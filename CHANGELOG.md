@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`), con HMAC y `crypto.timingSafeEqual`.
+
 ### Added
 
 - `mall.verifyNotify` / `verifyCallback`: reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` (#42).

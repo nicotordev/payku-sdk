@@ -9,6 +9,7 @@ export type PaykuWebhookVerificationFailureReason =
   | "status_mismatch"
   | "order_mismatch"
   | "amount_mismatch"
+  | "verification_key_mismatch"
   | "payku_api_error";
 
 export interface PaykuVerifyNotifyOptions {

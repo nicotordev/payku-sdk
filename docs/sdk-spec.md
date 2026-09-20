@@ -98,7 +98,7 @@ src/
 
 ## 7. Webhooks
 
-`PaykuWebhooks` recibe el payload de `urlnotify`, re-consulta la transacción vía API y valida estado/orden/monto. No confía ciegamente en el POST entrante.
+`PaykuWebhooks` recibe el payload de `urlnotify`, re-consulta la transacción vía API y valida estado/orden/monto. Si `payload.verification_key` y `payment.verification_key` tienen valor, deben coincidir. No confía ciegamente en el POST entrante.
 
 Mall (`urlnotify` con id `mall…`): `payku.mall.verifyNotify()` reconsulta `GET /api/mall/{id}` (no `/transaction/{payment_key}`).
 
