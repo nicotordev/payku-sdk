@@ -718,8 +718,9 @@ export interface PaykuPaymentReturnResult {
 export function parsePaymentReturnQuery(
   input:
     | string
+    | URL
     | URLSearchParams
-    | Record<string, string | string[] | undefined>,
+    | Record<string, string | string[] | undefined | unknown>,
 ): PaykuPaymentReturnResult {
   let id: string | undefined;
   let status: string | undefined;
@@ -738,6 +739,13 @@ export function parsePaymentReturnQuery(
     status = params.get("status") ?? undefined;
     messageError =
       params.get("message_error") ?? params.get("messageError") ?? undefined;
+  } else if (input instanceof URL) {
+    id = input.searchParams.get("id") ?? undefined;
+    status = input.searchParams.get("status") ?? undefined;
+    messageError =
+      input.searchParams.get("message_error") ??
+      input.searchParams.get("messageError") ??
+      undefined;
   } else if (input instanceof URLSearchParams) {
     id = input.get("id") ?? undefined;
     status = input.get("status") ?? undefined;
@@ -745,11 +753,11 @@ export function parsePaymentReturnQuery(
       input.get("message_error") ?? input.get("messageError") ?? undefined;
   } else if (typeof input === "object" && input !== null) {
     const getVal = (key: string): string | undefined => {
-      const val = input[key];
+      const val = (input as Record<string, unknown>)[key];
       if (Array.isArray(val)) {
-        return val[0];
+        return typeof val[0] === "string" ? val[0] : undefined;
       }
-      return val;
+      return typeof val === "string" ? val : undefined;
     };
     id = getVal("id");
     status = getVal("status");

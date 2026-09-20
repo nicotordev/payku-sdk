@@ -1,3 +1,4 @@
+import { URL } from "node:url";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -897,6 +898,196 @@ describe("parsePaymentReturnQuery", () => {
 
     expect(result.id).toBe("trx-99");
     expect(result.expired).toBe(false);
+  });
+
+  test("parses URL instance", () => {
+    const url = new URL("https://example.com/return?id=trx-url-1&status=success");
+    const result = parsePaymentReturnQuery(url);
+
+    expect(result.id).toBe("trx-url-1");
+    expect(result.status).toBe("success");
+    expect(result.expired).toBe(false);
+  });
+});
+
+describe("transactions.handleReturn", () => {
+  let mock: MockAdapter;
+  let apiAxios: ReturnType<typeof axios.create>;
+  let transactions: PaykuTransactions;
+  let chileTransactions: PaykuChileTransactions;
+
+  beforeEach(() => {
+    apiAxios = axios.create({
+      baseURL: "https://des.payku.cl/api",
+    });
+    mock = new MockAdapter(apiAxios);
+
+    const http = new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl: "https://des.payku.cl",
+      publicToken: "public-token",
+      privateToken: "private-token",
+      axiosInstance: apiAxios,
+      rootAxiosInstance: apiAxios,
+    });
+
+    transactions = new PaykuTransactions(http);
+    chileTransactions = new PaykuChileTransactions(transactions);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("returns isExpired: true immediately without calling API when session expired", async () => {
+    const url = "https://example.com/checkout/return?message_error=expired&id=trx-exp-1";
+    const result = await transactions.handleReturn(url);
+
+    expect(result).toEqual({
+      id: "trx-exp-1",
+      isExpired: true,
+      isPaid: false,
+      isPending: false,
+      isFailed: false,
+      rawStatus: "expired",
+    });
+    expect(mock.history.get).toHaveLength(0);
+  });
+
+  test("returns isPaid: true with transaction details when payment succeeded", async () => {
+    mock.onGet("/transaction/trx-paid-1").reply(200, {
+      id: "trx-paid-1",
+      status: "success",
+      order: "ORD-999",
+      amount: 15000,
+    });
+
+    const url = "https://example.com/checkout/return?id=trx-paid-1&status=success";
+    const result = await transactions.handleReturn(url);
+
+    expect(result.id).toBe("trx-paid-1");
+    expect(result.isPaid).toBe(true);
+    expect(result.isPending).toBe(false);
+    expect(result.isFailed).toBe(false);
+    expect(result.isExpired).toBe(false);
+    expect(result.rawStatus).toBe("success");
+    expect(result.transaction?.order).toBe("ORD-999");
+    expect(mock.history.get).toHaveLength(1);
+  });
+
+  test("returns isPending: true when payment is pending or register", async () => {
+    mock.onGet("/transaction/trx-pend-1").reply(200, {
+      id: "trx-pend-1",
+      status: "pending",
+      order: "ORD-PEND",
+    });
+
+    const result = await transactions.handleReturn("id=trx-pend-1&status=pending");
+
+    expect(result.id).toBe("trx-pend-1");
+    expect(result.isPaid).toBe(false);
+    expect(result.isPending).toBe(true);
+    expect(result.isFailed).toBe(false);
+    expect(result.isExpired).toBe(false);
+    expect(result.rawStatus).toBe("pending");
+    expect(result.transaction?.id).toBe("trx-pend-1");
+  });
+
+  test("returns isPending: true when transaction status is register", async () => {
+    mock.onGet("/transaction/trx-reg-1").reply(200, {
+      id: "trx-reg-1",
+      status: "register",
+    });
+
+    const result = await transactions.handleReturn("id=trx-reg-1");
+
+    expect(result.isPending).toBe(true);
+    expect(result.isPaid).toBe(false);
+    expect(result.rawStatus).toBe("register");
+  });
+
+  test("returns isFailed: true when payment was rejected or failed", async () => {
+    mock.onGet("/transaction/trx-fail-1").reply(200, {
+      id: "trx-fail-1",
+      status: "rejected",
+    });
+
+    const result = await transactions.handleReturn("id=trx-fail-1&status=failed");
+
+    expect(result.id).toBe("trx-fail-1");
+    expect(result.isPaid).toBe(false);
+    expect(result.isPending).toBe(false);
+    expect(result.isFailed).toBe(true);
+    expect(result.isExpired).toBe(false);
+    expect(result.rawStatus).toBe("rejected");
+  });
+
+  test("handles URLSearchParams input", async () => {
+    mock.onGet("/transaction/trx-sp-1").reply(200, {
+      id: "trx-sp-1",
+      status: "success",
+    });
+
+    const params = new URLSearchParams({ id: "trx-sp-1", status: "success" });
+    const result = await transactions.handleReturn(params);
+
+    expect(result.isPaid).toBe(true);
+    expect(result.id).toBe("trx-sp-1");
+  });
+
+  test("handles URL instance input", async () => {
+    mock.onGet("/transaction/trx-url-inst").reply(200, {
+      id: "trx-url-inst",
+      status: "success",
+    });
+
+    const url = new URL("https://example.com/return?id=trx-url-inst&status=success");
+    const result = await transactions.handleReturn(url);
+
+    expect(result.isPaid).toBe(true);
+    expect(result.id).toBe("trx-url-inst");
+  });
+
+  test("handles object record input (Next.js / Express)", async () => {
+    mock.onGet("/transaction/trx-record").reply(200, {
+      id: "trx-record",
+      status: "success",
+    });
+
+    const reqQuery = { id: "trx-record", status: "success" };
+    const result = await transactions.handleReturn(reqQuery);
+
+    expect(result.isPaid).toBe(true);
+    expect(result.id).toBe("trx-record");
+  });
+
+  test("evaluates flags from query alone when id is missing", async () => {
+    const resultSuccess = await transactions.handleReturn({ status: "success" });
+    expect(resultSuccess.isPaid).toBe(true);
+    expect(resultSuccess.transaction).toBeUndefined();
+
+    const resultPending = await transactions.handleReturn({ status: "pending" });
+    expect(resultPending.isPending).toBe(true);
+
+    const resultFailed = await transactions.handleReturn({ status: "failed" });
+    expect(resultFailed.isFailed).toBe(true);
+    expect(mock.history.get).toHaveLength(0);
+  });
+
+  test("PaykuChileTransactions delegates handleReturn seamlessly", async () => {
+    mock.onGet("/transaction/trx-chile-1").reply(200, {
+      id: "trx-chile-1",
+      status: "success",
+      order: "CHILE-ORD-1",
+    });
+
+    const result = await chileTransactions.handleReturn(
+      "https://example.com/checkout/return?id=trx-chile-1&status=success",
+    );
+
+    expect(result.id).toBe("trx-chile-1");
+    expect(result.isPaid).toBe(true);
+    expect(result.transaction?.order).toBe("CHILE-ORD-1");
   });
 });
 

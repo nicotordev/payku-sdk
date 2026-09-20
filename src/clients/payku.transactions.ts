@@ -16,6 +16,8 @@ import type {
   PaykuGetTransactionResponse,
   PaykuListTransactionsParams,
   PaykuListTransactionsResponse,
+  PaykuReturnInput,
+  PaykuReturnResult,
   PaykuTransaction,
 } from "../types/payku.transactions";
 import {
@@ -23,6 +25,7 @@ import {
   formatPaykuExpiredInSantiago,
   isNoRecordsErrorMessage,
   normalizeRut,
+  parsePaymentReturnQuery,
   toQueryRecord,
   validateCreateTransactionRequest,
   validateListTransactionsParams,
@@ -55,6 +58,14 @@ export default class PaykuTransactions {
    * Confirma un pago On-Site (Venezuela) en `/gateway/cobro`.
    */
   public confirmOnSite = this.confirmOnSitePayment.bind(this);
+
+  /**
+   * Procesa el retorno del cliente en `urlreturn` (desde URL, searchParams o query record).
+   * Si la sesión expiró, retorna inmediatamente `isExpired: true`.
+   * Si existe `id`, consulta el estado oficial de la transacción en la API y retorna
+   * un objeto enriquecido con flags booleanos (`isPaid`, `isPending`, `isFailed`, `isExpired`).
+   */
+  public handleReturn = this.handleReturnPayment.bind(this);
 
   private async createTransaction(
     params: PaykuCreateTransactionRequest,
@@ -179,5 +190,49 @@ export default class PaykuTransactions {
         this.options,
       );
     }
+  }
+
+  private async handleReturnPayment(
+    queryOrUrl: PaykuReturnInput,
+  ): Promise<PaykuReturnResult> {
+    const parsed = parsePaymentReturnQuery(queryOrUrl);
+
+    if (parsed.expired) {
+      return {
+        id: parsed.id,
+        isExpired: true,
+        isPaid: false,
+        isPending: false,
+        isFailed: false,
+        rawStatus: parsed.status ?? "expired",
+      };
+    }
+
+    let transaction: PaykuGetTransactionResponse | undefined;
+    if (parsed.id) {
+      transaction = await this.get(parsed.id);
+    }
+
+    const normalizedStatus = (
+      transaction?.status ?? parsed.status
+    )?.trim().toLowerCase();
+
+    const isPaid = normalizedStatus === "success";
+    const isPending =
+      normalizedStatus === "pending" || normalizedStatus === "register";
+    const isFailed =
+      normalizedStatus === "rejected" || normalizedStatus === "failed";
+    const isExpired = normalizedStatus === "expired" || parsed.expired;
+    const rawStatus = transaction?.status ?? parsed.status;
+
+    return {
+      id: transaction?.id ?? parsed.id,
+      isExpired,
+      isPaid,
+      isPending,
+      isFailed,
+      rawStatus,
+      transaction,
+    };
   }
 }
