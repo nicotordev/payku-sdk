@@ -46,8 +46,8 @@ export class PaykuScopedTransactions {
     return this.inner.create(
       {
         ...params,
-        urlreturn: params.urlreturn ?? this.defaults?.urlreturn,
-        urlnotify: params.urlnotify ?? this.defaults?.urlnotify,
+        urlreturn: params.urlreturn ?? effectiveOptions.defaults?.urlreturn,
+        urlnotify: params.urlnotify ?? effectiveOptions.defaults?.urlnotify,
         currency: PAYKU_COUNTRY_CURRENCY[this.country],
       },
       effectiveOptions,
@@ -86,8 +86,8 @@ export class PaykuChileTransactions extends PaykuScopedTransactions {
     return this.transactions.create(
       {
         ...params,
-        urlreturn: params.urlreturn ?? this.defaultsConfig?.urlreturn,
-        urlnotify: params.urlnotify ?? this.defaultsConfig?.urlnotify,
+        urlreturn: params.urlreturn ?? effectiveOptions.defaults?.urlreturn,
+        urlnotify: params.urlnotify ?? effectiveOptions.defaults?.urlnotify,
         currency: PAYKU_COUNTRY_CURRENCY.CL,
       },
       effectiveOptions,

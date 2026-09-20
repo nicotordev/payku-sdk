@@ -70,7 +70,12 @@ export function createTransactionSchema(
     .superRefine((data, ctx) => {
       // 1. Validación de expired
       if (data.expired !== undefined) {
-        if (data.urlreturn === undefined || data.urlreturn.trim() === "") {
+        const effectiveUrlreturn =
+          data.urlreturn ?? options.defaults?.urlreturn;
+        if (
+          effectiveUrlreturn === undefined ||
+          effectiveUrlreturn.trim() === ""
+        ) {
           ctx.addIssue({
             code: "custom",
             message: "urlreturn is required when expired is set",
@@ -184,6 +189,20 @@ export type PaykuCreateTransactionRequestInput = z.infer<
 export type PaykuCreateTransactionInput = PaykuCreateTransactionRequestInput;
 export type PaykuCreateTransaction = PaykuCreateTransactionRequestInput;
 
+function resolveUrlSchema(field: string, defaultValue?: string) {
+  const hasValidDefault =
+    typeof defaultValue === "string" && defaultValue.trim().length > 0;
+  if (!hasValidDefault) {
+    return requireNonEmptyString(field);
+  }
+  return z
+    .string({ message: `${field} is required` })
+    .refine((val) => val.trim().length > 0, {
+      message: `${field} is required`,
+    })
+    .optional();
+}
+
 /**
  * Fábrica para construir PaykuChileCreateTransactionSchema con opciones.
  */
@@ -198,12 +217,8 @@ export function createChileTransactionSchema(
       order: requireNonEmptyString("order"),
       subject: requireNonEmptyString("subject"),
       amount: z.number().positive("amount must be greater than 0"),
-      urlreturn: options.defaults?.urlreturn
-        ? z.string().optional()
-        : requireNonEmptyString("urlreturn"),
-      urlnotify: options.defaults?.urlnotify
-        ? z.string().optional()
-        : requireNonEmptyString("urlnotify"),
+      urlreturn: resolveUrlSchema("urlreturn", options.defaults?.urlreturn),
+      urlnotify: resolveUrlSchema("urlnotify", options.defaults?.urlnotify),
       payment: z.number().int().optional(),
       expired: z.string().optional(),
       additional_parameters:

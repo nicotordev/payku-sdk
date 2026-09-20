@@ -58,12 +58,16 @@ export default class PaykuTransactions {
     params: PaykuCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
+    const effectiveDefaults = options?.defaults ?? this.defaults;
     const mergedParams: PaykuCreateTransactionRequest = {
       ...params,
-      urlreturn: params.urlreturn ?? this.defaults?.urlreturn,
-      urlnotify: params.urlnotify ?? this.defaults?.urlnotify,
+      urlreturn: params.urlreturn ?? effectiveDefaults?.urlreturn,
+      urlnotify: params.urlnotify ?? effectiveDefaults?.urlnotify,
     };
-    validateCreateTransactionRequest(mergedParams, options);
+    validateCreateTransactionRequest(mergedParams, {
+      ...options,
+      defaults: effectiveDefaults,
+    });
 
     try {
       return await this.http.request<PaykuCreateTransactionResponse>({

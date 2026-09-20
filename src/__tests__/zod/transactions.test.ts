@@ -215,6 +215,49 @@ describe("PaykuCreateTransactionSchema", () => {
     });
     expect(res.success).toBe(true);
   });
+
+  test("accepts expired when urlreturn is supplied via defaults", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const ok = formatSantiagoWallClock(
+      new Date(now.getTime() + 10 * 60 * 1000),
+    );
+    const validator = createTransactionSchema({
+      now,
+      defaults: { urlreturn: "https://default.example.com/return" },
+    });
+
+    const res = validator.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      expired: ok,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test("rejects expired when default urlreturn is whitespace-only", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const ok = formatSantiagoWallClock(
+      new Date(now.getTime() + 10 * 60 * 1000),
+    );
+    const validator = createTransactionSchema({
+      now,
+      defaults: { urlreturn: "   " },
+    });
+
+    const res = validator.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      expired: ok,
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) =>
+          i.message.includes("urlreturn is required when expired is set"),
+        ),
+      ).toBe(true);
+    }
+  });
 });
 
 describe("PaykuChileCreateTransactionSchema", () => {
@@ -300,6 +343,51 @@ describe("PaykuChileCreateTransactionSchema", () => {
       amount: 1000,
     });
     expect(res.success).toBe(true);
+  });
+
+  test("rejects Chile request when default urlreturn is whitespace-only", () => {
+    const validator = createChileTransactionSchema({
+      defaults: {
+        urlreturn: "   ",
+        urlnotify: "https://default.example.com/notify",
+      },
+    });
+
+    const res = validator.safeParse({
+      email: "cliente@example.com",
+      order: "orden-defaults",
+      subject: "Test defaults",
+      amount: 1000,
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) => i.message.includes("urlreturn is required")),
+      ).toBe(true);
+    }
+  });
+
+  test("rejects explicit whitespace-only urlreturn even when valid default exists", () => {
+    const validator = createChileTransactionSchema({
+      defaults: {
+        urlreturn: "https://default.example.com/return",
+        urlnotify: "https://default.example.com/notify",
+      },
+    });
+
+    const res = validator.safeParse({
+      email: "cliente@example.com",
+      order: "orden-defaults",
+      subject: "Test defaults",
+      amount: 1000,
+      urlreturn: "   ",
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) => i.message.includes("urlreturn is required")),
+      ).toBe(true);
+    }
   });
 
   test("rejects unsupported currencies like USD", () => {

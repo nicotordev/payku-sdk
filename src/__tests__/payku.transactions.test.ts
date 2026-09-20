@@ -788,6 +788,76 @@ describe("client defaults (issue #168)", () => {
     expect(res.id).toBe(createSuccessFixture.id);
   });
 
+  test("options.defaults overrides constructor defaults in HTTP payload", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://option.example.com/return");
+      expect(data.urlnotify).toBe("https://option.example.com/notify");
+      return [200, createSuccessFixture];
+    });
+
+    const transactions = new PaykuTransactions(
+      http,
+      {},
+      {
+        urlreturn: "https://constructor.example.com/return",
+        urlnotify: "https://constructor.example.com/notify",
+      },
+    );
+
+    await transactions.create(
+      {
+        amount: 1000,
+        currency: "CLP",
+      },
+      {
+        defaults: {
+          urlreturn: "https://option.example.com/return",
+          urlnotify: "https://option.example.com/notify",
+        },
+      },
+    );
+  });
+
+  test("Chile transactions.create uses options.defaults over constructor defaults", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const data = JSON.parse(config.data);
+      expect(data.urlreturn).toBe("https://chile-option.example.com/return");
+      expect(data.urlnotify).toBe("https://chile-option.example.com/notify");
+      expect(data.currency).toBe("CLP");
+      return [200, createSuccessFixture];
+    });
+
+    const constructorDefaults = {
+      urlreturn: "https://constructor.example.com/return",
+      urlnotify: "https://constructor.example.com/notify",
+    };
+    const baseTransactions = new PaykuTransactions(
+      http,
+      {},
+      constructorDefaults,
+    );
+    const chileTransactions = new PaykuChileTransactions(
+      baseTransactions,
+      constructorDefaults,
+    );
+
+    await chileTransactions.create(
+      {
+        email: "cliente@example.com",
+        order: "orden-option-defaults",
+        subject: "Pago option defaults",
+        amount: 5000,
+      },
+      {
+        defaults: {
+          urlreturn: "https://chile-option.example.com/return",
+          urlnotify: "https://chile-option.example.com/notify",
+        },
+      },
+    );
+  });
+
   test("Chile transactions.create fails when urlreturn is omitted and no defaults are configured", async () => {
     const baseTransactions = new PaykuTransactions(http);
     const chileTransactions = new PaykuChileTransactions(baseTransactions);
