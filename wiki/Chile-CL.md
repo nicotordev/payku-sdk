@@ -134,6 +134,7 @@ Cargos únicos de delivery **no** van aquí: usar `consumptionSubscriptions.tran
 ```typescript
 const plan = await payku.consumptionSubscriptions.plans.create({
   name: "Delivery",
+  url_notify_suscription: "https://tu-sitio.com/notify-suscription",
   url_notify_payment: "https://tu-sitio.com/notify-payment",
 });
 const client = await payku.consumptionSubscriptions.clients.create({
