@@ -218,7 +218,8 @@ export default class PaykuTransactions {
       transaction?.status ?? parsed.status
     )?.trim().toLowerCase();
 
-    const isPaid = normalizedStatus === "success";
+    const isPaid =
+      transaction !== undefined && normalizedStatus === "success";
     const isPending =
       normalizedStatus === "pending" || normalizedStatus === "register";
     const isFailed =
