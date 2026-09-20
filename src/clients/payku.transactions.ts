@@ -26,6 +26,7 @@ import {
   isNoRecordsErrorMessage,
   normalizeRut,
   parsePaymentReturnQuery,
+  resolveCreateTransactionPayment,
   toQueryRecord,
   validateCreateTransactionRequest,
   validateListTransactionsParams,
@@ -90,13 +91,13 @@ export default class PaykuTransactions {
         ? { ...params.additional_parameters, payer_rut: normalizedRut }
         : params.additional_parameters;
 
-    const mergedParams: PaykuCreateTransactionRequest = {
+    const mergedParams = resolveCreateTransactionPayment({
       ...params,
       expired: resolvedExpired,
       additional_parameters,
       urlreturn: params.urlreturn ?? effectiveDefaults?.urlreturn,
       urlnotify: params.urlnotify ?? effectiveDefaults?.urlnotify,
-    };
+    });
     validateCreateTransactionRequest(mergedParams, {
       ...options,
       defaults: effectiveDefaults,

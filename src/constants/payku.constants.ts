@@ -43,6 +43,44 @@ export const PAYKU_PAYMENT_METHODS = {
   },
 } as const satisfies Record<PaykuCurrency, Record<string, number>>;
 
+/** Mapa slug lowercase → código numérico. */
+function paymentSlugsFromMethods(
+  methods: Record<string, number>,
+): Record<string, number> {
+  const slugs: Record<string, number> = {};
+  for (const [key, code] of Object.entries(methods)) {
+    slugs[key.toLowerCase()] = code;
+  }
+  return slugs;
+}
+
+/** Mapa código → slug canónico (no pisa aliases posteriores). */
+function paymentCodesToSlug(
+  methods: Record<string, number>,
+): Record<number, string> {
+  const map: Record<number, string> = {};
+  for (const [key, code] of Object.entries(methods)) {
+    if (map[code] === undefined) {
+      map[code] = key.toLowerCase();
+    }
+  }
+  return map;
+}
+
+/** Slug (`"webpay"`) → código numérico, por moneda. */
+export const PAYKU_PAYMENT_SLUGS = {
+  CLP: paymentSlugsFromMethods(PAYKU_PAYMENT_METHODS.CLP),
+  PEN: paymentSlugsFromMethods(PAYKU_PAYMENT_METHODS.PEN),
+  VES: paymentSlugsFromMethods(PAYKU_PAYMENT_METHODS.VES),
+} as const;
+
+/** Código numérico → slug canónico (ALIX gana sobre ATIX). */
+export const PAYKU_PAYMENT_CODE_TO_SLUG = {
+  CLP: paymentCodesToSlug(PAYKU_PAYMENT_METHODS.CLP),
+  PEN: paymentCodesToSlug(PAYKU_PAYMENT_METHODS.PEN),
+  VES: paymentCodesToSlug(PAYKU_PAYMENT_METHODS.VES),
+} as const;
+
 /**
  * Códigos CLP de la página docs Chile → Crear transacción.
  * Subconjunto de `PAYKU_PAYMENT_METHODS.CLP` (sin Full/Klap/Granve/Apple-Google Pay).

@@ -16,6 +16,8 @@ import {
   normalizeRut,
   parsePaykuExpiredInSantiago,
   parsePaymentReturnQuery,
+  paymentMethodToSlug,
+  resolvePaymentMethod,
   validateChileCreateTransactionRequest,
   validateCreateTransactionRequest,
 } from "../utils/payku.utils";
@@ -74,6 +76,51 @@ describe("validateCreateTransactionRequest", () => {
         payment: 20,
       }),
     ).toThrow("payment 20 is not valid for currency CLP");
+  });
+
+  test("accepts payment slugs and rejects unknown slugs", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: "webpay",
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: "etpay",
+        additional_parameters: { payer_rut: "11111111-1" },
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "PEN",
+        payment: "safety_pay",
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: "safety_pay",
+      }),
+    ).toThrow('payment slug "safety_pay" is not valid for currency CLP');
+  });
+
+  test("requires payer_rut for CLP etpay slug", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: "etpay",
+      }),
+    ).toThrow("additional_parameters.payer_rut is required");
   });
 
   test("rejects CLP Etpay/Fintoc/Floid without payer_rut", () => {
@@ -532,6 +579,29 @@ describe("PaykuChileTransactions", () => {
     expect(response.id).toBe("tx-cl");
   });
 
+  test("create resolves payment slugs to numeric wire codes", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.payment).toBe(1);
+      expect(body.currency).toBe("CLP");
+      return [
+        200,
+        {
+          status: "pending",
+          id: "tx-slug",
+          url: "https://des.payku.cl/checkout/tx-slug",
+        },
+      ];
+    });
+
+    const response = await chileTransactions.create({
+      ...chileCreateBase,
+      payment: "webpay",
+    });
+
+    expect(response.id).toBe("tx-slug");
+  });
+
   test("create posts CLP body with direct payerRut normalized and injected in additional_parameters", async () => {
     mock.onPost("/transaction").reply((config) => {
       const body = JSON.parse(String(config.data)) as Record<string, unknown>;
@@ -812,6 +882,37 @@ describe("PAYKU_PAYMENT_METHODS PEN aliases", () => {
   test("defines ALIX and deprecated ATIX alias with the same code", () => {
     expect(PAYKU_PAYMENT_METHODS.PEN.ALIX).toBe(29);
     expect(PAYKU_PAYMENT_METHODS.PEN.ATIX).toBe(29);
+  });
+});
+
+describe("resolvePaymentMethod", () => {
+  test("resolves CLP, PEN and VES slugs to catalog codes", () => {
+    expect(resolvePaymentMethod("webpay", "CLP")).toBe(1);
+    expect(resolvePaymentMethod("fintoc", "CLP")).toBe(19);
+    expect(resolvePaymentMethod("WEBPAY_1_3", "CLP")).toBe(100);
+    expect(resolvePaymentMethod("safety_pay", "PEN")).toBe(20);
+    expect(resolvePaymentMethod("atix", "PEN")).toBe(29);
+    expect(resolvePaymentMethod("vepuy", "VES")).toBe(17);
+  });
+
+  test("passes numeric codes through", () => {
+    expect(resolvePaymentMethod(1, "CLP")).toBe(1);
+    expect(resolvePaymentMethod(29, "PEN")).toBe(29);
+  });
+
+  test("rejects unknown slugs and slugs for the wrong currency", () => {
+    expect(() => resolvePaymentMethod("paypal", "CLP")).toThrow(
+      'payment slug "paypal" is not valid for currency CLP',
+    );
+    expect(() => resolvePaymentMethod("webpay", "PEN")).toThrow(
+      'payment slug "webpay" is not valid for currency PEN',
+    );
+  });
+
+  test("maps codes back to the canonical slug", () => {
+    expect(paymentMethodToSlug(1, "CLP")).toBe("webpay");
+    expect(paymentMethodToSlug(29, "PEN")).toBe("alix");
+    expect(paymentMethodToSlug(17, "VES")).toBe("vepuy");
   });
 });
 
