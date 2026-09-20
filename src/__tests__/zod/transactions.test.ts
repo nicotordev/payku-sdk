@@ -285,6 +285,23 @@ describe("PaykuChileCreateTransactionSchema", () => {
     }
   });
 
+  test("accepts Chile request omitting urlreturn and urlnotify when defaults are provided", () => {
+    const validator = createChileTransactionSchema({
+      defaults: {
+        urlreturn: "https://default.example.com/return",
+        urlnotify: "https://default.example.com/notify",
+      },
+    });
+
+    const res = validator.safeParse({
+      email: "cliente@example.com",
+      order: "orden-defaults",
+      subject: "Test defaults",
+      amount: 1000,
+    });
+    expect(res.success).toBe(true);
+  });
+
   test("rejects unsupported currencies like USD", () => {
     const res = PaykuCreateTransactionSchema.safeParse({
       amount: 1000,

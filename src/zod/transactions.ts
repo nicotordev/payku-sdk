@@ -198,8 +198,12 @@ export function createChileTransactionSchema(
       order: requireNonEmptyString("order"),
       subject: requireNonEmptyString("subject"),
       amount: z.number().positive("amount must be greater than 0"),
-      urlreturn: requireNonEmptyString("urlreturn"),
-      urlnotify: requireNonEmptyString("urlnotify"),
+      urlreturn: options.defaults?.urlreturn
+        ? z.string().optional()
+        : requireNonEmptyString("urlreturn"),
+      urlnotify: options.defaults?.urlnotify
+        ? z.string().optional()
+        : requireNonEmptyString("urlnotify"),
       payment: z.number().int().optional(),
       expired: z.string().optional(),
       additional_parameters:
@@ -210,6 +214,8 @@ export function createChileTransactionSchema(
       // Aplica validaciones base fijando currency = "CLP"
       const basePayload = {
         ...data,
+        urlreturn: data.urlreturn ?? options.defaults?.urlreturn,
+        urlnotify: data.urlnotify ?? options.defaults?.urlnotify,
         currency: "CLP" as const,
       };
 

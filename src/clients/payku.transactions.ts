@@ -7,6 +7,7 @@ import {
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
+import type { PaykuDefaultsConfig } from "../types/payku.common";
 import type {
   PaykuConfirmOnSiteRequest,
   PaykuConfirmOnSiteResponse,
@@ -30,6 +31,7 @@ export default class PaykuTransactions {
   constructor(
     private readonly http: HttpClient,
     private readonly options?: PaykuClientOptions,
+    private readonly defaults?: PaykuDefaultsConfig,
   ) {}
 
   /**
@@ -56,13 +58,18 @@ export default class PaykuTransactions {
     params: PaykuCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
-    validateCreateTransactionRequest(params, options);
+    const mergedParams: PaykuCreateTransactionRequest = {
+      ...params,
+      urlreturn: params.urlreturn ?? this.defaults?.urlreturn,
+      urlnotify: params.urlnotify ?? this.defaults?.urlnotify,
+    };
+    validateCreateTransactionRequest(mergedParams, options);
 
     try {
       return await this.http.request<PaykuCreateTransactionResponse>({
         method: "POST",
         path: "/transaction",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(mergedParams),
       });
     } catch (error) {
       throw createPaykuAPIError(

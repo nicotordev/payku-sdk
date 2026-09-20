@@ -31,20 +31,22 @@ const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
   privateToken: process.env.PAYKU_PRIVATE_TOKEN!,
   environment: "production",
+  defaults: {
+    urlreturn: "https://tu-sitio.com/return",
+    urlnotify: "https://tu-sitio.com/notify",
+  },
 });
 
-// currency implícita: CLP — no hace falta pasarla
+// currency implícita: CLP — y urlreturn/urlnotify opcionales si usas defaults:
 await payku.transactions.create({
   amount: 1000,
   payment: 1,
   order: "orden-001",
   email: "cliente@example.com",
   subject: "Compra test",
-  urlreturn: "https://tu-sitio.com/return",
-  urlnotify: "https://tu-sitio.com/notify",
 });
 
-// También desde .env
+// También desde .env (incluye PAYKU_DEFAULT_URLRETURN y PAYKU_DEFAULT_URLNOTIFY opcionales)
 const fromEnv = Payku.fromEnvForCountry("CL");
 ```
 

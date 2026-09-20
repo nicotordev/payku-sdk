@@ -3,6 +3,7 @@ import type { HttpClient } from "../http/client";
 import type {
   PaykuCountry,
   PaykuCurrency,
+  PaykuDefaultsConfig,
   PaykuEnvironment,
 } from "../types/payku.common";
 import type PaykuBanks from "./payku.banks";
@@ -25,6 +26,7 @@ export interface PaykuCountryCore {
   readonly privateToken: string;
   readonly environment: PaykuEnvironment;
   readonly options: PaykuClientOptions;
+  readonly defaults?: PaykuDefaultsConfig;
   readonly http: HttpClient;
   readonly transactions: PaykuTransactions;
   readonly wallet: PaykuWallet;
@@ -50,6 +52,7 @@ export interface PaykuCountryClient {
   readonly privateToken: string;
   readonly environment: PaykuEnvironment;
   readonly options: PaykuClientOptions;
+  readonly defaults?: PaykuDefaultsConfig;
   readonly baseUrl: string;
   readonly rootUrl: string;
 }

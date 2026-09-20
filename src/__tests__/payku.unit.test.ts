@@ -28,6 +28,35 @@ describe("Payku client", () => {
     expect(payku.environment).toBe("production");
     expect(payku.baseUrl).toBe("https://app.payku.cl/api");
     expect(payku.rootUrl).toBe("https://app.payku.cl");
+    expect(payku.defaults).toBeUndefined();
+  });
+
+  test("fromEnv reads defaults from PAYKU_DEFAULT_URLRETURN and PAYKU_DEFAULT_URLNOTIFY", () => {
+    const payku = Payku.fromEnv({
+      PAYKU_PUBLIC_TOKEN: "public",
+      PAYKU_PRIVATE_TOKEN: "private",
+      PAYKU_DEFAULT_URLRETURN: "https://example.com/return",
+      PAYKU_DEFAULT_URLNOTIFY: "https://example.com/notify",
+    });
+
+    expect(payku.defaults).toEqual({
+      urlreturn: "https://example.com/return",
+      urlnotify: "https://example.com/notify",
+    });
+  });
+
+  test("fromConfig preserves defaults", () => {
+    const payku = Payku.fromConfig({
+      publicToken: "public",
+      privateToken: "private",
+      defaults: {
+        urlreturn: "https://example.com/ret",
+      },
+    });
+
+    expect(payku.defaults).toEqual({
+      urlreturn: "https://example.com/ret",
+    });
   });
 
   test("exposes all resource namespaces", () => {
@@ -94,15 +123,34 @@ describe("Payku.forCountry", () => {
     expect(() => payku.wallet.withdraw).toThrow(/wallet\.withdraw/);
   });
 
-  test("fromEnvForCountry reads credentials", () => {
+  test("fromEnvForCountry reads credentials and defaults", () => {
     const payku = Payku.fromEnvForCountry("CL", {
       PAYKU_PUBLIC_TOKEN: "public",
       PAYKU_PRIVATE_TOKEN: "private",
       PAYKU_ENVIRONMENT: "production",
+      PAYKU_DEFAULT_URLRETURN: "https://example.com/return",
+      PAYKU_DEFAULT_URLNOTIFY: "https://example.com/notify",
     });
 
     expect(payku).toBeInstanceOf(PaykuChile);
     expect(payku.environment).toBe("production");
+    expect(payku.defaults).toEqual({
+      urlreturn: "https://example.com/return",
+      urlnotify: "https://example.com/notify",
+    });
+  });
+
+  test("forCountry preserves defaults", () => {
+    const payku = Payku.forCountry("CL", {
+      ...config,
+      defaults: {
+        urlreturn: "https://example.com/cl-return",
+      },
+    });
+
+    expect(payku.defaults).toEqual({
+      urlreturn: "https://example.com/cl-return",
+    });
   });
 });
 

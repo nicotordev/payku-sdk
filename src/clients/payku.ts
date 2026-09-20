@@ -4,6 +4,7 @@ import {
   getBaseUrl,
   getRootUrl,
   type PaykuCountry,
+  type PaykuDefaultsConfig,
   type PaykuEnvironment,
 } from "../types/payku.common";
 import PaykuBanks from "./payku.banks";
@@ -29,6 +30,7 @@ export interface PaykuConfig {
   privateToken: string;
   environment?: PaykuEnvironment;
   options?: PaykuClientOptions;
+  defaults?: PaykuDefaultsConfig;
 }
 
 export type PaykuCountryClientMap = {
@@ -50,6 +52,7 @@ export default class Payku {
   readonly privateToken: string;
   readonly environment: PaykuEnvironment;
   readonly options: PaykuClientOptions;
+  readonly defaults?: PaykuDefaultsConfig;
 
   readonly transactions: PaykuTransactions;
   readonly wallet: PaykuWallet;
@@ -72,6 +75,7 @@ export default class Payku {
     privateToken: string,
     environment: PaykuEnvironment = "sandbox",
     options: PaykuClientOptions = {},
+    defaults?: PaykuDefaultsConfig,
   ) {
     if (!publicToken || !privateToken) {
       throw new PaykuAuthenticationError();
@@ -81,6 +85,7 @@ export default class Payku {
     this.privateToken = privateToken;
     this.environment = environment;
     this.options = options;
+    this.defaults = defaults;
 
     this.http = new HttpClient({
       baseUrl: getBaseUrl(environment),
@@ -90,7 +95,7 @@ export default class Payku {
       logging: options.logging,
     });
 
-    this.transactions = new PaykuTransactions(this.http, options);
+    this.transactions = new PaykuTransactions(this.http, options, defaults);
     this.wallet = new PaykuWallet(this.http, options);
     this.banks = new PaykuBanks(this.http);
     this.paymentMethods = new PaykuPaymentMethods(this.http);
@@ -114,6 +119,7 @@ export default class Payku {
       config.privateToken,
       config.environment,
       config.options,
+      config.defaults,
     );
   }
 
@@ -127,7 +133,15 @@ export default class Payku {
       throw new PaykuAuthenticationError();
     }
 
-    return new Payku(publicToken, privateToken, environment);
+    const defaults: PaykuDefaultsConfig | undefined =
+      env.PAYKU_DEFAULT_URLRETURN || env.PAYKU_DEFAULT_URLNOTIFY
+        ? {
+            urlreturn: env.PAYKU_DEFAULT_URLRETURN,
+            urlnotify: env.PAYKU_DEFAULT_URLNOTIFY,
+          }
+        : undefined;
+
+    return new Payku(publicToken, privateToken, environment, {}, defaults);
   }
 
   /**
@@ -170,10 +184,19 @@ export default class Payku {
       throw new PaykuAuthenticationError();
     }
 
+    const defaults: PaykuDefaultsConfig | undefined =
+      env.PAYKU_DEFAULT_URLRETURN || env.PAYKU_DEFAULT_URLNOTIFY
+        ? {
+            urlreturn: env.PAYKU_DEFAULT_URLRETURN,
+            urlnotify: env.PAYKU_DEFAULT_URLNOTIFY,
+          }
+        : undefined;
+
     return Payku.forCountry(country, {
       publicToken,
       privateToken,
       environment,
+      defaults,
     });
   }
 
@@ -183,6 +206,7 @@ export default class Payku {
       privateToken: this.privateToken,
       environment: this.environment,
       options: this.options,
+      defaults: this.defaults,
       http: this.http,
       transactions: this.transactions,
       wallet: this.wallet,
@@ -222,3 +246,4 @@ export {
   PaykuScopedTransactions,
   PaykuVenezuelaTransactions,
 } from "./payku.transactions.scoped";
+export type { PaykuDefaultsConfig } from "../types/payku.common";
