@@ -15,6 +15,7 @@ import {
 } from "../types/payku.common";
 import { assertFeature } from "../utils/payku.country";
 import {
+  normalizeRut,
   validateChileCreateTransactionRequest,
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
@@ -83,9 +84,24 @@ export class PaykuChileTransactions extends PaykuScopedTransactions {
       defaults: options?.defaults ?? this.defaultsConfig,
     };
     validateChileCreateTransactionRequest(params, effectiveOptions);
+
+    const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
+    const normalizedRut =
+      rawRut !== undefined && rawRut.trim() !== ""
+        ? normalizeRut(rawRut)
+        : rawRut;
+
+    const additional_parameters =
+      normalizedRut !== undefined
+        ? { ...params.additional_parameters, payer_rut: normalizedRut }
+        : params.additional_parameters;
+
+    const { payerRut: _discard, ...restParams } = params;
+
     return this.transactions.create(
       {
-        ...params,
+        ...restParams,
+        additional_parameters,
         urlreturn: params.urlreturn ?? effectiveOptions.defaults?.urlreturn,
         urlnotify: params.urlnotify ?? effectiveOptions.defaults?.urlnotify,
         currency: PAYKU_COUNTRY_CURRENCY.CL,

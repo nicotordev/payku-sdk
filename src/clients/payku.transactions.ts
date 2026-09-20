@@ -20,7 +20,9 @@ import type {
 } from "../types/payku.transactions";
 import {
   bodyAsRecord,
+  formatPaykuExpiredInSantiago,
   isNoRecordsErrorMessage,
+  normalizeRut,
   toQueryRecord,
   validateCreateTransactionRequest,
   validateListTransactionsParams,
@@ -59,21 +61,44 @@ export default class PaykuTransactions {
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
     const effectiveDefaults = options?.defaults ?? this.defaults;
+    const now = options?.now ?? new Date();
+
+    const resolvedExpired =
+      params.expired !== undefined
+        ? formatPaykuExpiredInSantiago(params.expired, now)
+        : undefined;
+
+    const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
+    const normalizedRut =
+      rawRut !== undefined && rawRut.trim() !== ""
+        ? normalizeRut(rawRut)
+        : rawRut;
+
+    const additional_parameters =
+      normalizedRut !== undefined
+        ? { ...params.additional_parameters, payer_rut: normalizedRut }
+        : params.additional_parameters;
+
     const mergedParams: PaykuCreateTransactionRequest = {
       ...params,
+      expired: resolvedExpired,
+      additional_parameters,
       urlreturn: params.urlreturn ?? effectiveDefaults?.urlreturn,
       urlnotify: params.urlnotify ?? effectiveDefaults?.urlnotify,
     };
     validateCreateTransactionRequest(mergedParams, {
       ...options,
       defaults: effectiveDefaults,
+      now,
     });
+
+    const { payerRut: _discard, ...bodyParams } = mergedParams;
 
     try {
       return await this.http.request<PaykuCreateTransactionResponse>({
         method: "POST",
         path: "/transaction",
-        body: bodyAsRecord(mergedParams),
+        body: bodyAsRecord(bodyParams),
       });
     } catch (error) {
       throw createPaykuAPIError(

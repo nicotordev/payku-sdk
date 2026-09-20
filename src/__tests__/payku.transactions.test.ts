@@ -9,6 +9,10 @@ import { HttpClient } from "../http/client";
 import { PAYKU_PAYMENT_METHODS } from "../constants/payku.constants";
 import * as PaykuSDK from "../index";
 import {
+  formatPaykuExpired,
+  formatPaykuExpiredInSantiago,
+  normalizePaykuRut,
+  normalizeRut,
   parsePaykuExpiredInSantiago,
   parsePaymentReturnQuery,
   validateChileCreateTransactionRequest,
@@ -200,13 +204,189 @@ describe("validateCreateTransactionRequest", () => {
       ),
     ).not.toThrow();
   });
+
+  test("accepts expired as relative duration ({ minutes: 30 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: { minutes: 30 },
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).not.toThrow();
+  });
+
+  test("rejects expired relative duration within 5 minutes ({ minutes: 2 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: { minutes: 2 },
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).toThrow(
+      "expired must be more than 5 minutes after the current time (America/Santiago)",
+    );
+  });
+
+  test("accepts expired as Date instance ahead of 5 minutes", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const futureDate = new Date(now.getTime() + 20 * 60 * 1000);
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: futureDate,
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).not.toThrow();
+  });
+
+  test("accepts direct payerRut for CLP payments requiring payer_rut", () => {
+    expect(() =>
+      validateCreateTransactionRequest({
+        amount: 1000,
+        currency: "CLP",
+        payment: 19,
+        payerRut: "18.765.432-1",
+      }),
+    ).not.toThrow();
+  });
+
+  test("rejects invalid duration format in expired", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    expect(() =>
+      validateCreateTransactionRequest(
+        {
+          amount: 1000,
+          currency: "CLP",
+          expired: { minutes: -10 } as unknown as { minutes: number },
+          urlreturn: "https://example.com/return",
+        },
+        { now },
+      ),
+    ).toThrow("expired duration must contain positive numeric values");
+  });
+});
+
+describe("normalizeRut", () => {
+  test("cleans dots and surrounding whitespace", () => {
+    expect(normalizeRut("  18.765.432-1  ")).toBe("18765432-1");
+  });
+
+  test("normalizes lowercase 'k' to uppercase 'K'", () => {
+    expect(normalizeRut("18.765.432-k")).toBe("18765432-K");
+    expect(normalizeRut("18765432-k")).toBe("18765432-K");
+    expect(normalizeRut("18765432k")).toBe("18765432-K");
+  });
+
+  test("inserts hyphen before verification digit when omitted", () => {
+    expect(normalizeRut("187654321")).toBe("18765432-1");
+    expect(normalizeRut("7654321k")).toBe("7654321-K");
+    expect(normalizeRut("76543212")).toBe("7654321-2");
+  });
+
+  test("keeps already normalized RUT intact", () => {
+    expect(normalizeRut("18765432-1")).toBe("18765432-1");
+    expect(normalizeRut("18765432-K")).toBe("18765432-K");
+  });
+
+  test("handles empty and whitespace strings", () => {
+    expect(normalizeRut("")).toBe("");
+    expect(normalizeRut("   ")).toBe("");
+  });
+
+  test("normalizePaykuRut is an alias to normalizeRut", () => {
+    expect(normalizePaykuRut("18.765.432-1")).toBe("18765432-1");
+  });
+});
+
+describe("formatPaykuExpiredInSantiago", () => {
+  const fixedNow = new Date("2026-09-20T16:00:00.000Z"); // Santiago (UTC-3) => 13:00
+
+  test("formats minutes duration", () => {
+    expect(formatPaykuExpiredInSantiago({ minutes: 30 }, fixedNow)).toBe(
+      "2026-09-20 13:30",
+    );
+  });
+
+  test("formats hours duration", () => {
+    expect(formatPaykuExpiredInSantiago({ hours: 2 }, fixedNow)).toBe(
+      "2026-09-20 15:00",
+    );
+  });
+
+  test("formats days duration", () => {
+    expect(formatPaykuExpiredInSantiago({ days: 1 }, fixedNow)).toBe(
+      "2026-09-21 13:00",
+    );
+  });
+
+  test("formats combined duration (days and hours)", () => {
+    expect(
+      formatPaykuExpiredInSantiago({ days: 1, hours: 2, minutes: 15 }, fixedNow),
+    ).toBe("2026-09-21 15:15");
+  });
+
+  test("formats Date instance into America/Santiago wall-clock YYYY-MM-DD HH:mm", () => {
+    const date = new Date("2026-12-31T23:59:00.000Z"); // Santiago UTC-3 => 20:59
+    expect(formatPaykuExpiredInSantiago(date)).toBe("2026-12-31 20:59");
+  });
+
+  test("trims and returns existing string", () => {
+    expect(formatPaykuExpiredInSantiago("  2026-12-31 23:59  ")).toBe(
+      "2026-12-31 23:59",
+    );
+  });
+
+  test("rejects non-positive durations", () => {
+    expect(() =>
+      formatPaykuExpiredInSantiago({ minutes: 0 }, fixedNow),
+    ).toThrow("expired duration must contain positive numeric values");
+    expect(() =>
+      formatPaykuExpiredInSantiago({ minutes: -5 }, fixedNow),
+    ).toThrow("expired duration must contain positive numeric values");
+    expect(() =>
+      formatPaykuExpiredInSantiago({} as { minutes: number }, fixedNow),
+    ).toThrow("expired duration must contain positive numeric values");
+  });
+
+  test("rejects invalid Date instance", () => {
+    expect(() => formatPaykuExpiredInSantiago(new Date(NaN))).toThrow(
+      "expired is not a valid date",
+    );
+  });
+
+  test("formatPaykuExpired alias behaves identically", () => {
+    expect(formatPaykuExpired({ minutes: 30 }, fixedNow)).toBe(
+      "2026-09-20 13:30",
+    );
+  });
 });
 
 describe("parsePaykuExpiredInSantiago", () => {
-  test("round-trips a Santiago wall-clock instant", () => {
+  test("round-trips a Santiago wall-clock instant with seconds", () => {
     const expired = "2023-10-19 13:05:10";
     const parsed = parsePaykuExpiredInSantiago(expired);
     expect(formatSantiagoWallClock(parsed)).toBe(expired);
+  });
+
+  test("parses Santiago wall-clock instant without seconds (YYYY-MM-DD HH:mm)", () => {
+    const expired = "2026-12-31 23:59";
+    const parsed = parsePaykuExpiredInSantiago(expired);
+    expect(parsed).toBeInstanceOf(Date);
+    expect(formatPaykuExpiredInSantiago(parsed)).toBe(expired);
   });
 });
 
@@ -246,6 +426,44 @@ describe("validateChileCreateTransactionRequest", () => {
     ).toThrow(
       "expired must be more than 5 minutes after the current time (America/Santiago)",
     );
+  });
+
+  test("accepts Chile create with relative expired ({ minutes: 30 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    expect(() =>
+      validateChileCreateTransactionRequest(
+        {
+          ...chileCreateBase,
+          expired: { minutes: 30 },
+        },
+        { now },
+      ),
+    ).not.toThrow();
+  });
+
+  test("rejects Chile create with relative expired too soon ({ minutes: 2 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    expect(() =>
+      validateChileCreateTransactionRequest(
+        {
+          ...chileCreateBase,
+          expired: { minutes: 2 },
+        },
+        { now },
+      ),
+    ).toThrow(
+      "expired must be more than 5 minutes after the current time (America/Santiago)",
+    );
+  });
+
+  test("accepts Chile create with direct payerRut for Fintoc (19)", () => {
+    expect(() =>
+      validateChileCreateTransactionRequest({
+        ...chileCreateBase,
+        payment: 19,
+        payerRut: "18.765.432-1",
+      }),
+    ).not.toThrow();
   });
 });
 
@@ -311,6 +529,113 @@ describe("PaykuChileTransactions", () => {
     });
 
     expect(response.id).toBe("tx-cl");
+  });
+
+  test("create posts CLP body with direct payerRut normalized and injected in additional_parameters", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.currency).toBe("CLP");
+      expect(body.payment).toBe(19);
+      expect(body.additional_parameters).toEqual({
+        payer_rut: "18765432-1",
+      });
+      expect(body.payerRut).toBeUndefined();
+      return [
+        200,
+        {
+          status: "pending",
+          id: "tx-cl-rut",
+          url: "https://des.payku.cl/checkout/tx-cl-rut",
+        },
+      ];
+    });
+
+    const response = await chileTransactions.create({
+      ...chileCreateBase,
+      payment: 19,
+      payerRut: "18.765.432-1",
+    });
+
+    expect(response.id).toBe("tx-cl-rut");
+  });
+
+  test("create posts CLP body with lowercase k in payerRut normalized to K", async () => {
+    mock.onPost("/transaction").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.additional_parameters).toEqual({
+        payer_rut: "18765432-K",
+      });
+      return [
+        200,
+        {
+          status: "pending",
+          id: "tx-cl-k",
+          url: "https://des.payku.cl/checkout/tx-cl-k",
+        },
+      ];
+    });
+
+    const response = await chileTransactions.create({
+      ...chileCreateBase,
+      payment: 19,
+      payerRut: "  18.765.432-k  ",
+    });
+
+    expect(response.id).toBe("tx-cl-k");
+  });
+
+  test("create posts CLP body with expired duration formatted in Santiago timezone", async () => {
+    const fixedNow = new Date("2026-09-20T16:00:00.000Z"); // 13:00 Santiago
+
+    mock.onPost("/transaction").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.expired).toBe("2026-09-20 13:30");
+      return [
+        200,
+        {
+          status: "pending",
+          id: "tx-cl-exp",
+          url: "https://des.payku.cl/checkout/tx-cl-exp",
+        },
+      ];
+    });
+
+    const response = await chileTransactions.create(
+      {
+        ...chileCreateBase,
+        expired: { minutes: 30 },
+      },
+      { now: fixedNow },
+    );
+
+    expect(response.id).toBe("tx-cl-exp");
+  });
+
+  test("create posts CLP body with expired Date formatted in Santiago timezone", async () => {
+    const fixedDate = new Date("2026-12-31T23:59:00.000Z"); // 20:59 Santiago
+
+    mock.onPost("/transaction").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.expired).toBe("2026-12-31 20:59");
+      return [
+        200,
+        {
+          status: "pending",
+          id: "tx-cl-date",
+          url: "https://des.payku.cl/checkout/tx-cl-date",
+        },
+      ];
+    });
+
+    const response = await chileTransactions.create(
+      {
+        ...chileCreateBase,
+        expired: fixedDate,
+      },
+      { now: new Date("2026-12-31T18:00:00.000Z") },
+    );
+
+    expect(response.id).toBe("tx-cl-date");
   });
 
   test("create respects clpPaymentCodes option when set to create-docs", async () => {
@@ -490,10 +815,15 @@ describe("PAYKU_PAYMENT_METHODS PEN aliases", () => {
 });
 
 describe("SDK entrypoint exports", () => {
-  test("exports validation functions", () => {
+  test("exports validation and formatting functions", () => {
     expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
     expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
     expect(typeof PaykuSDK.parsePaymentReturnQuery).toBe("function");
+    expect(typeof PaykuSDK.formatPaykuExpiredInSantiago).toBe("function");
+    expect(typeof PaykuSDK.formatPaykuExpired).toBe("function");
+    expect(typeof PaykuSDK.normalizeRut).toBe("function");
+    expect(typeof PaykuSDK.normalizePaykuRut).toBe("function");
+    expect(typeof PaykuSDK.parsePaykuExpiredInSantiago).toBe("function");
   });
 });
 

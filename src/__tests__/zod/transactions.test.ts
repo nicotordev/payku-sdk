@@ -4,6 +4,8 @@ import {
   createTransactionSchema,
   PaykuChileCreateTransactionSchema,
   PaykuCreateTransactionSchema,
+  PaykuExpirationDurationSchema,
+  PaykuExpirationInputSchema,
   PaykuListTransactionsParamsSchema,
 } from "../../zod";
 
@@ -258,6 +260,83 @@ describe("PaykuCreateTransactionSchema", () => {
       ).toBe(true);
     }
   });
+
+  test("accepts relative duration expired ({ minutes: 30 }) with urlreturn", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const validator = createTransactionSchema({ now });
+    const res = validator.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      expired: { minutes: 30 },
+      urlreturn: "https://example.com/return",
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test("accepts Date instance expired with urlreturn", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const validator = createTransactionSchema({ now });
+    const res = validator.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      expired: new Date(now.getTime() + 15 * 60 * 1000),
+      urlreturn: "https://example.com/return",
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test("rejects relative duration expired within 5 minutes ({ minutes: 2 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const validator = createTransactionSchema({ now });
+    const res = validator.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      expired: { minutes: 2 },
+      urlreturn: "https://example.com/return",
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) =>
+          i.message.includes("more than 5 minutes in the future (Santiago)"),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test("accepts direct payerRut for CLP payments requiring payer_rut", () => {
+    const res = PaykuCreateTransactionSchema.safeParse({
+      amount: 1000,
+      currency: "CLP",
+      payment: 19,
+      payerRut: "18.765.432-1",
+    });
+    expect(res.success).toBe(true);
+  });
+});
+
+describe("PaykuExpirationDurationSchema", () => {
+  test("accepts valid durations", () => {
+    expect(PaykuExpirationDurationSchema.safeParse({ minutes: 30 }).success).toBe(true);
+    expect(PaykuExpirationDurationSchema.safeParse({ hours: 2 }).success).toBe(true);
+    expect(PaykuExpirationDurationSchema.safeParse({ days: 1 }).success).toBe(true);
+    expect(
+      PaykuExpirationDurationSchema.safeParse({ days: 1, hours: 2, minutes: 15 }).success,
+    ).toBe(true);
+  });
+
+  test("rejects non-positive durations", () => {
+    expect(PaykuExpirationDurationSchema.safeParse({ minutes: 0 }).success).toBe(false);
+    expect(PaykuExpirationDurationSchema.safeParse({ minutes: -5 }).success).toBe(false);
+    expect(PaykuExpirationDurationSchema.safeParse({}).success).toBe(false);
+  });
+
+  test("PaykuExpirationInputSchema accepts string, Date and duration", () => {
+    expect(PaykuExpirationInputSchema.safeParse("2026-12-31 23:59").success).toBe(true);
+    expect(PaykuExpirationInputSchema.safeParse(new Date()).success).toBe(true);
+    expect(PaykuExpirationInputSchema.safeParse({ minutes: 30 }).success).toBe(true);
+    expect(PaykuExpirationInputSchema.safeParse(123).success).toBe(false);
+  });
 });
 
 describe("PaykuChileCreateTransactionSchema", () => {
@@ -307,6 +386,40 @@ describe("PaykuChileCreateTransactionSchema", () => {
         res.error.issues.some((i) => i.message.includes("more than 5 minutes")),
       ).toBe(true);
     }
+  });
+
+  test("accepts Chile create with relative duration expired ({ minutes: 30 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const validator = createChileTransactionSchema({ now });
+    const res = validator.safeParse({
+      ...chileCreateBase,
+      expired: { minutes: 30 },
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test("rejects Chile create with relative duration expired within 5 minutes ({ minutes: 2 })", () => {
+    const now = new Date("2024-06-15T15:00:00.000Z");
+    const validator = createChileTransactionSchema({ now });
+    const res = validator.safeParse({
+      ...chileCreateBase,
+      expired: { minutes: 2 },
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) => i.message.includes("more than 5 minutes")),
+      ).toBe(true);
+    }
+  });
+
+  test("accepts Chile create with direct payerRut for Fintoc (19)", () => {
+    const res = PaykuChileCreateTransactionSchema.safeParse({
+      ...chileCreateBase,
+      payment: 19,
+      payerRut: "18.765.432-1",
+    });
+    expect(res.success).toBe(true);
   });
 
   test("rejects whitespace-only required fields", () => {

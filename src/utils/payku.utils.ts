@@ -22,6 +22,7 @@ import type {
   PaykuChileCreateTransactionRequest,
   PaykuCreateTransactionRequest,
   PaykuCreateTransactionResponse,
+  PaykuExpirationInput,
   PaykuListTransactionsParams,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
@@ -195,11 +196,10 @@ function requireStringField(
   }
 }
 
-/** Docs Chile: `expired` wall-clock en hora Santiago. */
-const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+/** Docs Chile: `expired` wall-clock en hora Santiago. Soporta YYYY-MM-DD HH:mm y YYYY-MM-DD HH:mm:ss. */
+const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/;
 const PAYKU_SANTIAGO_TZ = "America/Santiago";
 const PAYKU_EXPIRED_MIN_MARGIN_MS = 5 * 60 * 1000;
-
 
 function pad2(value: number): string {
   return String(value).padStart(2, "0");
@@ -224,18 +224,124 @@ function readDateTimeParts(parts: Intl.DateTimeFormatPart[]): {
     day: get("day"),
     hour: get("hour"),
     minute: get("minute"),
-    second: get("second"),
+    second: get("second") || 0,
   };
 }
 
 /**
- * Interpreta `YYYY-MM-DD HH:mm:ss` como hora local America/Santiago.
+ * Normaliza un RUT chileno:
+ * - Limpia puntos y espacios en blanco
+ * - Convierte el dígito verificador 'k' a mayúscula 'K'
+ * - Asegura el guión antes del dígito verificador si es omitido en secuencias de solo dígitos (o K)
+ */
+export function normalizeRut(rut: string): string {
+  if (typeof rut !== "string") {
+    return rut;
+  }
+  const trimmed = rut.trim();
+  if (trimmed === "") {
+    return trimmed;
+  }
+  const cleaned = trimmed.replace(/[\s.]/g, "").toUpperCase();
+
+  if (cleaned.includes("-")) {
+    return cleaned;
+  }
+
+  if (/^\d+[0-9K]$/.test(cleaned)) {
+    return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
+  }
+
+  return cleaned;
+}
+
+export const normalizePaykuRut = normalizeRut;
+
+/**
+ * Formatea un Date o duración relativa (`{ minutes }`, `{ hours }`, `{ days }`)
+ * al formato estricto `"YYYY-MM-DD HH:mm"` en el huso horario legal de Santiago de Chile (`America/Santiago`).
+ * Si el input es un string, lo retorna limpio (trim).
+ */
+export function formatPaykuExpiredInSantiago(
+  input: PaykuExpirationInput,
+  now: Date = new Date(),
+): string {
+  if (typeof input === "string") {
+    return input.trim();
+  }
+
+  let targetDate: Date;
+
+  if (input instanceof Date) {
+    if (Number.isNaN(input.getTime())) {
+      throw new PaykuError("expired is not a valid date");
+    }
+    targetDate = input;
+  } else if (typeof input === "object" && input !== null) {
+    const duration = input as {
+      minutes?: number;
+      hours?: number;
+      days?: number;
+    };
+    const minutes = duration.minutes ?? 0;
+    const hours = duration.hours ?? 0;
+    const days = duration.days ?? 0;
+
+    if (
+      !Number.isFinite(minutes) ||
+      !Number.isFinite(hours) ||
+      !Number.isFinite(days) ||
+      minutes < 0 ||
+      hours < 0 ||
+      days < 0 ||
+      (minutes === 0 && hours === 0 && days === 0)
+    ) {
+      throw new PaykuError(
+        "expired duration must contain positive numeric values",
+      );
+    }
+
+    const totalMs =
+      minutes * 60 * 1000 +
+      hours * 60 * 60 * 1000 +
+      days * 24 * 60 * 60 * 1000;
+    targetDate = new Date(now.getTime() + totalMs);
+  } else {
+    throw new PaykuError(
+      "expired must be a string, Date, or duration object",
+    );
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: PAYKU_SANTIAGO_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(targetDate);
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? "00";
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
+}
+
+export const formatPaykuExpired = formatPaykuExpiredInSantiago;
+
+/**
+ * Interpreta `YYYY-MM-DD HH:mm:ss` o `YYYY-MM-DD HH:mm` como hora local America/Santiago.
  * Usa `Intl` (sin deps); el offset puede variar por DST histórico de Chile.
  */
 export function parsePaykuExpiredInSantiago(expired: string): Date {
   const [datePart, timePart] = expired.split(" ");
   const [year, month, day] = datePart!.split("-").map(Number);
-  const [hour, minute, second] = timePart!.split(":").map(Number);
+  const timeTokens = timePart!.split(":").map(Number);
+  const hour = timeTokens[0];
+  const minute = timeTokens[1];
+  const second = timeTokens[2] ?? 0;
 
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: PAYKU_SANTIAGO_TZ,
@@ -249,7 +355,7 @@ export function parsePaykuExpiredInSantiago(expired: string): Date {
   });
 
   // Ajuste iterativo: tratar los dígitos como UTC y corregir con el wall-clock Santiago.
-  let utcMs = Date.UTC(year!, month! - 1, day!, hour!, minute!, second!);
+  let utcMs = Date.UTC(year!, month! - 1, day!, hour!, minute!, second);
 
   for (let i = 0; i < 3; i++) {
     const asSantiago = readDateTimeParts(
@@ -269,7 +375,7 @@ export function parsePaykuExpiredInSantiago(expired: string): Date {
       day!,
       hour!,
       minute!,
-      second!,
+      second,
     );
     const diff = desiredAsUtcMs - asUtcMs;
     utcMs += diff;
@@ -280,9 +386,10 @@ export function parsePaykuExpiredInSantiago(expired: string): Date {
 
   const result = new Date(utcMs);
   const roundTrip = readDateTimeParts(formatter.formatToParts(result));
-  const formatted = `${roundTrip.year}-${pad2(roundTrip.month)}-${pad2(roundTrip.day)} ${pad2(roundTrip.hour)}:${pad2(roundTrip.minute)}:${pad2(roundTrip.second)}`;
+  const formattedWithSec = `${roundTrip.year}-${pad2(roundTrip.month)}-${pad2(roundTrip.day)} ${pad2(roundTrip.hour)}:${pad2(roundTrip.minute)}:${pad2(roundTrip.second)}`;
+  const formattedWithoutSec = `${roundTrip.year}-${pad2(roundTrip.month)}-${pad2(roundTrip.day)} ${pad2(roundTrip.hour)}:${pad2(roundTrip.minute)}`;
 
-  if (formatted !== expired) {
+  if (formattedWithSec !== expired && formattedWithoutSec !== expired) {
     throw new PaykuError("expired is not a valid date");
   }
 
@@ -290,7 +397,7 @@ export function parsePaykuExpiredInSantiago(expired: string): Date {
 }
 
 function validateExpiredField(
-  expired: string | undefined,
+  expired: PaykuExpirationInput | undefined,
   urlreturn: string | undefined,
   now: Date,
 ): void {
@@ -303,7 +410,15 @@ function validateExpiredField(
     throw new PaykuError("urlreturn is required when expired is set");
   }
 
-  const expiredValue = String(expired).trim();
+  let expiredValue: string;
+  try {
+    expiredValue = formatPaykuExpiredInSantiago(expired, now);
+  } catch (error) {
+    if (error instanceof PaykuError) {
+      throw error;
+    }
+    throw new PaykuError("expired is not a valid date");
+  }
 
   if (!PAYKU_EXPIRED_FORMAT.test(expiredValue)) {
     throw new PaykuError("expired must use format YYYY-MM-DD HH:mm:ss");
@@ -436,9 +551,11 @@ export function validateCreateTransactionRequest(
   }
 
   if (params.currency === "CLP") {
+    const payerRut =
+      params.payerRut ?? params.additional_parameters?.payer_rut;
     validateClpPayerRutRequirement(
       params.payment,
-      params.additional_parameters?.payer_rut,
+      payerRut,
     );
   }
 
@@ -467,12 +584,24 @@ export function validateChileCreateTransactionRequest(
   requireNonEmptyField(urlreturn, "urlreturn");
   requireNonEmptyField(urlnotify, "urlnotify");
 
+  const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
+  const normalizedRut =
+    rawRut !== undefined && rawRut.trim() !== ""
+      ? normalizeRut(rawRut)
+      : rawRut;
+
+  const additional_parameters =
+    normalizedRut !== undefined
+      ? { ...params.additional_parameters, payer_rut: normalizedRut }
+      : params.additional_parameters;
+
   validateCreateTransactionRequest(
     {
       ...params,
       urlreturn,
       urlnotify,
       currency: "CLP",
+      additional_parameters,
     },
     options,
   );

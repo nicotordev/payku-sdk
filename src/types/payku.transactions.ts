@@ -15,6 +15,24 @@ export interface PaykuTransactionAdditionalParameters {
   [key: string]: unknown;
 }
 
+/**
+ * Duración relativa para expiración de orden de pago.
+ */
+export type PaykuExpirationDuration = {
+  minutes?: number;
+  hours?: number;
+  days?: number;
+};
+
+/**
+ * Formatos aceptados para definir la expiración de la transacción.
+ * Acepta string fecha hora ("YYYY-MM-DD HH:mm"), objeto Date o duración relativa.
+ */
+export type PaykuExpirationInput =
+  | string
+  | Date
+  | PaykuExpirationDuration;
+
 export interface PaykuCreateTransactionRequest {
   email?: string;
   order?: string;
@@ -22,7 +40,8 @@ export interface PaykuCreateTransactionRequest {
   amount: number;
   currency: PaykuCurrency;
   payment?: number;
-  expired?: string;
+  expired?: PaykuExpirationInput;
+  payerRut?: string;
   urlreturn?: string;
   urlnotify?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;
@@ -40,7 +59,8 @@ export interface PaykuChileCreateTransactionRequest {
   urlreturn?: string;
   urlnotify?: string;
   payment?: number;
-  expired?: string;
+  expired?: PaykuExpirationInput;
+  payerRut?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;
 }
 
