@@ -6,6 +6,7 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  normalizeMarketplaceAffiliation,
   validateCreateMarketplaceAffiliationRequest,
   validateCreateMarketplaceClientRequest,
   validateMarketplaceTransactionRequest,
@@ -102,11 +103,16 @@ export default class PaykuMarketplace {
 
   private createAffiliation(params: PaykuCreateMarketplaceAffiliationRequest) {
     return this.wrap("marketplace.affiliations.create", async () => {
-      validateCreateMarketplaceAffiliationRequest(params);
+      const body = {
+        ...params,
+        percentage: String(params.percentage),
+        affiliation: normalizeMarketplaceAffiliation(params.affiliation),
+      };
+      validateCreateMarketplaceAffiliationRequest(body);
       return this.http.request<PaykuMarketplaceAffiliationResponse>({
         method: "POST",
         path: "/maaffiliation",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
       });
     });
   }

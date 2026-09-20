@@ -682,10 +682,7 @@ Reparto de un cobro entre el comercio y vendedores (`maclient` → `maaffiliatio
 > - El campo `marketplace` en el cobro es el **token** de la afiliación (`aff.token`), no el `id` del cliente.
 
 ```typescript
-import Payku, {
-  buildMarketplaceAffiliation,
-  PaykuMarketplaceError,
-} from "@nicotordev/payku";
+import Payku, { PaykuMarketplaceError } from "@nicotordev/payku";
 
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
@@ -708,10 +705,8 @@ try {
 
   const aff = await payku.marketplace.affiliations.create({
     name: "market1",
-    percentage: "20",
-    affiliation: buildMarketplaceAffiliation([
-      { clientId: client.id, percentage: "80" },
-    ]),
+    percentage: 20,
+    affiliation: [{ clientId: client.id, percentage: 80 }],
   });
 
   const order = await payku.marketplace.transactions.create({
@@ -736,7 +731,7 @@ try {
 }
 ```
 
-`percentage` es el % del comercio; los pares en `affiliation` son `[idCliente, %vendedor]` y deben sumar 100 con el comercio (`validateMarketplaceAffiliationPercentages`).
+`percentage` es el % del comercio; `affiliation` acepta `{ clientId, percentage }` o tuplas `[idCliente, %vendedor]`. El body HTTP sigue siendo `[[id, "80"], ...]`. Deben sumar 100 con el comercio.
 
 ## Mall (Chile)
 
