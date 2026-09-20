@@ -1,4 +1,9 @@
 import type { PaykuCurrency } from "./payku.common";
+import type {
+  PaykuGatewayStatus,
+  PaykuNullifyStatus,
+  PaykuTransactionStatus,
+} from "./payku.responses";
 
 type PaykuPaymentMethodsCatalog =
   typeof import("../constants/payku.constants").PAYKU_PAYMENT_METHODS;
@@ -17,11 +22,6 @@ export type PaykuPaymentSlug =
   | PaykuPenPaymentSlug
   | PaykuVesPaymentSlug;
 export type PaykuPaymentMethodInput = PaykuPaymentSlug | number;
-import type {
-  PaykuGatewayStatus,
-  PaykuNullifyStatus,
-  PaykuTransactionStatus,
-} from "./payku.responses";
 
 export interface PaykuTransactionAdditionalParameters {
   parameters1?: string;
@@ -33,6 +33,24 @@ export interface PaykuTransactionAdditionalParameters {
   [key: string]: unknown;
 }
 
+/**
+ * Duración relativa para expiración de orden de pago.
+ */
+export type PaykuExpirationDuration = {
+  minutes?: number;
+  hours?: number;
+  days?: number;
+};
+
+/**
+ * Formatos aceptados para definir la expiración de la transacción.
+ * Acepta string fecha hora ("YYYY-MM-DD HH:mm"), objeto Date o duración relativa.
+ */
+export type PaykuExpirationInput =
+  | string
+  | Date
+  | PaykuExpirationDuration;
+
 export interface PaykuCreateTransactionRequest {
   email?: string;
   order?: string;
@@ -40,7 +58,8 @@ export interface PaykuCreateTransactionRequest {
   amount: number;
   currency: PaykuCurrency;
   payment?: PaykuPaymentMethodInput;
-  expired?: string;
+  expired?: PaykuExpirationInput;
+  payerRut?: string;
   urlreturn?: string;
   urlnotify?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;
@@ -58,7 +77,8 @@ export interface PaykuChileCreateTransactionRequest {
   urlreturn?: string;
   urlnotify?: string;
   payment?: PaykuClpPaymentSlug | number;
-  expired?: string;
+  expired?: PaykuExpirationInput;
+  payerRut?: string;
   additional_parameters?: PaykuTransactionAdditionalParameters;
 }
 

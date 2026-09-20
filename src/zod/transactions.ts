@@ -8,14 +8,43 @@ import {
 } from "../constants/payku.constants";
 import type { PaykuCurrency } from "../types/payku.common";
 import {
+  formatPaykuExpiredInSantiago,
   parsePaykuExpiredInSantiago,
   resolvePaymentMethod,
   type ClpPaymentCodeSet,
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
 
-const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const PAYKU_EXPIRED_FORMAT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/;
 const PAYKU_EXPIRED_MIN_MARGIN_MS = 5 * 60 * 1000;
+
+/**
+ * Esquema Zod para duraciones relativas de expiración de transacciones.
+ */
+export const PaykuExpirationDurationSchema = z
+  .object({
+    minutes: z.number().finite().nonnegative().optional(),
+    hours: z.number().finite().nonnegative().optional(),
+    days: z.number().finite().nonnegative().optional(),
+  })
+  .refine(
+    (data) =>
+      (data.minutes !== undefined && data.minutes > 0) ||
+      (data.hours !== undefined && data.hours > 0) ||
+      (data.days !== undefined && data.days > 0),
+    {
+      message: "expired duration must contain at least one positive value",
+    },
+  );
+
+/**
+ * Esquema Zod para input flexible de expiración (string, Date o duración relativa).
+ */
+export const PaykuExpirationInputSchema = z.union([
+  z.string(),
+  z.date(),
+  PaykuExpirationDurationSchema,
+]);
 
 function resolveClpPaymentCodes(
   set: ClpPaymentCodeSet = "catalog",
@@ -61,7 +90,8 @@ export function createTransactionSchema(
       amount: z.number().positive("amount must be greater than 0"),
       currency: z.enum(["CLP", "PEN", "VES"]),
       payment: z.union([z.number().int(), z.string()]).optional(),
-      expired: z.string().optional(),
+      expired: PaykuExpirationInputSchema.optional(),
+      payerRut: z.string().optional(),
       urlreturn: z.string().optional(),
       urlnotify: z.string().optional(),
       additional_parameters:
@@ -84,7 +114,24 @@ export function createTransactionSchema(
           });
         }
 
-        const expiredValue = String(data.expired).trim();
+        let expiredValue: string;
+        try {
+          expiredValue = formatPaykuExpiredInSantiago(
+            data.expired,
+            options.now ?? new Date(),
+          );
+        } catch (error) {
+          ctx.addIssue({
+            code: "custom",
+            message:
+              error instanceof Error
+                ? error.message
+                : "expired is not a valid date",
+            path: ["expired"],
+          });
+          return;
+        }
+
         if (!PAYKU_EXPIRED_FORMAT.test(expiredValue)) {
           ctx.addIssue({
             code: "custom",
@@ -158,7 +205,8 @@ export function createTransactionSchema(
             paymentCode as (typeof PAYKU_CLP_PAYMENTS_REQUIRING_PAYER_RUT)[number],
           )
         ) {
-          const payerRut = data.additional_parameters?.payer_rut;
+          const payerRut =
+            data.payerRut ?? data.additional_parameters?.payer_rut;
           if (
             payerRut === undefined ||
             payerRut === null ||
@@ -244,7 +292,8 @@ export function createChileTransactionSchema(
       urlreturn: resolveUrlSchema("urlreturn", options.defaults?.urlreturn),
       urlnotify: resolveUrlSchema("urlnotify", options.defaults?.urlnotify),
       payment: z.union([z.number().int(), z.string()]).optional(),
-      expired: z.string().optional(),
+      expired: PaykuExpirationInputSchema.optional(),
+      payerRut: z.string().optional(),
       additional_parameters:
         PaykuTransactionAdditionalParametersSchema.optional(),
     })
