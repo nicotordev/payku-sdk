@@ -441,9 +441,11 @@ export default class PaykuSubscriptions {
       }
 
       const notifyKey = nonEmptyString(payload.verification_key);
-      const apiKey = nonEmptyString(transaction.verification_key);
+      const paymentVerificationKey = nonEmptyString(
+        transaction.verification_key,
+      );
       const expectedKey = nonEmptyString(options.expectedVerificationKey);
-      const referenceKey = apiKey ?? expectedKey;
+      const referenceKey = paymentVerificationKey ?? expectedKey;
 
       if (
         notifyKey !== undefined &&
@@ -461,8 +463,8 @@ export default class PaykuSubscriptions {
 
       if (
         expectedKey !== undefined &&
-        apiKey !== undefined &&
-        !verificationKeysEqual(expectedKey, apiKey)
+        paymentVerificationKey !== undefined &&
+        !verificationKeysEqual(expectedKey, paymentVerificationKey)
       ) {
         return {
           valid: false,
