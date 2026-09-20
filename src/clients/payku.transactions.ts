@@ -127,7 +127,7 @@ export default class PaykuTransactions {
     try {
       return await this.http.request<PaykuGetTransactionResponse>({
         method: "GET",
-        path: `/transaction/${id}`,
+        path: `/transaction/${encodeURIComponent(id)}`,
       });
     } catch (error) {
       throw createPaykuAPIError(

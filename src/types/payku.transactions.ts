@@ -1,4 +1,3 @@
-import type { URL } from "node:url";
 import type { PaykuCurrency } from "./payku.common";
 import type {
   PaykuGatewayStatus,

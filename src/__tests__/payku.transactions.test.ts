@@ -975,6 +975,21 @@ describe("transactions.handleReturn", () => {
     expect(mock.history.get).toHaveLength(1);
   });
 
+  test("encodes the transaction id before looking up the return", async () => {
+    const id = "../account?scope=all&active=true";
+    const encodedId = encodeURIComponent(id);
+    mock.onGet(`/transaction/${encodedId}`).reply(200, {
+      id,
+      status: "success",
+    });
+
+    const result = await transactions.handleReturn({ id, status: "pending" });
+
+    expect(result.id).toBe(id);
+    expect(result.isPaid).toBe(true);
+    expect(mock.history.get[0]?.url).toBe(`/transaction/${encodedId}`);
+  });
+
   test("returns isPending: true when payment is pending or register", async () => {
     mock.onGet("/transaction/trx-pend-1").reply(200, {
       id: "trx-pend-1",
@@ -1393,4 +1408,3 @@ describe("client defaults (issue #168)", () => {
     ).rejects.toThrow("urlreturn is required");
   });
 });
-

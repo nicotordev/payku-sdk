@@ -1,4 +1,3 @@
-import { URL } from "node:url";
 import type { PaykuCurrency, PaykuDefaultsConfig } from "../types/payku.common";
 import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
@@ -1113,4 +1112,3 @@ export function validateWalletPayoutRequest(
     }
   }
 }
-
