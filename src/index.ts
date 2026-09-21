@@ -13,6 +13,7 @@ export {
   PaykuScopedBanks,
   PaykuScopedPaymentMethods,
   PaykuScopedTransactions,
+  PaykuTransactions,
   PaykuVenezuelaTransactions,
   PaykuSharedWallet,
 } from "./clients/payku";
@@ -70,9 +71,12 @@ export {
 } from "./constants/payku.constants";
 export type {
   PaykuClpPaymentSlug,
+  PaykuFailedTransaction,
+  PaykuPaidTransaction,
   PaykuPaymentMethodInput,
   PaykuPaymentSlug,
   PaykuPenPaymentSlug,
+  PaykuPendingTransaction,
   PaykuVesPaymentSlug,
 } from "./types/payku.transactions";
 export {
@@ -81,8 +85,13 @@ export {
   buildMallMerchant,
   buildEventAffiliation,
   buildMarketplaceAffiliation,
+  extractTransactionStatus,
   formatPaykuExpired,
   formatPaykuExpiredInSantiago,
+  isTransactionFailed,
+  isTransactionPaid,
+  isTransactionPending,
+  isTransactionSuccess,
   mapNotifyStatusToTransactionStatus,
   normalizePaykuRut,
   normalizeRut,

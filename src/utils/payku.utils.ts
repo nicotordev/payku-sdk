@@ -1274,3 +1274,128 @@ export function validateWalletPayoutRequest(
     }
   }
 }
+
+/**
+ * Extrae y normaliza el campo `status` de un string o de un objeto transacción/webhook.
+ */
+export function extractTransactionStatus(target: unknown): string | undefined {
+  if (typeof target === "string") {
+    const trimmed = target.trim().toLowerCase();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  if (typeof target === "object" && target !== null && "status" in target) {
+    const raw = (target as { status?: unknown }).status;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim().toLowerCase();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Type guard que determina si una transacción o payload está pagada exitosamente (`status: "success"`).
+ * Soporta objetos `PaykuTransaction`, `PaykuGetTransactionResponse`, notificaciones webhook o cadenas de texto.
+ *
+ * @example
+ * ```typescript
+ * const tx = await payku.transactions.get(id);
+ * if (isTransactionPaid(tx)) {
+ *   // tx.status está tipado como "success"
+ *   await deliverProduct(tx.order);
+ * }
+ * ```
+ */
+export function isTransactionPaid<T extends { status?: unknown }>(
+  transaction: T,
+): transaction is T & { status: "success" };
+export function isTransactionPaid(
+  transaction: string,
+): transaction is "success";
+export function isTransactionPaid(
+  transaction: unknown,
+): transaction is { status: "success" };
+export function isTransactionPaid(
+  transaction: unknown,
+): transaction is { status: "success" } {
+  return extractTransactionStatus(transaction) === "success";
+}
+
+/**
+ * Alias de `isTransactionPaid`. Determina si una transacción fue exitosa (`status: "success"`).
+ */
+export function isTransactionSuccess<T extends { status?: unknown }>(
+  transaction: T,
+): transaction is T & { status: "success" };
+export function isTransactionSuccess(
+  transaction: string,
+): transaction is "success";
+export function isTransactionSuccess(
+  transaction: unknown,
+): transaction is { status: "success" };
+export function isTransactionSuccess(
+  transaction: unknown,
+): transaction is { status: "success" } {
+  return isTransactionPaid(transaction);
+}
+
+/**
+ * Type guard que determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
+ * En Payku, "register" representa una transacción iniciada pero aún pendiente de confirmación de pago.
+ *
+ * @example
+ * ```typescript
+ * const tx = await payku.transactions.get(id);
+ * if (isTransactionPending(tx)) {
+ *   // tx.status es "pending" o "register"
+ *   await notifyAwaitingPayment(tx.order);
+ * }
+ * ```
+ */
+export function isTransactionPending<T extends { status?: unknown }>(
+  transaction: T,
+): transaction is T & { status: "pending" | "register" };
+export function isTransactionPending(
+  transaction: string,
+): transaction is "pending" | "register";
+export function isTransactionPending(
+  transaction: unknown,
+): transaction is { status: "pending" | "register" };
+export function isTransactionPending(
+  transaction: unknown,
+): transaction is { status: "pending" | "register" } {
+  const status = extractTransactionStatus(transaction);
+  return status === "pending" || status === "register";
+}
+
+/**
+ * Type guard que determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
+ * En Payku, la API usa `"rejected"` mientras que los callbacks/notificaciones usan `"failed"`.
+ *
+ * @example
+ * ```typescript
+ * const tx = await payku.transactions.get(id);
+ * if (isTransactionFailed(tx)) {
+ *   // tx.status es "rejected" o "failed"
+ *   await restoreCart(tx.order);
+ * }
+ * ```
+ */
+export function isTransactionFailed<T extends { status?: unknown }>(
+  transaction: T,
+): transaction is T & { status: "rejected" | "failed" };
+export function isTransactionFailed(
+  transaction: string,
+): transaction is "rejected" | "failed";
+export function isTransactionFailed(
+  transaction: unknown,
+): transaction is { status: "rejected" | "failed" };
+export function isTransactionFailed(
+  transaction: unknown,
+): transaction is { status: "rejected" | "failed" } {
+  const status = extractTransactionStatus(transaction);
+  return status === "rejected" || status === "failed";
+}
+
+
+
