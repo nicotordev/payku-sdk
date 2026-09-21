@@ -6,6 +6,8 @@ import type {
   PaykuCreateTransactionResponse,
   PaykuGetTransactionResponse,
   PaykuListTransactionsParams,
+  PaykuReturnInput,
+  PaykuReturnResult,
   PaykuTransaction,
 } from "../types/payku.transactions";
 import {
@@ -61,6 +63,10 @@ export class PaykuScopedTransactions {
 
   list(params: PaykuListTransactionsParams = {}): Promise<PaykuTransaction[]> {
     return this.inner.list(params);
+  }
+
+  handleReturn(queryOrUrl: PaykuReturnInput): Promise<PaykuReturnResult> {
+    return this.inner.handleReturn(queryOrUrl);
   }
 }
 

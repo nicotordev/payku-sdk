@@ -117,5 +117,9 @@ export type {
   ValidateCreateTransactionOptions,
 } from "./utils/payku.utils";
 export type { PaykuListSubscriptionClientsParams } from "./types/payku.subscriptions";
+export type {
+  PaykuReturnInput,
+  PaykuReturnResult,
+} from "./types/payku.transactions";
 export { PAYKU_WALLET_SANDBOX_AMOUNTS } from "./types/payku.wallet";
 

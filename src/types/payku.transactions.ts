@@ -198,6 +198,29 @@ export interface PaykuGetTransactionResponse {
   gateway_response?: PaykuTransactionGatewayResponse;
 }
 
+/**
+ * Entrada flexible para procesar el retorno del cliente en urlreturn.
+ * Acepta string de URL / query, instancia de URL, URLSearchParams o un objeto record (Next.js, Express, etc.).
+ */
+export type PaykuReturnInput =
+  | string
+  | URL
+  | URLSearchParams
+  | Record<string, unknown>;
+
+/**
+ * Resultado procesado del retorno del cliente en urlreturn con flags booleanos y detalle de transacción.
+ */
+export interface PaykuReturnResult {
+  id?: string;
+  isExpired: boolean;
+  isPaid: boolean;
+  isPending: boolean;
+  isFailed: boolean;
+  rawStatus?: string;
+  transaction?: PaykuGetTransactionResponse;
+}
+
 export interface PaykuListTransactionsParams {
   date_init?: string;
   date_end?: string;

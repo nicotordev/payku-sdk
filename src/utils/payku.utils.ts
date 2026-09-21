@@ -277,6 +277,16 @@ export function parseQueryToRecord(
     return obj;
   }
 
+  if (typeof URL !== "undefined" && input instanceof URL) {
+    const obj: Record<string, string> = {};
+    input.searchParams.forEach((value, key) => {
+      if (!Object.hasOwn(obj, key)) {
+        obj[key] = value;
+      }
+    });
+    return obj;
+  }
+
   if (isRecord(input)) {
     const obj: Record<string, string | undefined> = {};
     for (const [key, val] of Object.entries(input)) {
@@ -906,8 +916,9 @@ export interface PaykuPaymentReturnResult {
 export function parsePaymentReturnQuery(
   input:
     | string
+    | URL
     | URLSearchParams
-    | Record<string, string | string[] | undefined>,
+    | Record<string, string | string[] | undefined | unknown>,
 ): PaykuPaymentReturnResult {
   const record = parseQueryToRecord(input);
   const id = record?.id;
