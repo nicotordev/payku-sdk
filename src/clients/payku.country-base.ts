@@ -56,3 +56,42 @@ export interface PaykuCountryClient {
   readonly baseUrl: string;
   readonly rootUrl: string;
 }
+
+/**
+ * Base abstracta para vistas de clientes por país (Chile, Perú, Venezuela).
+ * Centraliza la inicialización de credenciales, configuración y utilidades comunes.
+ */
+export abstract class PaykuCountryBase implements PaykuCountryClient {
+  abstract readonly country: PaykuCountry;
+  abstract readonly currency: PaykuCurrency;
+
+  readonly publicToken: string;
+  readonly privateToken: string;
+  readonly environment: PaykuEnvironment;
+  readonly options: PaykuClientOptions;
+  readonly defaults?: PaykuDefaultsConfig;
+  readonly webhooks: PaykuWebhooks;
+
+  protected readonly core: PaykuCountryCore;
+
+  /** Inicializa las propiedades compartidas por todos los clientes de país. */
+  constructor(core: PaykuCountryCore) {
+    this.core = core;
+    this.publicToken = core.publicToken;
+    this.privateToken = core.privateToken;
+    this.environment = core.environment;
+    this.options = core.options;
+    this.defaults = core.defaults;
+    this.webhooks = core.webhooks;
+  }
+
+  /** URL base de la API para el entorno configurado. */
+  get baseUrl(): string {
+    return this.core.baseUrl;
+  }
+
+  /** URL raíz de Payku para el entorno configurado. */
+  get rootUrl(): string {
+    return this.core.rootUrl;
+  }
+}

@@ -1,6 +1,6 @@
 import {
-  createPaykuAPIError,
   PaykuMarketplaceError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
@@ -48,14 +48,7 @@ export default class PaykuMarketplace {
   ) {}
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error) => {
-      throw createPaykuAPIError(
-        error,
-        operation,
-        PaykuMarketplaceError,
-        this.options,
-      );
-    });
+    return wrapOperation(operation, PaykuMarketplaceError, this.options, fn);
   }
 
   private createClient(params: PaykuCreateMarketplaceClientRequest) {

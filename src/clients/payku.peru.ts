@@ -1,44 +1,22 @@
-import type { PaykuClientOptions } from "../errors";
-import type {
-  PaykuDefaultsConfig,
-  PaykuEnvironment,
-} from "../types/payku.common";
-import type {
-  PaykuCountryCore,
-  PaykuCountryClient,
-} from "./payku.country-base";
+import type { PaykuCountryCore } from "./payku.country-base";
+import { PaykuCountryBase } from "./payku.country-base";
 import { PaykuScopedBanks } from "./payku.banks.scoped";
 import { PaykuScopedPaymentMethods } from "./payku.payment-methods.scoped";
-import type PaykuWebhooks from "./payku.webhooks";
 import { PaykuScopedTransactions } from "./payku.transactions.scoped";
 import { PaykuSharedWallet } from "./payku.wallet.scoped";
 
 /** Cliente tipado para comercios en Perú (PEN). */
-export class PaykuPeru implements PaykuCountryClient {
+export class PaykuPeru extends PaykuCountryBase {
   readonly country = "PE" as const;
   readonly currency = "PEN" as const;
-
-  readonly publicToken: string;
-  readonly privateToken: string;
-  readonly environment: PaykuEnvironment;
-  readonly options: PaykuClientOptions;
-  readonly defaults?: PaykuDefaultsConfig;
 
   readonly transactions: PaykuScopedTransactions;
   readonly wallet: PaykuSharedWallet;
   readonly banks: PaykuScopedBanks;
   readonly paymentMethods: PaykuScopedPaymentMethods;
-  readonly webhooks: PaykuWebhooks;
-
-  private readonly core: PaykuCountryCore;
 
   constructor(core: PaykuCountryCore) {
-    this.core = core;
-    this.publicToken = core.publicToken;
-    this.privateToken = core.privateToken;
-    this.environment = core.environment;
-    this.options = core.options;
-    this.defaults = core.defaults;
+    super(core);
     this.transactions = new PaykuScopedTransactions(
       core.transactions,
       "PE",
@@ -47,14 +25,5 @@ export class PaykuPeru implements PaykuCountryClient {
     this.wallet = new PaykuSharedWallet(core.wallet, "PE");
     this.banks = new PaykuScopedBanks(core.banks, "PE");
     this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "PE");
-    this.webhooks = core.webhooks;
-  }
-
-  get baseUrl(): string {
-    return this.core.baseUrl;
-  }
-
-  get rootUrl(): string {
-    return this.core.rootUrl;
   }
 }

@@ -81,24 +81,6 @@ export const PAYKU_PAYMENT_CODE_TO_SLUG = {
   VES: paymentCodesToSlug(PAYKU_PAYMENT_METHODS.VES),
 } as const;
 
-/**
- * Códigos CLP de la página docs Chile → Crear transacción.
- * Subconjunto de `PAYKU_PAYMENT_METHODS.CLP` (sin Full/Klap/Granve/Apple-Google Pay).
- */
-export const PAYKU_CLP_CREATE_PAYMENT_CODES = [
-  PAYKU_PAYMENT_METHODS.CLP.ALL,
-  PAYKU_PAYMENT_METHODS.CLP.WEBPAY,
-  PAYKU_PAYMENT_METHODS.CLP.ETPAY,
-  PAYKU_PAYMENT_METHODS.CLP.PAGO46,
-  PAYKU_PAYMENT_METHODS.CLP.MACH,
-  PAYKU_PAYMENT_METHODS.CLP.FINTOC,
-  PAYKU_PAYMENT_METHODS.CLP.TENPO,
-  PAYKU_PAYMENT_METHODS.CLP.FLOID,
-  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_1_3,
-  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_4_6,
-  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_7_12,
-] as const;
-
 /** Códigos de pago permitidos en crear transacción Mall (1, 4, 6, 9, 19, 23, 26, 99). */
 export const PAYKU_MALL_PAYMENT_CODES = [
   PAYKU_PAYMENT_METHODS.CLP.ALL,
@@ -109,6 +91,17 @@ export const PAYKU_MALL_PAYMENT_CODES = [
   PAYKU_PAYMENT_METHODS.CLP.FINTOC,
   PAYKU_PAYMENT_METHODS.CLP.TENPO,
   PAYKU_PAYMENT_METHODS.CLP.FLOID,
+] as const;
+
+/**
+ * Códigos CLP de la página docs Chile → Crear transacción.
+ * Subconjunto de `PAYKU_PAYMENT_METHODS.CLP` (sin Full/Klap/Granve/Apple-Google Pay).
+ */
+export const PAYKU_CLP_CREATE_PAYMENT_CODES = [
+  ...PAYKU_MALL_PAYMENT_CODES,
+  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_1_3,
+  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_4_6,
+  PAYKU_PAYMENT_METHODS.CLP.WEBPAY_7_12,
 ] as const;
 
 /** Máximo documentado para `GET /api/transaction` (`per_page`). */

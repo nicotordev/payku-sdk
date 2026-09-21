@@ -1,8 +1,6 @@
-import {
-  PAYKU_COUNTRY_CURRENCY,
-  type PaykuCountry,
-} from "../types/payku.common";
+import type { PaykuCountry } from "../types/payku.common";
 import type { PaykuBank, PaykuListBanksParams } from "../types/payku.banks";
+import { resolveScopedCurrency } from "../utils/payku.utils";
 import type PaykuBanks from "./payku.banks";
 
 export type PaykuScopedListBanksParams = Partial<PaykuListBanksParams>;
@@ -21,11 +19,7 @@ export class PaykuScopedBanks {
    * Si no se especifica `currency`, utiliza por defecto la moneda correspondiente al país configurado (ej. "clp" para CL).
    */
   list(params: PaykuScopedListBanksParams = {}): Promise<PaykuBank[]> {
-    const currency =
-      params.currency ??
-      (PAYKU_COUNTRY_CURRENCY[this.country].toLowerCase() as Lowercase<
-        typeof PAYKU_COUNTRY_CURRENCY[typeof this.country]
-      >);
+    const currency = resolveScopedCurrency(this.country, params.currency);
 
     return this.inner.list({
       ...params,

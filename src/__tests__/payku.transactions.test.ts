@@ -15,6 +15,7 @@ import {
   normalizeRut,
   parsePaykuExpiredInSantiago,
   parsePaymentReturnQuery,
+  parseQueryToRecord,
   paymentMethodToSlug,
   resolvePaymentMethod,
   validateChileCreateTransactionRequest,
@@ -949,6 +950,38 @@ describe("parsePaymentReturnQuery", () => {
     expect(result.expired).toBe(true);
   });
 
+  test("preserves the first occurrence of repeated query parameters", () => {
+    const queryResult = parsePaymentReturnQuery(
+      "id=first&id=second&status=success&status=expired",
+    );
+    const paramsResult = parsePaymentReturnQuery(
+      new URLSearchParams("id=first&id=second&status=success&status=expired"),
+    );
+
+    expect(queryResult).toMatchObject({
+      id: "first",
+      status: "success",
+      expired: false,
+    });
+    expect(paramsResult).toEqual(queryResult);
+  });
+
+  test("ignores non-string record values", () => {
+    expect(
+      parseQueryToRecord({
+        id: 123,
+        status: [{ value: "success" }],
+        message_error: [false],
+        messageError: ["expired", "ignored"],
+      }),
+    ).toEqual({
+      id: undefined,
+      status: undefined,
+      message_error: undefined,
+      messageError: "expired",
+    });
+  });
+
   test("parses URLSearchParams instance", () => {
     const params = new URLSearchParams({
       id: "trx-sp",
@@ -1303,4 +1336,3 @@ describe("client defaults (issue #168)", () => {
     ).rejects.toThrow("urlreturn is required");
   });
 });
-

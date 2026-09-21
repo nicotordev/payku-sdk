@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PAYKU_MALL_PAYMENT_CODES } from "../constants/payku.constants";
+import { isMarketplaceAffiliationTotal100 } from "../utils/payku.utils";
 
 const requireNonEmptyString = (field: string) =>
   z
@@ -240,10 +241,7 @@ export const PaykuMarketplaceAffiliationSchema = z
       0,
     );
     const total = merchant + clients;
-    const tolerance =
-      0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
-
-    if (!Number.isFinite(total) || Math.abs(total - 100) > tolerance) {
+    if (!isMarketplaceAffiliationTotal100(total)) {
       ctx.addIssue({
         code: "custom",
         message: `marketplace affiliation percentages must sum to 100 (got ${total})`,

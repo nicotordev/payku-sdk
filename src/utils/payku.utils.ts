@@ -1,5 +1,12 @@
+import { Buffer } from "node:buffer";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { URL } from "node:url";
-import type { PaykuCurrency, PaykuDefaultsConfig } from "../types/payku.common";
+import {
+  PAYKU_COUNTRY_CURRENCY,
+  type PaykuCountry,
+  type PaykuCurrency,
+  type PaykuDefaultsConfig,
+} from "../types/payku.common";
 import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
   PaykuCreateEventRequest,
@@ -25,6 +32,7 @@ import type {
   PaykuExpirationInput,
   PaykuListTransactionsParams,
   PaykuPaymentMethodInput,
+  PaykuTransactionAdditionalParameters,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
 import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
@@ -180,6 +188,115 @@ export function bodyAsRecord<T extends object>(
   return value as unknown as Record<string, unknown>;
 }
 
+/** Indica si un valor es un objeto record no nulo y no es un arreglo. */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Convierte un valor presente a string sin espacios, u omite valores vacíos. */
+export function nonEmptyString(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const trimmed =
+    typeof value === "string" ? value.trim() : String(value).trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+const verificationCompareKey = randomBytes(32);
+
+/** Normaliza una clave de verificación a un digest de longitud fija. */
+function hmacSha256(value: string): Buffer {
+  return createHmac("sha256", verificationCompareKey)
+    .update(value, "utf8")
+    .digest();
+}
+
+/**
+ * Compara dos claves de verificación de forma timing-safe evitando fugas
+ * por longitud o contenido.
+ */
+export function verificationKeysEqual(left: string, right: string): boolean {
+  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
+}
+
+/**
+ * Resuelve la moneda para clientes con scope de país ("clp", "pen", "ves").
+ */
+export function resolveScopedCurrency(
+  country: PaykuCountry,
+  overrideCurrency?: string,
+): Lowercase<PaykuCurrency> {
+  return (
+    (overrideCurrency?.toLowerCase() as Lowercase<PaykuCurrency>) ??
+    (PAYKU_COUNTRY_CURRENCY[country].toLowerCase() as Lowercase<PaykuCurrency>)
+  );
+}
+
+/**
+ * Extrae la query string de una URL o cadena, ignorando fragments (#) y prefijos (?).
+ */
+export function extractQueryString(input: string): string {
+  let queryString = input;
+  if (queryString.includes("#")) {
+    queryString = queryString.slice(0, queryString.indexOf("#"));
+  }
+  if (queryString.includes("?")) {
+    queryString = queryString.slice(queryString.indexOf("?") + 1);
+  }
+  return queryString;
+}
+
+/**
+ * Convierte una URL, query string, URLSearchParams o Record de query en un Record plano de strings.
+ */
+export function parseQueryToRecord(
+  input: unknown,
+): Record<string, string | undefined> | undefined {
+  if (typeof input === "string") {
+    const params = new URLSearchParams(extractQueryString(input));
+    const obj: Record<string, string> = {};
+    params.forEach((value, key) => {
+      if (!Object.hasOwn(obj, key)) {
+        obj[key] = value;
+      }
+    });
+    return obj;
+  }
+
+  if (
+    typeof URLSearchParams !== "undefined" &&
+    input instanceof URLSearchParams
+  ) {
+    const obj: Record<string, string> = {};
+    input.forEach((value, key) => {
+      if (!Object.hasOwn(obj, key)) {
+        obj[key] = value;
+      }
+    });
+    return obj;
+  }
+
+  if (isRecord(input)) {
+    const obj: Record<string, string | undefined> = {};
+    for (const [key, val] of Object.entries(input)) {
+      const candidate = Array.isArray(val) ? val[0] : val;
+      obj[key] = typeof candidate === "string" ? candidate : undefined;
+    }
+    return obj;
+  }
+
+  return undefined;
+}
+
+/**
+ * Valida si la suma de porcentajes de marketplace es 100 dentro de la tolerancia de punto flotante.
+ */
+export function isMarketplaceAffiliationTotal100(total: number): boolean {
+  const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
+  return Number.isFinite(total) && Math.abs(total - 100) <= tolerance;
+}
+
 function requireNonEmptyField(value: unknown, field: string): void {
   if (value === undefined || value === null || String(value).trim() === "") {
     throw new PaykuError(`${field} is required`);
@@ -259,6 +376,28 @@ export function normalizeRut(rut: string): string {
 }
 
 export const normalizePaykuRut = normalizeRut;
+
+/**
+ * Resuelve y normaliza el payer_rut para transacciones a partir de params.payerRut o params.additional_parameters.payer_rut.
+ */
+export function resolveTransactionPayerRutParameters<
+  T extends {
+    payerRut?: string;
+    additional_parameters?: PaykuTransactionAdditionalParameters;
+  },
+>(
+  params: T,
+): PaykuTransactionAdditionalParameters | undefined {
+  const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
+  const normalizedRut =
+    rawRut !== undefined && rawRut.trim() !== ""
+      ? normalizeRut(rawRut)
+      : rawRut;
+
+  return normalizedRut !== undefined
+    ? { ...params.additional_parameters, payer_rut: normalizedRut }
+    : params.additional_parameters;
+}
 
 /**
  * Formatea un Date o duración relativa (`{ minutes }`, `{ hours }`, `{ days }`)
@@ -644,16 +783,7 @@ export function validateChileCreateTransactionRequest(
   requireNonEmptyField(urlreturn, "urlreturn");
   requireNonEmptyField(urlnotify, "urlnotify");
 
-  const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
-  const normalizedRut =
-    rawRut !== undefined && rawRut.trim() !== ""
-      ? normalizeRut(rawRut)
-      : rawRut;
-
-  const additional_parameters =
-    normalizedRut !== undefined
-      ? { ...params.additional_parameters, payer_rut: normalizedRut }
-      : params.additional_parameters;
+  const additional_parameters = resolveTransactionPayerRutParameters(params);
 
   validateCreateTransactionRequest(
     {
@@ -755,9 +885,7 @@ export function validateMarketplaceAffiliationPercentages(
   const clients = affiliation.reduce((sum, [, pct]) => sum + Number(pct), 0);
   const total = merchant + clients;
 
-  // Tolerancia documentada 0.01 + epsilon FP (p. ej. 20 + 79.99).
-  const tolerance = 0.01 + Number.EPSILON * Math.max(1, Math.abs(total), 100);
-  if (!Number.isFinite(total) || Math.abs(total - 100) > tolerance) {
+  if (!isMarketplaceAffiliationTotal100(total)) {
     throw new PaykuError(
       `marketplace affiliation percentages must sum to 100 (got ${total})`,
     );
@@ -781,40 +909,10 @@ export function parsePaymentReturnQuery(
     | URLSearchParams
     | Record<string, string | string[] | undefined>,
 ): PaykuPaymentReturnResult {
-  let id: string | undefined;
-  let status: string | undefined;
-  let messageError: string | undefined;
-
-  if (typeof input === "string") {
-    let queryString = input;
-    if (queryString.includes("#")) {
-      queryString = queryString.slice(0, queryString.indexOf("#"));
-    }
-    if (queryString.includes("?")) {
-      queryString = queryString.slice(queryString.indexOf("?") + 1);
-    }
-    const params = new URLSearchParams(queryString);
-    id = params.get("id") ?? undefined;
-    status = params.get("status") ?? undefined;
-    messageError =
-      params.get("message_error") ?? params.get("messageError") ?? undefined;
-  } else if (input instanceof URLSearchParams) {
-    id = input.get("id") ?? undefined;
-    status = input.get("status") ?? undefined;
-    messageError =
-      input.get("message_error") ?? input.get("messageError") ?? undefined;
-  } else if (typeof input === "object" && input !== null) {
-    const getVal = (key: string): string | undefined => {
-      const val = input[key];
-      if (Array.isArray(val)) {
-        return val[0];
-      }
-      return val;
-    };
-    id = getVal("id");
-    status = getVal("status");
-    messageError = getVal("message_error") ?? getVal("messageError");
-  }
+  const record = parseQueryToRecord(input);
+  const id = record?.id;
+  const status = record?.status;
+  const messageError = record?.message_error ?? record?.messageError;
 
   const normalizedMessageError = messageError?.trim().toLowerCase();
   const normalizedStatus = status?.trim().toLowerCase();
@@ -1165,4 +1263,3 @@ export function validateWalletPayoutRequest(
     }
   }
 }
-

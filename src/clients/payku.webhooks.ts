@@ -1,5 +1,3 @@
-import { Buffer } from "node:buffer";
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { PaykuAPIError } from "../errors";
 import type {
   PaykuNotifyPayload,
@@ -8,35 +6,17 @@ import type {
   PaykuWebhookRequestInput,
   PaykuWebhookVerificationFailureReason,
 } from "../types/payku.webhooks";
-import { mapNotifyStatusToTransactionStatus } from "../utils/payku.utils";
+import {
+  isRecord,
+  mapNotifyStatusToTransactionStatus,
+  nonEmptyString,
+  verificationKeysEqual,
+} from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
+export { isRecord };
+
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
-
-const verificationCompareKey = randomBytes(32);
-
-function nonEmptyVerificationKey(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function hmacSha256(value: string): Buffer {
-  return createHmac("sha256", verificationCompareKey)
-    .update(value, "utf8")
-    .digest();
-}
-
-function verificationKeysEqual(left: string, right: string): boolean {
-  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 export default class PaykuWebhooks {
   public verifyNotify = this.verifyNotification.bind(this);
@@ -77,8 +57,8 @@ export default class PaykuWebhooks {
         };
       }
 
-      const notifyKey = nonEmptyVerificationKey(payload.verification_key);
-      const paymentVerificationKey = nonEmptyVerificationKey(
+      const notifyKey = nonEmptyString(payload.verification_key);
+      const paymentVerificationKey = nonEmptyString(
         transaction.payment?.verification_key,
       );
 
@@ -153,6 +133,7 @@ export default class PaykuWebhooks {
     return this.verifyNotification(parsed.payload, options);
   }
 
+  /** Lee y valida estructuralmente un Request Web o payload ya parseado. */
   private async readNotifyPayload(
     input: PaykuWebhookRequestInput,
   ): Promise<

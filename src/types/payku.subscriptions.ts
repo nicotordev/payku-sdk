@@ -213,18 +213,7 @@ export type PaykuListSubscriptionsResponse = Array<{
   subscriptions: PaykuSubscriptionListItem[];
 }>;
 
-export interface PaykuListSubscriptionsV3Query {
-  page?: number;
-  per_page?: number;
-  date_init?: string;
-  date_end?: string;
-  active?: boolean | string;
-  canceled?: boolean | string;
-  suspended?: boolean | string;
-  pending?: boolean | string;
-  expired?: boolean | string;
-  [key: string]: unknown;
-}
+export type PaykuListSubscriptionsV3Query = PaykuListSubscriptionsQuery;
 
 export interface PaykuSubscriptionV3PaidItem {
   payment_cycle_day?: string;

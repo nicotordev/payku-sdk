@@ -1,6 +1,9 @@
 import { z } from "zod";
 import type { PaykuNotifyPayload } from "../types/payku.transactions";
-import type { PaykuPaymentReturnResult } from "../utils/payku.utils";
+import {
+  parseQueryToRecord,
+  type PaykuPaymentReturnResult,
+} from "../utils/payku.utils";
 
 export { z };
 
@@ -9,42 +12,7 @@ export { z };
  * query string parcial, instancia de URLSearchParams o Record de objetos (Next.js/Express).
  */
 function normalizeReturnQueryInput(input: unknown): unknown {
-  if (typeof input === "string") {
-    let queryString = input;
-    if (queryString.includes("#")) {
-      queryString = queryString.slice(0, queryString.indexOf("#"));
-    }
-    if (queryString.includes("?")) {
-      queryString = queryString.slice(queryString.indexOf("?") + 1);
-    }
-    const params = new URLSearchParams(queryString);
-    const obj: Record<string, string> = {};
-    params.forEach((value, key) => {
-      obj[key] = value;
-    });
-    return obj;
-  }
-
-  if (
-    typeof URLSearchParams !== "undefined" &&
-    input instanceof URLSearchParams
-  ) {
-    const obj: Record<string, string> = {};
-    input.forEach((value, key) => {
-      obj[key] = value;
-    });
-    return obj;
-  }
-
-  if (typeof input === "object" && input !== null) {
-    const obj: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(input)) {
-      obj[key] = Array.isArray(val) ? val[0] : val;
-    }
-    return obj;
-  }
-
-  return input;
+  return parseQueryToRecord(input) ?? input;
 }
 
 /**
