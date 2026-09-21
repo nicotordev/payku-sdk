@@ -239,9 +239,9 @@ export default class PaykuTransactions {
       transaction?.status ?? parsed.status
     )?.trim().toLowerCase();
 
-    const statusTarget = transaction ?? parsed.status;
+    const statusTarget = normalizedStatus;
     const isPaid =
-      transaction !== undefined && isTransactionPaid(transaction);
+      transaction !== undefined && isTransactionPaid(statusTarget);
     const isPending = isTransactionPending(statusTarget);
     const isFailed = isTransactionFailed(statusTarget);
     const isExpired = normalizedStatus === "expired" || parsed.expired;
