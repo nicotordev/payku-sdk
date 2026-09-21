@@ -1,44 +1,22 @@
-import type { PaykuClientOptions } from "../errors";
-import type {
-  PaykuDefaultsConfig,
-  PaykuEnvironment,
-} from "../types/payku.common";
-import type {
-  PaykuCountryCore,
-  PaykuCountryClient,
-} from "./payku.country-base";
+import type { PaykuCountryCore } from "./payku.country-base";
+import { PaykuCountryBase } from "./payku.country-base";
 import { PaykuScopedBanks } from "./payku.banks.scoped";
 import { PaykuScopedPaymentMethods } from "./payku.payment-methods.scoped";
-import type PaykuWebhooks from "./payku.webhooks";
 import { PaykuVenezuelaTransactions } from "./payku.transactions.scoped";
 import { PaykuSharedWallet } from "./payku.wallet.scoped";
 
 /** Cliente tipado para comercios en Venezuela (VES). */
-export class PaykuVenezuela implements PaykuCountryClient {
+export class PaykuVenezuela extends PaykuCountryBase {
   readonly country = "VE" as const;
   readonly currency = "VES" as const;
-
-  readonly publicToken: string;
-  readonly privateToken: string;
-  readonly environment: PaykuEnvironment;
-  readonly options: PaykuClientOptions;
-  readonly defaults?: PaykuDefaultsConfig;
 
   readonly transactions: PaykuVenezuelaTransactions;
   readonly wallet: PaykuSharedWallet;
   readonly banks: PaykuScopedBanks;
   readonly paymentMethods: PaykuScopedPaymentMethods;
-  readonly webhooks: PaykuWebhooks;
-
-  private readonly core: PaykuCountryCore;
 
   constructor(core: PaykuCountryCore) {
-    this.core = core;
-    this.publicToken = core.publicToken;
-    this.privateToken = core.privateToken;
-    this.environment = core.environment;
-    this.options = core.options;
-    this.defaults = core.defaults;
+    super(core);
     this.transactions = new PaykuVenezuelaTransactions(
       core.transactions,
       core.defaults,
@@ -46,14 +24,5 @@ export class PaykuVenezuela implements PaykuCountryClient {
     this.wallet = new PaykuSharedWallet(core.wallet, "VE");
     this.banks = new PaykuScopedBanks(core.banks, "VE");
     this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "VE");
-    this.webhooks = core.webhooks;
-  }
-
-  get baseUrl(): string {
-    return this.core.baseUrl;
-  }
-
-  get rootUrl(): string {
-    return this.core.rootUrl;
   }
 }

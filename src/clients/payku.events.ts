@@ -1,6 +1,6 @@
 import {
-  createPaykuAPIError,
   PaykuEventsError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
@@ -25,14 +25,7 @@ export default class PaykuEvents {
   ) {}
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error) => {
-      throw createPaykuAPIError(
-        error,
-        operation,
-        PaykuEventsError,
-        this.options,
-      );
-    });
+    return wrapOperation(operation, PaykuEventsError, this.options, fn);
   }
 
   private createEvent(

@@ -31,6 +31,23 @@ describe("Payku client", () => {
     expect(payku.defaults).toBeUndefined();
   });
 
+  test("fromEnv and fromEnvForCountry reject unsupported environments", () => {
+    for (const environment of ["staging", ""]) {
+      const env = {
+        PAYKU_PUBLIC_TOKEN: "public",
+        PAYKU_PRIVATE_TOKEN: "private",
+        PAYKU_ENVIRONMENT: environment,
+      };
+
+      expect(() => Payku.fromEnv(env)).toThrow(
+        `invalid PAYKU_ENVIRONMENT "${environment}"`,
+      );
+      expect(() => Payku.fromEnvForCountry("CL", env)).toThrow(
+        `invalid PAYKU_ENVIRONMENT "${environment}"`,
+      );
+    }
+  });
+
   test("fromEnv reads defaults from PAYKU_DEFAULT_URLRETURN and PAYKU_DEFAULT_URLNOTIFY", () => {
     const payku = Payku.fromEnv({
       PAYKU_PUBLIC_TOKEN: "public",

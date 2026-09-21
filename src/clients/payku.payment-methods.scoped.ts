@@ -1,11 +1,9 @@
-import {
-  PAYKU_COUNTRY_CURRENCY,
-  type PaykuCountry,
-} from "../types/payku.common";
+import type { PaykuCountry } from "../types/payku.common";
 import type {
   PaykuListPaymentMethodsParams,
   PaykuPaymentMethod,
 } from "../types/payku.payment-methods";
+import { resolveScopedCurrency } from "../utils/payku.utils";
 import type PaykuPaymentMethods from "./payku.payment-methods";
 
 export type PaykuScopedListPaymentMethodsParams = PaykuListPaymentMethodsParams;
@@ -23,12 +21,10 @@ export class PaykuScopedPaymentMethods {
    * Lista los métodos de pago disponibles para la moneda del país.
    * Si no se especifica `currency`, utiliza por defecto la moneda correspondiente al país configurado (ej. "clp" para CL).
    */
-  list(params: PaykuScopedListPaymentMethodsParams = {}): Promise<PaykuPaymentMethod[]> {
-    const currency =
-      params.currency ??
-      (PAYKU_COUNTRY_CURRENCY[this.country].toLowerCase() as Lowercase<
-        typeof PAYKU_COUNTRY_CURRENCY[typeof this.country]
-      >);
+  list(
+    params: PaykuScopedListPaymentMethodsParams = {},
+  ): Promise<PaykuPaymentMethod[]> {
+    const currency = resolveScopedCurrency(this.country, params.currency);
 
     return this.inner.list({
       ...params,

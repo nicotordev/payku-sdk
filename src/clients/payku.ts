@@ -1,4 +1,8 @@
-import { PaykuAuthenticationError, type PaykuClientOptions } from "../errors";
+import {
+  PaykuAuthenticationError,
+  PaykuError,
+  type PaykuClientOptions,
+} from "../errors";
 import { HttpClient } from "../http/client";
 import {
   getBaseUrl,
@@ -41,6 +45,44 @@ export type PaykuCountryClientMap = {
 
 export type PaykuForCountryClient<C extends PaykuCountry> =
   PaykuCountryClientMap[C];
+
+/**
+ * Resuelve credenciales, entorno y URLs predeterminadas desde variables de entorno.
+ */
+export function resolvePaykuConfigFromEnv(
+  env: Record<string, string | undefined> = process.env,
+): PaykuConfig {
+  const publicToken = env.PAYKU_PUBLIC_TOKEN;
+  const privateToken = env.PAYKU_PRIVATE_TOKEN;
+  const environmentValue = env.PAYKU_ENVIRONMENT ?? "sandbox";
+
+  if (environmentValue !== "sandbox" && environmentValue !== "production") {
+    throw new PaykuError(
+      `Payku: invalid PAYKU_ENVIRONMENT "${environmentValue}"`,
+    );
+  }
+
+  const environment: PaykuEnvironment = environmentValue;
+
+  if (!publicToken || !privateToken) {
+    throw new PaykuAuthenticationError();
+  }
+
+  const defaults: PaykuDefaultsConfig | undefined =
+    env.PAYKU_DEFAULT_URLRETURN || env.PAYKU_DEFAULT_URLNOTIFY
+      ? {
+          urlreturn: env.PAYKU_DEFAULT_URLRETURN,
+          urlnotify: env.PAYKU_DEFAULT_URLNOTIFY,
+        }
+      : undefined;
+
+  return {
+    publicToken,
+    privateToken,
+    environment,
+    defaults,
+  };
+}
 
 /**
  * Cliente API de Payku (modo global / multi-país).
@@ -124,24 +166,7 @@ export default class Payku {
   }
 
   static fromEnv(env: Record<string, string | undefined> = process.env): Payku {
-    const publicToken = env.PAYKU_PUBLIC_TOKEN;
-    const privateToken = env.PAYKU_PRIVATE_TOKEN;
-    const environment = (env.PAYKU_ENVIRONMENT ??
-      "sandbox") as PaykuEnvironment;
-
-    if (!publicToken || !privateToken) {
-      throw new PaykuAuthenticationError();
-    }
-
-    const defaults: PaykuDefaultsConfig | undefined =
-      env.PAYKU_DEFAULT_URLRETURN || env.PAYKU_DEFAULT_URLNOTIFY
-        ? {
-            urlreturn: env.PAYKU_DEFAULT_URLRETURN,
-            urlnotify: env.PAYKU_DEFAULT_URLNOTIFY,
-          }
-        : undefined;
-
-    return new Payku(publicToken, privateToken, environment, {}, defaults);
+    return Payku.fromConfig(resolvePaykuConfigFromEnv(env));
   }
 
   /**
@@ -175,29 +200,7 @@ export default class Payku {
     country: C,
     env: Record<string, string | undefined> = process.env,
   ): PaykuForCountryClient<C> {
-    const publicToken = env.PAYKU_PUBLIC_TOKEN;
-    const privateToken = env.PAYKU_PRIVATE_TOKEN;
-    const environment = (env.PAYKU_ENVIRONMENT ??
-      "sandbox") as PaykuEnvironment;
-
-    if (!publicToken || !privateToken) {
-      throw new PaykuAuthenticationError();
-    }
-
-    const defaults: PaykuDefaultsConfig | undefined =
-      env.PAYKU_DEFAULT_URLRETURN || env.PAYKU_DEFAULT_URLNOTIFY
-        ? {
-            urlreturn: env.PAYKU_DEFAULT_URLRETURN,
-            urlnotify: env.PAYKU_DEFAULT_URLNOTIFY,
-          }
-        : undefined;
-
-    return Payku.forCountry(country, {
-      publicToken,
-      privateToken,
-      environment,
-      defaults,
-    });
+    return Payku.forCountry(country, resolvePaykuConfigFromEnv(env));
   }
 
   private toCountryCore(): PaykuCountryCore {

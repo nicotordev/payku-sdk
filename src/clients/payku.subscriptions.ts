@@ -1,19 +1,19 @@
-import { Buffer } from "node:buffer";
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import {
-  createPaykuAPIError,
   PaykuAPIError,
   PaykuSubscriptionsError,
+  wrapOperation,
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
   mapNotifyStatusToTransactionStatus,
+  nonEmptyString,
   validateCreateSubscriptionClientRequest,
   validateCreateSubscriptionRequest,
   validateCreateSubscriptionTransactionRequest,
   validateListSubscriptionClientsParams,
+  verificationKeysEqual,
 } from "../utils/payku.utils";
 import type {
   PaykuCreateSubscriptionClientRequest,
@@ -46,27 +46,6 @@ import type {
   PaykuVerifySubscriptionPaymentNotifyOptions,
   PaykuVerifySubscriptionPaymentNotifyResult,
 } from "../types/payku.subscriptions";
-
-const verificationCompareKey = randomBytes(32);
-
-function nonEmptyString(value: unknown): string | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  const trimmed = String(value).trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function hmacSha256(value: string): Buffer {
-  return createHmac("sha256", verificationCompareKey)
-    .update(value, "utf8")
-    .digest();
-}
-
-function verificationKeysEqual(left: string, right: string): boolean {
-  return timingSafeEqual(hmacSha256(left), hmacSha256(right));
-}
 
 export default class PaykuSubscriptions {
   public clients = {
@@ -108,14 +87,7 @@ export default class PaykuSubscriptions {
   ) {}
 
   private wrap<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error) => {
-      throw createPaykuAPIError(
-        error,
-        operation,
-        PaykuSubscriptionsError,
-        this.options,
-      );
-    });
+    return wrapOperation(operation, PaykuSubscriptionsError, this.options, fn);
   }
 
   private createClient(params: PaykuCreateSubscriptionClientRequest) {

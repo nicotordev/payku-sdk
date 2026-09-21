@@ -24,9 +24,9 @@ import {
   bodyAsRecord,
   formatPaykuExpiredInSantiago,
   isNoRecordsErrorMessage,
-  normalizeRut,
   parsePaymentReturnQuery,
   resolveCreateTransactionPayment,
+  resolveTransactionPayerRutParameters,
   toQueryRecord,
   validateCreateTransactionRequest,
   validateListTransactionsParams,
@@ -80,16 +80,7 @@ export default class PaykuTransactions {
         ? formatPaykuExpiredInSantiago(params.expired, now)
         : undefined;
 
-    const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
-    const normalizedRut =
-      rawRut !== undefined && rawRut.trim() !== ""
-        ? normalizeRut(rawRut)
-        : rawRut;
-
-    const additional_parameters =
-      normalizedRut !== undefined
-        ? { ...params.additional_parameters, payer_rut: normalizedRut }
-        : params.additional_parameters;
+    const additional_parameters = resolveTransactionPayerRutParameters(params);
 
     const mergedParams = resolveCreateTransactionPayment({
       ...params,

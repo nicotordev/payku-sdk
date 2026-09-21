@@ -106,13 +106,7 @@ export interface PaykuWalletListParams extends PaykuPaginationParams {
 /**
  * Shape compartido por `GET /wallet`, `/wallet/list` y `/wallet/{id}`.
  */
-export interface PaykuWalletListResponse extends PaykuSuccessResponse {
-  current_id?: string;
-  amount_available?: number;
-  currency?: PaykuCurrency | string;
-  filter?: PaykuWalletFilter;
-  wallet_movements?: PaykuWalletMovement[];
-}
+export type PaykuWalletListResponse = PaykuWalletBalanceResponse;
 
 /** Estados documentados de payout GET / payoutv3. */
 export type PaykuPayoutStatus =

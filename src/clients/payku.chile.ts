@@ -1,12 +1,5 @@
-import type { PaykuClientOptions } from "../errors";
-import type {
-  PaykuDefaultsConfig,
-  PaykuEnvironment,
-} from "../types/payku.common";
-import type {
-  PaykuCountryCore,
-  PaykuCountryClient,
-} from "./payku.country-base";
+import type { PaykuCountryCore } from "./payku.country-base";
+import { PaykuCountryBase } from "./payku.country-base";
 import { PaykuScopedBanks } from "./payku.banks.scoped";
 import { PaykuScopedPaymentMethods } from "./payku.payment-methods.scoped";
 import type PaykuConciliation from "./payku.conciliation";
@@ -18,25 +11,17 @@ import type PaykuMarketplace from "./payku.marketplace";
 import type PaykuNullification from "./payku.nullification";
 import type PaykuSubscriptions from "./payku.subscriptions";
 import type PaykuWallet from "./payku.wallet";
-import type PaykuWebhooks from "./payku.webhooks";
 import { PaykuChileTransactions } from "./payku.transactions.scoped";
 
 /** Cliente tipado para comercios en Chile (CLP). */
-export class PaykuChile implements PaykuCountryClient {
+export class PaykuChile extends PaykuCountryBase {
   readonly country = "CL" as const;
   readonly currency = "CLP" as const;
-
-  readonly publicToken: string;
-  readonly privateToken: string;
-  readonly environment: PaykuEnvironment;
-  readonly options: PaykuClientOptions;
-  readonly defaults?: PaykuDefaultsConfig;
 
   readonly transactions: PaykuChileTransactions;
   readonly wallet: PaykuWallet;
   readonly banks: PaykuScopedBanks;
   readonly paymentMethods: PaykuScopedPaymentMethods;
-  readonly webhooks: PaykuWebhooks;
   readonly subscriptions: PaykuSubscriptions;
   readonly consumptionSubscriptions: PaykuConsumptionSubscriptions;
   readonly marketplace: PaykuMarketplace;
@@ -46,15 +31,8 @@ export class PaykuChile implements PaykuCountryClient {
   readonly nullification: PaykuNullification;
   readonly conciliation: PaykuConciliation;
 
-  private readonly core: PaykuCountryCore;
-
   constructor(core: PaykuCountryCore) {
-    this.core = core;
-    this.publicToken = core.publicToken;
-    this.privateToken = core.privateToken;
-    this.environment = core.environment;
-    this.options = core.options;
-    this.defaults = core.defaults;
+    super(core);
     this.transactions = new PaykuChileTransactions(
       core.transactions,
       core.defaults,
@@ -62,7 +40,6 @@ export class PaykuChile implements PaykuCountryClient {
     this.wallet = core.wallet;
     this.banks = new PaykuScopedBanks(core.banks, "CL");
     this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "CL");
-    this.webhooks = core.webhooks;
     this.subscriptions = core.subscriptions;
     this.consumptionSubscriptions = core.consumptionSubscriptions;
     this.marketplace = core.marketplace;
@@ -71,13 +48,5 @@ export class PaykuChile implements PaykuCountryClient {
     this.escrow = core.escrow;
     this.nullification = core.nullification;
     this.conciliation = core.conciliation;
-  }
-
-  get baseUrl(): string {
-    return this.core.baseUrl;
-  }
-
-  get rootUrl(): string {
-    return this.core.rootUrl;
   }
 }

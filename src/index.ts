@@ -35,6 +35,7 @@ export {
   createPaykuAPIError,
   extractPaykuErrorMessage,
   isPaykuError,
+  wrapOperation,
 } from "./errors";
 export type {
   PaykuAPIErrorLogEvent,

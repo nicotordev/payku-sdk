@@ -330,3 +330,20 @@ function logPaykuAPIError(
     // Never mask the original API error if logging fails.
   }
 }
+
+/**
+ * Envuelve una operación asíncrona atrapando cualquier error y relanzándolo
+ * como una instancia tipada de PaykuAPIError con logging configurado.
+ */
+export async function wrapOperation<T>(
+  operation: string,
+  ErrorClass: typeof PaykuAPIError = PaykuAPIError,
+  options: PaykuClientOptions | undefined,
+  fn: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    throw createPaykuAPIError(error, operation, ErrorClass, options);
+  }
+}
