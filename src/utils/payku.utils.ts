@@ -1276,18 +1276,16 @@ export function validateWalletPayoutRequest(
 }
 
 /**
- * Extrae y normaliza el campo `status` de un string o de un objeto transacción/webhook.
+ * Extrae el campo `status` de un string o de un objeto transacción/webhook sin alterar el valor.
  */
 export function extractTransactionStatus(target: unknown): string | undefined {
   if (typeof target === "string") {
-    const trimmed = target.trim().toLowerCase();
-    return trimmed.length > 0 ? trimmed : undefined;
+    return target;
   }
   if (typeof target === "object" && target !== null && "status" in target) {
     const raw = (target as { status?: unknown }).status;
     if (typeof raw === "string") {
-      const trimmed = raw.trim().toLowerCase();
-      return trimmed.length > 0 ? trimmed : undefined;
+      return raw;
     }
   }
   return undefined;

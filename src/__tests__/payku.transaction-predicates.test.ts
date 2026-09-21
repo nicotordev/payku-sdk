@@ -15,20 +15,18 @@ import type {
 
 describe("Transaction Predicates & Type Guards (Issue #173)", () => {
   describe("extractTransactionStatus", () => {
-    test("extracts and normalizes from strings", () => {
+    test("extracts exact status from strings without modifying them", () => {
       expect(extractTransactionStatus("success")).toBe("success");
-      expect(extractTransactionStatus("SUCCESS")).toBe("success");
-      expect(extractTransactionStatus("  pending  ")).toBe("pending");
-      expect(extractTransactionStatus("REGISTER")).toBe("register");
-      expect(extractTransactionStatus("")).toBeUndefined();
-      expect(extractTransactionStatus("   ")).toBeUndefined();
+      expect(extractTransactionStatus("SUCCESS")).toBe("SUCCESS");
+      expect(extractTransactionStatus("  pending  ")).toBe("  pending  ");
+      expect(extractTransactionStatus("REGISTER")).toBe("REGISTER");
     });
 
-    test("extracts and normalizes from objects with status", () => {
+    test("extracts exact status from objects with status without modifying them", () => {
       expect(extractTransactionStatus({ status: "success" })).toBe("success");
-      expect(extractTransactionStatus({ status: "Pending " })).toBe("pending");
-      expect(extractTransactionStatus({ status: "REJECTED" })).toBe("rejected");
-      expect(extractTransactionStatus({ status: "" })).toBeUndefined();
+      expect(extractTransactionStatus({ status: "Pending " })).toBe("Pending ");
+      expect(extractTransactionStatus({ status: "REJECTED" })).toBe("REJECTED");
+      expect(extractTransactionStatus({ status: "" })).toBe("");
       expect(extractTransactionStatus({ status: 123 })).toBeUndefined();
       expect(extractTransactionStatus({ status: null })).toBeUndefined();
       expect(extractTransactionStatus({})).toBeUndefined();
@@ -43,19 +41,20 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
   });
 
   describe("isTransactionPaid / isTransactionSuccess", () => {
-    test("returns true for success status in objects and strings", () => {
+    test("returns true for exact canonical success status", () => {
       expect(isTransactionPaid({ status: "success" })).toBe(true);
-      expect(isTransactionPaid({ status: "SUCCESS" })).toBe(true);
-      expect(isTransactionPaid({ status: " success " })).toBe(true);
       expect(isTransactionPaid("success")).toBe(true);
-      expect(isTransactionPaid("SUCCESS")).toBe(true);
 
       // isTransactionSuccess alias
       expect(isTransactionSuccess({ status: "success" })).toBe(true);
       expect(isTransactionSuccess("success")).toBe(true);
     });
 
-    test("returns false for non-success statuses", () => {
+    test("returns false for non-canonical casing, untrimmed strings, and other statuses", () => {
+      expect(isTransactionPaid({ status: "SUCCESS" })).toBe(false);
+      expect(isTransactionPaid({ status: " success " })).toBe(false);
+      expect(isTransactionPaid("SUCCESS")).toBe(false);
+      expect(isTransactionPaid(" success ")).toBe(false);
       expect(isTransactionPaid({ status: "pending" })).toBe(false);
       expect(isTransactionPaid({ status: "register" })).toBe(false);
       expect(isTransactionPaid({ status: "rejected" })).toBe(false);
@@ -84,16 +83,18 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
   });
 
   describe("isTransactionPending", () => {
-    test("returns true for pending and register statuses", () => {
+    test("returns true for exact canonical pending and register statuses", () => {
       expect(isTransactionPending({ status: "pending" })).toBe(true);
       expect(isTransactionPending({ status: "register" })).toBe(true);
-      expect(isTransactionPending({ status: "PENDING" })).toBe(true);
-      expect(isTransactionPending({ status: " REGISTER " })).toBe(true);
       expect(isTransactionPending("pending")).toBe(true);
       expect(isTransactionPending("register")).toBe(true);
     });
 
-    test("returns false for success, rejected, failed and invalid inputs", () => {
+    test("returns false for non-canonical casing, untrimmed, or other statuses", () => {
+      expect(isTransactionPending({ status: "PENDING" })).toBe(false);
+      expect(isTransactionPending({ status: " REGISTER " })).toBe(false);
+      expect(isTransactionPending("PENDING")).toBe(false);
+      expect(isTransactionPending(" register ")).toBe(false);
       expect(isTransactionPending({ status: "success" })).toBe(false);
       expect(isTransactionPending({ status: "rejected" })).toBe(false);
       expect(isTransactionPending({ status: "failed" })).toBe(false);
@@ -121,16 +122,18 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
   });
 
   describe("isTransactionFailed", () => {
-    test("returns true for rejected and failed statuses", () => {
+    test("returns true for exact canonical rejected and failed statuses", () => {
       expect(isTransactionFailed({ status: "rejected" })).toBe(true);
       expect(isTransactionFailed({ status: "failed" })).toBe(true);
-      expect(isTransactionFailed({ status: "REJECTED" })).toBe(true);
-      expect(isTransactionFailed({ status: " FAILED " })).toBe(true);
       expect(isTransactionFailed("rejected")).toBe(true);
       expect(isTransactionFailed("failed")).toBe(true);
     });
 
-    test("returns false for success, pending, register and invalid inputs", () => {
+    test("returns false for non-canonical casing, untrimmed, or other statuses", () => {
+      expect(isTransactionFailed({ status: "REJECTED" })).toBe(false);
+      expect(isTransactionFailed({ status: " FAILED " })).toBe(false);
+      expect(isTransactionFailed("REJECTED")).toBe(false);
+      expect(isTransactionFailed(" failed ")).toBe(false);
       expect(isTransactionFailed({ status: "success" })).toBe(false);
       expect(isTransactionFailed({ status: "pending" })).toBe(false);
       expect(isTransactionFailed({ status: "register" })).toBe(false);
