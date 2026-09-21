@@ -1177,9 +1177,10 @@ describe("transactions.handleReturn", () => {
     expect(result.id).toBe("trx-record");
   });
 
-  test("evaluates flags from query alone when id is missing", async () => {
+  test("does not confirm payment from query alone when id is missing", async () => {
     const resultSuccess = await transactions.handleReturn({ status: "success" });
-    expect(resultSuccess.isPaid).toBe(true);
+    expect(resultSuccess.isPaid).toBe(false);
+    expect(resultSuccess.rawStatus).toBe("success");
     expect(resultSuccess.transaction).toBeUndefined();
 
     const resultPending = await transactions.handleReturn({ status: "pending" });
