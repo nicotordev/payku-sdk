@@ -1,4 +1,5 @@
 import { describe } from "bun:test";
+import { randomBytes } from "node:crypto";
 import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
 import type {
@@ -115,7 +116,7 @@ let sequenceCounter = 0;
 export function generateUniqueId(prefix = "smoke", maxLength?: number): string {
   sequenceCounter = (sequenceCounter + 1) % 1000;
   const time = Date.now().toString(36);
-  const rand = Math.random().toString(36).substring(2, 6);
+  const rand = randomBytes(3).toString("base64url").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 4);
   const raw = `${prefix}_${time}_${rand}`;
 
   if (maxLength && raw.length > maxLength) {
@@ -146,7 +147,16 @@ export function generateUniqueEmail(prefix = "smoke"): string {
  * Genera un número de teléfono móvil de 9 dígitos.
  */
 export function generateUniquePhone(): string {
-  const rand = Math.floor(10000000 + Math.random() * 90000000);
+  const min = 10000000;
+  const range = 90000000;
+  const maxUnbiased = Math.floor(0x100000000 / range) * range;
+  let n = 0;
+
+  do {
+    n = randomBytes(4).readUInt32BE(0);
+  } while (n >= maxUnbiased);
+
+  const rand = min + (n % range);
   return `9${rand}`;
 }
 
