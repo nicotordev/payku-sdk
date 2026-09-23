@@ -237,6 +237,11 @@ describe("Payku Integration Test Infrastructure", () => {
         isSignRejection(new PaykuError("not found", { statusCode: 404 })),
       ).toBe(false);
       expect(isSignRejection(new Error("waiting sign"))).toBe(false);
+      expect(
+        isSignRejection(
+          new PaykuError("No se pudo confirmar la transacción"),
+        ),
+      ).toBe(false);
     });
 
     test("capabilityDependentReason skips sign failures and matches disabled products", () => {
@@ -263,6 +268,11 @@ describe("Payku Integration Test Infrastructure", () => {
       expect(
         capabilityDependentReason(
           new PaykuAPIError("no autorizado", { statusCode: 200 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("permission denied", { statusCode: 401 }),
         ),
       ).toBeUndefined();
     });

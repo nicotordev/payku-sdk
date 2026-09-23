@@ -425,11 +425,7 @@ export function isSignRejection(error: unknown): boolean {
   }
 
   const text = `${error.type ?? ""} ${error.message}`.toLowerCase();
-  return (
-    text.includes("waiting sign") ||
-    text.includes("invalid sign") ||
-    text.includes("firma")
-  );
+  return /\b(waiting|invalid) sign\b|\bfirma\b/u.test(text);
 }
 
 /**
@@ -438,6 +434,10 @@ export function isSignRejection(error: unknown): boolean {
  */
 export function capabilityDependentReason(error: unknown): string | undefined {
   if (!(error instanceof PaykuError) || isSignRejection(error)) {
+    return undefined;
+  }
+
+  if (error.statusCode === 401) {
     return undefined;
   }
 
