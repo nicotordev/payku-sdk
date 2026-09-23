@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `transactions.listAll` y `transactions.iterate`: paginación automática de `GET /transaction` hasta página vacía o incompleta. `per_page` omitido usa el máximo 4000. Disponible en el cliente base y en `forCountry` (#174).
 - `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `transactions.create` acepta slugs de método de pago (`"webpay"`, `"fintoc"`, `"safety_pay"`, …) además de códigos numéricos; el body HTTP sigue siendo el código (#169).
 - `marketplace.affiliations.create` acepta `{ clientId, percentage }` además de tuplas `[clientId, percentage]`; el body HTTP sigue siendo array de pares (#179).

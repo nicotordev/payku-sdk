@@ -1,3 +1,4 @@
+import { PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE } from "../constants/payku.constants";
 import {
   createPaykuAPIError,
   PaykuCreateTransactionError,
@@ -58,6 +59,18 @@ export default class PaykuTransactions {
    * Lista transacciones con filtros documentados.
    */
   public list = this.listTransactions.bind(this);
+
+  /**
+   * Acumula todas las transacciones del filtro, página a página, hasta agotar resultados.
+   * Si omites `per_page`, cada request usa `PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE`.
+   */
+  public listAll = this.listAllTransactions.bind(this);
+
+  /**
+   * Generador asíncrono. Pide la página siguiente al consumir los ítems de la actual.
+   * Misma paginación y límite de `per_page` que `listAll`.
+   */
+  public iterate = this.iterateTransactions.bind(this);
 
   /**
    * Confirma un pago On-Site (Venezuela) en `/gateway/cobro`.
@@ -188,6 +201,43 @@ export default class PaykuTransactions {
         PaykuListTransactionsError,
         this.options,
       );
+    }
+  }
+
+  private async listAllTransactions(
+    params: PaykuListTransactionsParams = {},
+  ): Promise<PaykuTransaction[]> {
+    const transactions: PaykuTransaction[] = [];
+
+    for await (const transaction of this.iterateTransactions(params)) {
+      transactions.push(transaction);
+    }
+
+    return transactions;
+  }
+
+  private async *iterateTransactions(
+    params: PaykuListTransactionsParams = {},
+  ): AsyncGenerator<PaykuTransaction> {
+    const perPage = params.per_page ?? PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE;
+    let page = params.page ?? 1;
+
+    while (true) {
+      const batch = await this.listTransactions({
+        ...params,
+        page,
+        per_page: perPage,
+      });
+
+      for (const transaction of batch) {
+        yield transaction;
+      }
+
+      if (batch.length < perPage) {
+        return;
+      }
+
+      page += 1;
     }
   }
 

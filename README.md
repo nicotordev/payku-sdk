@@ -131,7 +131,7 @@ const sign = buildSign(
 
 | Módulo                                       | Sign    | Notas                                                                                       |
 | -------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
-| `transactions`                               | No      | create/get/list (y On-Site VE)                                                              |
+| `transactions`                               | No      | create/get/list/listAll/iterate (y On-Site VE)                                              |
 | `banks` / `paymentMethods`                   | No      | Catálogo                                                                                    |
 | `conciliation`                               | No      |                                                                                             |
 | `escrow` / `events`                          | No      |                                                                                             |
@@ -186,6 +186,25 @@ console.log(order.url);
 ```
 
 `expired` es opcional (`YYYY-MM-DD HH:mm:ss`, hora Santiago). Si se envía, el SDK exige `urlreturn` y que la fecha sea **más de 5 minutos** después de ahora (`America/Santiago`, vía `Intl`). Si la transacción expira, Payku redirige a `urlreturn?message_error=expired&id=…`.
+
+### Listar todas las transacciones
+
+`list()` devuelve una sola página (`page`, `per_page`, máximo 4000). `listAll()` recorre las páginas y devuelve el arreglo completo. `iterate()` es un generador asíncrono: pide la página siguiente solo cuando se consumen los ítems de la actual.
+
+Si omites `per_page`, cada request usa 4000 (`PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE`). La paginación termina cuando una página viene vacía o trae menos registros que `per_page`. `page` es la página inicial (por defecto `1`). Los mismos métodos están en `Payku.forCountry(...)`.
+
+```typescript
+const transactions = await payku.transactions.listAll({
+  date_init: "2026-01-01",
+  date_end: "2026-01-31",
+});
+
+for await (const tx of payku.transactions.iterate({
+  date_init: "2026-01-01",
+})) {
+  console.log(tx.id);
+}
+```
 
 ### Retorno de pasarela (`urlreturn`) y expiración
 

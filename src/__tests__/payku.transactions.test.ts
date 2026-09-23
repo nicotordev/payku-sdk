@@ -849,6 +849,160 @@ describe("PaykuTransactions HTTP", () => {
     expect(mock.history.get).toHaveLength(1);
   });
 
+  test("listAll walks pages until a short page and keeps filters", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+      expect(config.params).toMatchObject({
+        per_page: 2,
+        date_init: "2026-01-01",
+        date_end: "2026-01-31",
+        success: true,
+      });
+
+      if (page === 2) {
+        return [
+          200,
+          { transaction: [{ id: "tx-2a" }, { id: "tx-2b" }] },
+        ];
+      }
+
+      if (page === 3) {
+        return [200, { transaction: [{ id: "tx-3" }] }];
+      }
+
+      return [200, { transaction: [] }];
+    });
+
+    const items = await transactions.listAll({
+      page: 2,
+      per_page: 2,
+      date_init: "2026-01-01",
+      date_end: "2026-01-31",
+      success: true,
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["tx-2a", "tx-2b", "tx-3"]);
+    expect(mock.history.get).toHaveLength(2);
+  });
+
+  test("listAll defaults omitted per_page to 4000 and stops on a short page", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+      expect(config.params.per_page).toBe(4000);
+
+      if (page === 1) {
+        return [200, { transaction: [{ id: "only" }] }];
+      }
+
+      return [200, { transaction: [{ id: "should-not-fetch" }] }];
+    });
+
+    const items = await transactions.listAll({ date_init: "2026-01-01" });
+
+    expect(items.map((item) => item.id)).toEqual(["only"]);
+    expect(mock.history.get).toHaveLength(1);
+  });
+
+  test("listAll and iterate reject per_page above 4000 before requesting", async () => {
+    await expect(transactions.listAll({ per_page: 4001 })).rejects.toThrow(
+      "per_page must be between 1 and 4000",
+    );
+
+    await expect(
+      transactions.iterate({ per_page: 0 }).next(),
+    ).rejects.toThrow("per_page must be between 1 and 4000");
+
+    expect(mock.history.get).toHaveLength(0);
+  });
+
+  test("iterate requests the next page only after the current page is consumed", async () => {
+    const requestedPages: number[] = [];
+
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+      requestedPages.push(page);
+
+      if (page === 1) {
+        return [200, { transaction: [{ id: "a" }, { id: "b" }] }];
+      }
+
+      if (page === 2) {
+        return [200, { transaction: [] }];
+      }
+
+      return [500, { status: "failed", message_error: "unexpected page" }];
+    });
+
+    const iterator = transactions.iterate({ per_page: 2 });
+    expect(requestedPages).toEqual([]);
+
+    expect((await iterator.next()).value?.id).toBe("a");
+    expect(requestedPages).toEqual([1]);
+
+    expect((await iterator.next()).value?.id).toBe("b");
+    expect(requestedPages).toEqual([1]);
+
+    const done = await iterator.next();
+    expect(done.done).toBe(true);
+    expect(requestedPages).toEqual([1, 2]);
+  });
+
+  test("listAll propagates an error from a later page", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+
+      if (page === 1) {
+        return [200, { transaction: [{ id: "a" }, { id: "b" }] }];
+      }
+
+      return [500, { status: "failed", message_error: "upstream down" }];
+    });
+
+    await expect(transactions.listAll({ per_page: 2 })).rejects.toThrow();
+    expect(mock.history.get).toHaveLength(2);
+  });
+
+  test("listAll treats a no-records response as the end of pagination", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+
+      if (page === 1) {
+        return [200, { transaction: [{ id: "tx-1" }, { id: "tx-2" }] }];
+      }
+
+      return [200, listEmptyNoRecordsFixture];
+    });
+
+    const items = await transactions.listAll({ per_page: 2 });
+
+    expect(items.map((item) => item.id)).toEqual(["tx-1", "tx-2"]);
+    expect(mock.history.get).toHaveLength(2);
+  });
+
+  test("scoped transactions listAll and iterate delegate pagination", async () => {
+    mock.onGet("/transaction").reply((config) => {
+      const page = Number(config.params.page);
+
+      if (page === 1) {
+        return [200, { transaction: [{ id: "cl-1" }, { id: "cl-2" }] }];
+      }
+
+      return [200, { transaction: [{ id: "cl-3" }] }];
+    });
+
+    const chile = new PaykuChileTransactions(transactions);
+    const items = await chile.listAll({ per_page: 2 });
+    expect(items.map((item) => item.id)).toEqual(["cl-1", "cl-2", "cl-3"]);
+
+    const ids: string[] = [];
+    for await (const transaction of chile.iterate({ per_page: 2 })) {
+      ids.push(transaction.id ?? "");
+    }
+
+    expect(ids).toEqual(["cl-1", "cl-2", "cl-3"]);
+    expect(mock.history.get).toHaveLength(4);
+  });
+
   test("create respects clpPaymentCodes option when set to create-docs", async () => {
     await expect(
       transactions.create(
