@@ -366,9 +366,14 @@ export function createSandboxChileClient(
   options: PaykuClientOptions = {},
 ): PaykuChile {
   assertSandboxEnvironment();
+  const publicToken =
+    paykuIntegrationConfig.publicToken || "sandbox_public_token_placeholder";
+  const privateToken =
+    paykuIntegrationConfig.privateToken || "sandbox_private_token_placeholder";
+
   return Payku.forCountry("CL", {
-    publicToken: paykuIntegrationConfig.publicToken,
-    privateToken: paykuIntegrationConfig.privateToken,
+    publicToken,
+    privateToken,
     environment: "sandbox",
     options: {
       ...options,
@@ -384,9 +389,14 @@ export function createSandboxChileClient(
  */
 export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
   assertSandboxEnvironment();
+  const publicToken =
+    paykuIntegrationConfig.publicToken || "sandbox_public_token_placeholder";
+  const privateToken =
+    paykuIntegrationConfig.privateToken || "sandbox_private_token_placeholder";
+
   return new Payku(
-    paykuIntegrationConfig.publicToken,
-    paykuIntegrationConfig.privateToken,
+    publicToken,
+    privateToken,
     "sandbox",
     {
       ...options,
