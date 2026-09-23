@@ -15,7 +15,6 @@ import {
   generateUniqueId,
   generateUniqueOrder,
   generateUniquePhone,
-  hasPaykuIntegrationCredentials,
   redactSensitiveData,
   redactSensitiveString,
   withCleanup,
@@ -277,22 +276,12 @@ describe("Payku Integration Test Infrastructure", () => {
 
   describe("client factories", () => {
     test("createSandboxChileClient configures sandbox environment", () => {
-      if (!hasPaykuIntegrationCredentials) {
-        expect(hasPaykuIntegrationCredentials).toBe(false);
-        return;
-      }
-
       const client = createSandboxChileClient();
       expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
     });
 
     test("createSandboxClient configures sandbox environment", () => {
-      if (!hasPaykuIntegrationCredentials) {
-        expect(hasPaykuIntegrationCredentials).toBe(false);
-        return;
-      }
-
       const client = createSandboxClient();
       expect(client.environment).toBe("sandbox");
     });

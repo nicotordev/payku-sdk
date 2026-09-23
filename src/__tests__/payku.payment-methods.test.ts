@@ -1,9 +1,10 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import Payku from "../clients/payku";
+import Payku, { PaykuPaymentMethods as PaykuPaymentMethodsExport } from "../index";
 import PaykuPaymentMethods from "../clients/payku.payment-methods";
 import { PaykuScopedPaymentMethods } from "../clients/payku.payment-methods.scoped";
+import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
 import paymentMethodsFixture from "./fixtures/chile/payment-methods/list-200.json";
 
@@ -151,6 +152,55 @@ describe("PaykuPaymentMethods", () => {
       });
 
       expect(paykuChile.paymentMethods).toBeInstanceOf(PaykuScopedPaymentMethods);
+    });
+  });
+
+  describe("toSlug and resolve", () => {
+    test("static and instance methods share the catalog helpers", () => {
+      expect(PaykuPaymentMethods.toSlug(1)).toBe("webpay");
+      expect(PaykuPaymentMethods.resolve("webpay")).toBe(1);
+      expect(paymentMethods.toSlug(17)).toBe("vepuy");
+      expect(paymentMethods.resolve("safety_pay")).toBe(20);
+      expect(paymentMethods.toSlug(1, "CLP")).toBe("webpay");
+      expect(paymentMethods.toSlug(1, "PEN")).toBeUndefined();
+      expect(paymentMethods.toSlug(30)).toBe("granve");
+      expect(paymentMethods.toSlug(999)).toBeUndefined();
+      expect(paymentMethods.resolve(1)).toBe(1);
+      expect(() => paymentMethods.resolve("paypal")).toThrow(PaykuError);
+      expect(() => paymentMethods.resolve(1.5)).toThrow(PaykuError);
+      expect(() => paymentMethods.resolve("vepuy", "CLP")).toThrow(/CLP/);
+    });
+
+    test("keeps toSlug and resolve usable after destructuring", () => {
+      const { toSlug, resolve } = paymentMethods;
+
+      expect(toSlug(29, "PEN")).toBe("alix");
+      expect(resolve("atix", "PEN")).toBe(29);
+    });
+
+    test("scoped methods use the country currency unless overridden", () => {
+      const chile = new PaykuScopedPaymentMethods(paymentMethods, "CL");
+
+      expect(chile.toSlug(1)).toBe("webpay");
+      expect(chile.resolve("webpay")).toBe(1);
+      expect(chile.toSlug(17)).toBeUndefined();
+      expect(() => chile.resolve("vepuy")).toThrow(PaykuError);
+      expect(chile.resolve("safety_pay", "PEN")).toBe(20);
+
+      const { toSlug, resolve } = chile;
+      expect(toSlug(19)).toBe("fintoc");
+      expect(resolve("mach")).toBe(9);
+    });
+
+    test("forCountry payment methods resolve against that country", () => {
+      const chile = Payku.forCountry("CL", {
+        publicToken: "public-token",
+        privateToken: "private-token",
+      });
+
+      expect(chile.paymentMethods.toSlug(1)).toBe("webpay");
+      expect(chile.paymentMethods.resolve("webpay")).toBe(1);
+      expect(PaykuPaymentMethodsExport.toSlug(17)).toBe("vepuy");
     });
   });
 });

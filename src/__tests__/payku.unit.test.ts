@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import Payku, { PaykuChile, PaykuPeru, PaykuVenezuela } from "../clients/payku";
-import { PaykuUnsupportedFeatureError } from "../errors";
+import { PaykuError, PaykuUnsupportedFeatureError, isPaykuError } from "../errors";
+import { buildSign } from "../http/sign";
 import {
   extractPaykuErrorMessage,
   isPaykuFailedResponse,
@@ -155,6 +156,49 @@ describe("Payku.forCountry", () => {
       urlreturn: "https://example.com/return",
       urlnotify: "https://example.com/notify",
     });
+  });
+
+  test("isSupported reads the country feature matrix", () => {
+    expect(Payku.forCountry("CL", config).isSupported("mall")).toBe(true);
+    expect(Payku.forCountry("PE", config).isSupported("mall")).toBe(false);
+    expect(Payku.forCountry("VE", config).isSupported("onSite")).toBe(true);
+    expect(Payku.forCountry("PE", config).isSupported("onSite")).toBe(false);
+
+    const { isSupported } = Payku.forCountry("CL", config);
+    expect(isSupported("subscriptions")).toBe(true);
+  });
+
+  test("sign uses the configured private token", () => {
+    const privateToken = "fe551abcef62fcf002dc598922e68f0a";
+    const params = {
+      email: "johndoe@example.com",
+      name: "John Doe",
+    };
+    const expected = buildSign("/api/suclient", params, privateToken);
+    const payku = new Payku("public", privateToken);
+    const chile = Payku.forCountry("CL", {
+      publicToken: "public",
+      privateToken,
+    });
+
+    expect(payku.sign("/api/suclient", params)).toBe(expected);
+    expect(chile.sign("/api/suclient", params)).toBe(expected);
+    expect(Payku.sign("/api/suclient", params, privateToken)).toBe(expected);
+    expect(payku.sign("/api/wallet")).toBe(
+      buildSign("/api/wallet", {}, privateToken),
+    );
+
+    const { sign } = payku;
+    expect(sign("/api/suclient", params)).toBe(expected);
+  });
+
+  test("Payku.isError aliases isPaykuError", () => {
+    const error = new PaykuError("boom");
+
+    expect(Payku.isError(error)).toBe(true);
+    expect(Payku.isError(error)).toBe(isPaykuError(error));
+    expect(Payku.isError(new Error("boom"))).toBe(false);
+    expect(Payku.isError("boom")).toBe(false);
   });
 
   test("forCountry preserves defaults", () => {

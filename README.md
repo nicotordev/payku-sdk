@@ -56,7 +56,7 @@ const fromEnv = Payku.fromEnvForCountry("CL");
 | `PE` | `PaykuPeru`      | PEN    | core compartido                                                   |
 | `VE` | `PaykuVenezuela` | VES    | `transactions.confirmOnSite`                                      |
 
-Si llamás un módulo no soportado (p. ej. `wallet.withdraw` en Perú), el SDK lanza `PaykuUnsupportedFeatureError`.
+Si llamás un módulo no soportado (p. ej. `wallet.withdraw` en Perú), el SDK lanza `PaykuUnsupportedFeatureError`. `payku.isSupported("mall")` responde si el país incluye ese módulo, sin lanzar. `payku.sign(path, params)` firma con el token privado ya configurado.
 
 ### Modo global (multi-país)
 
@@ -100,12 +100,13 @@ Endpoints sensibles envían además el header `Sign`, calculado con el **token p
 5. Concatenar `pathCodificado&key=value&...` (o solo el path si no hay params)
 6. `HMAC-SHA256(concat, privateToken)` en hex
 
-El SDK firma solo donde corresponde (`signed: true`). Para integraciones custom exporta `buildSign`:
+El SDK firma solo donde corresponde (`signed: true`). En una instancia, `payku.sign(path, params)` usa el token privado ya configurado. `Payku.sign` y `buildSign` piden el token como tercer argumento:
 
 ```typescript
-import { buildSign } from "@nicotordev/payku";
+import Payku, { buildSign } from "@nicotordev/payku";
 
-const sign = buildSign(
+const payku = Payku.fromEnv();
+const sign = payku.sign(
   "/api/suclient",
   {
     email: "johndoe@example.com",
@@ -121,8 +122,11 @@ const sign = buildSign(
       parameter_2: "example 2",
     },
   },
-  process.env.PAYKU_PRIVATE_TOKEN!,
 );
+
+// Sin instancia, el token sigue siendo explícito:
+Payku.sign("/api/suclient", { email: "johndoe@example.com" }, process.env.PAYKU_PRIVATE_TOKEN!);
+buildSign("/api/suclient", { email: "johndoe@example.com" }, process.env.PAYKU_PRIVATE_TOKEN!);
 
 // Header: Sign: <sign>
 ```
@@ -279,6 +283,9 @@ const methods = await payku.paymentMethods.list();
 for (const method of methods) {
   console.log(`${method.payment}: ${method.name} (${method.currency})`);
 }
+
+payku.paymentMethods.toSlug(1); // "webpay"
+payku.paymentMethods.resolve("webpay"); // 1
 ```
 
 #### Con cliente global
@@ -289,6 +296,9 @@ const payku = Payku.fromEnv();
 const clpMethods = await payku.paymentMethods.list({ currency: "clp" });
 // O consultar todos los medios disponibles sin filtro
 const allMethods = await payku.paymentMethods.list();
+
+payku.paymentMethods.toSlug(1, "CLP"); // "webpay"
+payku.paymentMethods.resolve("safety_pay"); // 20
 ```
 
 #### Uso en creación de transacciones (`transactions.create`)
@@ -435,7 +445,7 @@ try {
     return;
   }
 
-  if (isPaykuError(error)) {
+  if (isPaykuError(error) || Payku.isError(error)) {
     console.error(error.message, error.statusCode, error.type);
     return;
   }

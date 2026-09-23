@@ -63,6 +63,7 @@ bun test --path-ignore-patterns '' src/__tests__/integration/payment-methods.tes
 bun test --path-ignore-patterns '' src/__tests__/integration/sign.test.ts
 bun test --path-ignore-patterns '' src/__tests__/integration/subscriptions.test.ts
 bun test --path-ignore-patterns '' src/__tests__/integration/consumption.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/marketplace.test.ts
 ```
 
 O usando el flag de filtro por nombre de suite:
