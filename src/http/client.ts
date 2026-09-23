@@ -72,11 +72,14 @@ export class HttpClient {
   private readonly publicToken: string;
   private readonly privateToken: string;
   private readonly logging: boolean;
+  /** Host de la cuenta (`https://des.payku.cl` o `https://app.payku.cl`), sin `/api`. */
+  readonly rootUrl: string;
 
   constructor(config: HttpClientConfig) {
     this.publicToken = config.publicToken;
     this.privateToken = config.privateToken;
     this.logging = config.logging ?? false;
+    this.rootUrl = config.rootUrl;
     this.axios =
       config.axiosInstance ??
       axios.create({

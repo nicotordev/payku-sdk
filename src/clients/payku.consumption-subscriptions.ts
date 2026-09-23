@@ -4,8 +4,12 @@ import {
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  buildConsumptionGatewayUrl,
+} from "../utils/payku.utils";
 import type {
+  PaykuConsumptionGatewayUrlParams,
   PaykuCreateConsumptionPlanRequest,
   PaykuCreateConsumptionPlanResponse,
   PaykuCreateSubscriptionClientRequest,
@@ -69,6 +73,17 @@ export default class PaykuConsumptionSubscriptions {
         "consumption.transactions.create",
       ),
   };
+
+  /**
+   * URL de pasarela Webpay `GET {rootUrl}/suscripcion/index`.
+   * No llama a la API. `rootUrl` es el del cliente (`des.payku.cl` / `app.payku.cl`).
+   */
+  public gatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
+    return buildConsumptionGatewayUrl({
+      ...params,
+      rootUrl: this.http.rootUrl,
+    });
+  }
 
   public cards = {
     delete: (
