@@ -1,0 +1,162 @@
+# Smoke Tests en Payku Sandbox (`des.payku.cl`)
+
+Esta guía describe la infraestructura común y las pautas para ejecutar pruebas de integración y smoke tests contra el entorno real de **Payku Sandbox** (`https://des.payku.cl`).
+
+---
+
+## 1. Filosofía: Smoke Tests vs Unit Tests
+
+- **Unit Tests (`bun run test:unit`)**: Validan exhaustivamente la lógica interna del SDK, validaciones Zod, firmas HMAC, serialización wire, transformaciones de respuesta, manejo de errores y compatibilidad de métodos con mocks controlados. Se ejecutan automáticamente en cada commit y en CI pública sin requerir credenciales ni conectividad.
+- **Smoke Tests (`bun run test:integration`)**: Validan la conectividad y el contrato real contra los endpoints en vivo de Payku Sandbox (`https://des.payku.cl`). Comprueban que la API responde con los esquemas esperados, que las firmas HMAC son aceptadas por la pasarela y que las credenciales funcionan correctamente.
+
+---
+
+## 2. Guardrails de Seguridad
+
+Para garantizar que los smoke tests **nunca** alteren datos de producción ni expongan secretos:
+
+1. **Restricción estricta de entorno**: La suite solo puede ejecutarse cuando `PAYKU_ENVIRONMENT=sandbox`. Si `PAYKU_ENVIRONMENT` tiene cualquier otro valor (ej. `production`), la ejecución aborta de inmediato lanzando un error fatal.
+2. **Redacción de secretos**: Los clientes creados mediante `createSandboxChileClient()` y `createSandboxClient()` aplican automáticamente un logger con redactor que enmascara `PAYKU_PUBLIC_TOKEN`, `PAYKU_PRIVATE_TOKEN`, encabezados `Bearer` y firmas HMAC (`Sign`).
+3. **Aislamiento en git y discovery**:
+   - `bunfig.toml` excluye la carpeta `src/__tests__/integration/**` de la ejecución predeterminada de `bun test`.
+   - `.env` está ignorado en `.gitignore` para evitar commits accidentales de credenciales.
+
+---
+
+## 3. Variables de Entorno Requeridas
+
+Para habilitar la ejecución de los smoke tests en local, crea un archivo `.env` en la raíz del proyecto (basado en `.env.example`):
+
+```bash
+# Tokens obtenidos desde tu cuenta Payku Sandbox (Integración → Tokens integración y API)
+PAYKU_PUBLIC_TOKEN=tk_pub_...
+PAYKU_PRIVATE_TOKEN=tk_priv_...
+
+# Debe ser estrictamente "sandbox"
+PAYKU_ENVIRONMENT=sandbox
+
+# Opcional: falla inmediatamente si faltan tokens (útil en CI protegida)
+# PAYKU_STRICT_INTEGRATION=1
+```
+
+> [!NOTE]
+> Si no defines tokens reales en `.env`, los smoke tests se omiten automáticamente de forma segura con un aviso explicativo, permitiendo correr comandos generales sin fallar.
+
+---
+
+## 4. Ejecución de Tests
+
+### Ejecutar toda la suite de integración
+
+```bash
+bun run test:integration
+```
+
+### Ejecutar un módulo concreto
+
+Para ejecutar únicamente los smoke tests de un módulo específico (por ejemplo, transacciones o marketplace), pasa la ruta al archivo:
+
+```bash
+bun test --path-ignore-patterns '' src/__tests__/integration/transactions.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/marketplace.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/banks.test.ts
+```
+
+O usando el flag de filtro por nombre de suite:
+
+```bash
+bun run test:integration -t "transactions"
+bun run test:integration -t "marketplace"
+```
+
+---
+
+## 5. Helpers y Buenas Prácticas
+
+Todas las utilidades de infraestructura residen en `src/test-utils/paykuIntegration.ts`:
+
+### 5.1 Prevención de colisiones entre ejecuciones concurrentes
+
+Para evitar que dos ejecuciones simultáneas colisionen con los mismos identificadores (por ejemplo, órdenes duplicadas o emails ya registrados), usa los generadores integrados:
+
+```typescript
+import {
+  generateUniqueOrder,
+  generateUniqueEmail,
+  generateUniquePhone,
+  generateUniqueId,
+  SANDBOX_TEST_RUT,
+} from "../../test-utils/paykuIntegration";
+
+// Orden única: "order_m8yq12a_x91z"
+const order = generateUniqueOrder();
+
+// Email único: "smoke-m8yq12a-x91z@example.com"
+const email = generateUniqueEmail("cliente");
+
+// Teléfono móvil chileno válido de 9 dígitos
+const phone = generateUniquePhone();
+
+// RUT de prueba estándar para Sandbox Chile
+const rut = SANDBOX_TEST_RUT; // "11111111-1"
+```
+
+### 5.2 Limpieza automática de recursos (Cleanup)
+
+Para endpoints que permitan borrado o reversión (como `marketplace.clients.delete`), utiliza `withCleanup` o `IntegrationCleanupTracker`. Esto garantiza que los recursos creados se eliminen aun cuando las aserciones de la prueba fallen:
+
+```typescript
+import { withCleanup, createSandboxChileClient } from "../../test-utils/paykuIntegration";
+
+test("crea y elimina un cliente", async () => {
+  await withCleanup(async (tracker) => {
+    const payku = createSandboxChileClient();
+    const created = await payku.marketplace.clients.create({ /* ... */ });
+
+    // Registra la tarea de borrado (se ejecutará en orden LIFO en el bloque finally)
+    tracker.register(async () => {
+      await payku.marketplace.clients.delete(created.id);
+    }, "eliminar cliente temporal");
+
+    expect(created.id).toBeTruthy();
+  });
+});
+```
+
+### 5.3 Manejo de latencia y reintentos en Sandbox
+
+El entorno de pruebas de Payku puede experimentar latencia o micro-cortes transitorios. Para ello, se definen constantes de timeout y utilidades de reintento:
+
+```typescript
+import {
+  SANDBOX_TIMEOUT_MS,
+  withRetry,
+  createSandboxChileClient,
+} from "../../test-utils/paykuIntegration";
+
+// Timeout por prueba de 20s
+test("consulta endpoint con reintentos ante jitter", async () => {
+  const payku = createSandboxChileClient();
+  const balance = await withRetry(async () => {
+    return await payku.wallet.balance();
+  }, { maxRetries: 2, delayMs: 1000 });
+
+  expect(balance).toBeDefined();
+}, SANDBOX_TIMEOUT_MS);
+```
+
+### 5.4 Contratos mínimos sin snapshots frágiles
+
+Los tests de smoke deben validar que los campos críticos y tipos básicos existan y tengan formatos coherentes (`id`, `status`, URLs `https://...`), evitando aserciones rígidas sobre datos dinámicos que cambian con el tiempo (como listas de transacciones o balances fluctuantes).
+
+---
+
+## 6. Ejecución en CI Protegida
+
+En flujos de CI (por ejemplo, workflows manuales con `workflow_dispatch` o jobs nocturnos programados):
+
+1. Configura los secretos del repositorio:
+   - `PAYKU_SANDBOX_PUBLIC_TOKEN`
+   - `PAYKU_SANDBOX_PRIVATE_TOKEN`
+2. Pasa `PAYKU_STRICT_INTEGRATION=1` para que el job falle de inmediato si algún secreto falta o expira.
+3. Ejecuta `bun run test:integration`.
