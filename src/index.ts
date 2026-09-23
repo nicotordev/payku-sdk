@@ -91,7 +91,6 @@ export {
   isTransactionFailed,
   isTransactionPaid,
   isTransactionPending,
-  isTransactionSuccess,
   mapNotifyStatusToTransactionStatus,
   normalizePaykuRut,
   normalizeRut,
@@ -131,4 +130,3 @@ export type {
   PaykuReturnResult,
 } from "./types/payku.transactions";
 export { PAYKU_WALLET_SANDBOX_AMOUNTS } from "./types/payku.wallet";
-

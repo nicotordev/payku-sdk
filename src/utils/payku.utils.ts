@@ -501,9 +501,7 @@ export function resolveTransactionPayerRutParameters<
     payerRut?: string;
     additional_parameters?: PaykuTransactionAdditionalParameters;
   },
->(
-  params: T,
-): PaykuTransactionAdditionalParameters | undefined {
+>(params: T): PaykuTransactionAdditionalParameters | undefined {
   const rawRut = params.payerRut ?? params.additional_parameters?.payer_rut;
   const normalizedRut =
     rawRut !== undefined && rawRut.trim() !== ""
@@ -560,14 +558,10 @@ export function formatPaykuExpiredInSantiago(
     }
 
     const totalMs =
-      minutes * 60 * 1000 +
-      hours * 60 * 60 * 1000 +
-      days * 24 * 60 * 60 * 1000;
+      minutes * 60 * 1000 + hours * 60 * 60 * 1000 + days * 24 * 60 * 60 * 1000;
     targetDate = new Date(now.getTime() + totalMs);
   } else {
-    throw new PaykuError(
-      "expired must be a string, Date, or duration object",
-    );
+    throw new PaykuError("expired must be a string, Date, or duration object");
   }
 
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -856,7 +850,9 @@ export function validateCreateTransactionRequest(
     const validCodes: readonly number[] =
       params.currency === "CLP"
         ? resolveClpPaymentCodes(options.clpPaymentCodes)
-        : Object.values(PAYKU_PAYMENT_METHODS[params.currency as PaykuCurrency]);
+        : Object.values(
+            PAYKU_PAYMENT_METHODS[params.currency as PaykuCurrency],
+          );
 
     if (!validCodes.includes(payment)) {
       throw new PaykuError(
@@ -866,12 +862,8 @@ export function validateCreateTransactionRequest(
   }
 
   if (params.currency === "CLP") {
-    const payerRut =
-      params.payerRut ?? params.additional_parameters?.payer_rut;
-    validateClpPayerRutRequirement(
-      payment,
-      payerRut,
-    );
+    const payerRut = params.payerRut ?? params.additional_parameters?.payer_rut;
+    validateClpPayerRutRequirement(payment, payerRut);
   }
 
   const gateway = params.additional_parameters?.gateway;
@@ -976,7 +968,9 @@ export function validateMarketplaceAffiliationPercentages(
 ): void {
   const merchant = Number(merchantPercentage);
   if (!Number.isFinite(merchant) || merchant < 0 || merchant > 100) {
-    throw new PaykuError("merchant percentage must be a finite number between 0 and 100");
+    throw new PaykuError(
+      "merchant percentage must be a finite number between 0 and 100",
+    );
   }
 
   if (!Array.isArray(affiliation)) {
@@ -986,15 +980,21 @@ export function validateMarketplaceAffiliationPercentages(
   for (let i = 0; i < affiliation.length; i++) {
     const item = affiliation[i];
     if (!Array.isArray(item) || item.length !== 2) {
-      throw new PaykuError(`affiliation[${i}] must be a tuple [clientId, percentage]`);
+      throw new PaykuError(
+        `affiliation[${i}] must be a tuple [clientId, percentage]`,
+      );
     }
     const [clientId, pct] = item;
     if (typeof clientId !== "string" || clientId.trim() === "") {
-      throw new PaykuError(`affiliation[${i}].clientId must be a non-empty string`);
+      throw new PaykuError(
+        `affiliation[${i}].clientId must be a non-empty string`,
+      );
     }
     const numPct = Number(pct);
     if (!Number.isFinite(numPct) || numPct <= 0 || numPct > 100) {
-      throw new PaykuError(`affiliation[${i}].percentage must be a finite number between 0 and 100`);
+      throw new PaykuError(
+        `affiliation[${i}].percentage must be a finite number between 0 and 100`,
+      );
     }
   }
 
@@ -1224,7 +1224,9 @@ export function validateCreateNullificationRequest(
     numAmount <= 0 ||
     numAmount > 99999999999999
   ) {
-    throw new PaykuError("amount must be a positive integer of at most 14 digits");
+    throw new PaykuError(
+      "amount must be a positive integer of at most 14 digits",
+    );
   }
 }
 
@@ -1428,24 +1430,6 @@ export function isTransactionPaid(
 }
 
 /**
- * Alias de `isTransactionPaid`. Determina si una transacción fue exitosa (`status: "success"`).
- */
-export function isTransactionSuccess<T extends { status?: unknown }>(
-  transaction: T,
-): transaction is T & { status: "success" };
-export function isTransactionSuccess(
-  transaction: string,
-): transaction is "success";
-export function isTransactionSuccess(
-  transaction: unknown,
-): transaction is { status: "success" };
-export function isTransactionSuccess(
-  transaction: unknown,
-): transaction is { status: "success" } {
-  return isTransactionPaid(transaction);
-}
-
-/**
  * Type guard que determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
  * En Payku, "register" representa una transacción iniciada pero aún pendiente de confirmación de pago.
  *
@@ -1502,6 +1486,3 @@ export function isTransactionFailed(
   const status = extractTransactionStatus(transaction);
   return status === "rejected" || status === "failed";
 }
-
-
-

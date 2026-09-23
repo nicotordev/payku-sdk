@@ -65,6 +65,18 @@ export class PaykuScopedTransactions {
     return this.inner.list(params);
   }
 
+  listAll(
+    params: PaykuListTransactionsParams = {},
+  ): Promise<PaykuTransaction[]> {
+    return this.inner.listAll(params);
+  }
+
+  iterate(
+    params: PaykuListTransactionsParams = {},
+  ): AsyncGenerator<PaykuTransaction> {
+    return this.inner.iterate(params);
+  }
+
   handleReturn(queryOrUrl: PaykuReturnInput): Promise<PaykuReturnResult> {
     return this.inner.handleReturn(queryOrUrl);
   }
@@ -73,11 +85,6 @@ export class PaykuScopedTransactions {
    * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
    */
   public isPaid = PaykuTransactions.isPaid;
-
-  /**
-   * Alias de `isPaid`: determina si una transacción fue exitosa (`status: "success"`).
-   */
-  public isSuccess = PaykuTransactions.isSuccess;
 
   /**
    * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
