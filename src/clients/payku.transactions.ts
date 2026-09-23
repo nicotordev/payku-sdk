@@ -1,3 +1,4 @@
+import { PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE } from "../constants/payku.constants";
 import {
   createPaykuAPIError,
   PaykuCreateTransactionError,
@@ -27,7 +28,6 @@ import {
   isTransactionFailed,
   isTransactionPaid,
   isTransactionPending,
-  isTransactionSuccess,
   parsePaymentReturnQuery,
   resolveCreateTransactionPayment,
   resolveTransactionPayerRutParameters,
@@ -36,6 +36,37 @@ import {
   validateListTransactionsParams,
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
+
+/** Día calendario `YYYY-MM-DD` en America/Santiago, el huso que usa Payku. */
+function formatPaykuListDateInSantiago(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? "00";
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/**
+ * Copia los filtros una vez. Payku usa la fecha actual si faltan `date_init` o
+ * `date_end`; fijarlas aquí evita que un cambio de día, o una mutación del
+ * objeto del llamador, altere las páginas siguientes.
+ */
+function snapshotListTransactionsParams(
+  params: PaykuListTransactionsParams,
+): PaykuListTransactionsParams {
+  const today = formatPaykuListDateInSantiago(new Date());
+
+  return {
+    ...params,
+    date_init: params.date_init ?? today,
+    date_end: params.date_end ?? today,
+  };
+}
 
 export default class PaykuTransactions {
   constructor(
@@ -60,6 +91,20 @@ export default class PaykuTransactions {
   public list = this.listTransactions.bind(this);
 
   /**
+   * Acumula todas las transacciones del filtro, página a página, hasta agotar resultados.
+   * Si omites `per_page`, cada request usa `PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE`.
+   * `date_init` y `date_end` omitidos se fijan al día actual en America/Santiago
+   * antes de la primera página y se reutilizan en el resto.
+   */
+  public listAll = this.listAllTransactions.bind(this);
+
+  /**
+   * Generador asíncrono. Pide la página siguiente al consumir los ítems de la actual.
+   * Misma paginación, límite de `per_page` y fijación de fechas que `listAll`.
+   */
+  public iterate = this.iterateTransactions.bind(this);
+
+  /**
    * Confirma un pago On-Site (Venezuela) en `/gateway/cobro`.
    */
   public confirmOnSite = this.confirmOnSitePayment.bind(this);
@@ -78,11 +123,6 @@ export default class PaykuTransactions {
   public static isPaid = isTransactionPaid;
 
   /**
-   * Alias de `isPaid`: determina si una transacción fue exitosa (`status: "success"`).
-   */
-  public static isSuccess = isTransactionSuccess;
-
-  /**
    * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
    */
   public static isPending = isTransactionPending;
@@ -98,11 +138,6 @@ export default class PaykuTransactions {
   public isPaid = PaykuTransactions.isPaid;
 
   /**
-   * Alias de `isPaid`: determina si una transacción fue exitosa (`status: "success"`).
-   */
-  public isSuccess = PaykuTransactions.isSuccess;
-
-  /**
    * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
    */
   public isPending = PaykuTransactions.isPending;
@@ -113,7 +148,6 @@ export default class PaykuTransactions {
   public isFailed = PaykuTransactions.isFailed;
 
   private async createTransaction(
-
     params: PaykuCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
@@ -206,6 +240,45 @@ export default class PaykuTransactions {
     }
   }
 
+  private async listAllTransactions(
+    params: PaykuListTransactionsParams = {},
+  ): Promise<PaykuTransaction[]> {
+    const transactions: PaykuTransaction[] = [];
+
+    for await (const transaction of this.iterateTransactions(params)) {
+      transactions.push(transaction);
+    }
+
+    return transactions;
+  }
+
+  private async *iterateTransactions(
+    params: PaykuListTransactionsParams = {},
+  ): AsyncGenerator<PaykuTransaction> {
+    const fixedParams = snapshotListTransactionsParams(params);
+    const perPage =
+      fixedParams.per_page ?? PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE;
+    let page = fixedParams.page ?? 1;
+
+    while (true) {
+      const batch = await this.listTransactions({
+        ...fixedParams,
+        page,
+        per_page: perPage,
+      });
+
+      for (const transaction of batch) {
+        yield transaction;
+      }
+
+      if (batch.length < perPage) {
+        return;
+      }
+
+      page += 1;
+    }
+  }
+
   private async confirmOnSitePayment(
     params: PaykuConfirmOnSiteRequest,
   ): Promise<PaykuConfirmOnSiteResponse> {
@@ -250,13 +323,12 @@ export default class PaykuTransactions {
       transaction = await this.get(parsed.id);
     }
 
-    const normalizedStatus = (
-      transaction?.status ?? parsed.status
-    )?.trim().toLowerCase();
+    const normalizedStatus = (transaction?.status ?? parsed.status)
+      ?.trim()
+      .toLowerCase();
 
     const statusTarget = normalizedStatus;
-    const isPaid =
-      transaction !== undefined && isTransactionPaid(statusTarget);
+    const isPaid = transaction !== undefined && isTransactionPaid(statusTarget);
     const isPending = isTransactionPending(statusTarget);
     const isFailed = isTransactionFailed(statusTarget);
     const isExpired = normalizedStatus === "expired" || parsed.expired;

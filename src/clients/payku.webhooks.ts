@@ -126,7 +126,10 @@ export default class PaykuWebhooks {
     if (!parsed.ok) {
       return {
         valid: false,
-        reason: parsed.reason,
+        reason:
+          "reason" in parsed && typeof parsed.reason === "string"
+            ? parsed.reason
+            : "payku_api_error",
       };
     }
 

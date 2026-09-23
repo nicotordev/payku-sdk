@@ -3,7 +3,6 @@ import Payku, {
   isTransactionFailed,
   isTransactionPaid,
   isTransactionPending,
-  isTransactionSuccess,
   extractTransactionStatus,
   PaykuTransactions,
 } from "../index";
@@ -40,14 +39,10 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
     });
   });
 
-  describe("isTransactionPaid / isTransactionSuccess", () => {
+  describe("isTransactionPaid", () => {
     test("returns true for exact canonical success status", () => {
       expect(isTransactionPaid({ status: "success" })).toBe(true);
       expect(isTransactionPaid("success")).toBe(true);
-
-      // isTransactionSuccess alias
-      expect(isTransactionSuccess({ status: "success" })).toBe(true);
-      expect(isTransactionSuccess("success")).toBe(true);
     });
 
     test("returns false for non-canonical casing, untrimmed strings, and other statuses", () => {
@@ -181,7 +176,6 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
       const failedTx = { status: "rejected" };
 
       expect(payku.transactions.isPaid(paidTx)).toBe(true);
-      expect(payku.transactions.isSuccess(paidTx)).toBe(true);
       expect(payku.transactions.isPending(paidTx)).toBe(false);
       expect(payku.transactions.isFailed(paidTx)).toBe(false);
 
@@ -192,7 +186,6 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
 
     test("static methods on PaykuTransactions work identically", () => {
       expect(PaykuTransactions.isPaid({ status: "success" })).toBe(true);
-      expect(PaykuTransactions.isSuccess({ status: "success" })).toBe(true);
       expect(PaykuTransactions.isPending({ status: "register" })).toBe(true);
       expect(PaykuTransactions.isFailed({ status: "rejected" })).toBe(true);
     });
@@ -204,7 +197,6 @@ describe("Transaction Predicates & Type Guards (Issue #173)", () => {
       });
 
       expect(chile.transactions.isPaid({ status: "success" })).toBe(true);
-      expect(chile.transactions.isSuccess({ status: "success" })).toBe(true);
       expect(chile.transactions.isPending({ status: "pending" })).toBe(true);
       expect(chile.transactions.isFailed({ status: "rejected" })).toBe(true);
     });
