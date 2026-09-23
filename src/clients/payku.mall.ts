@@ -7,8 +7,10 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  buildMallMerchant,
   mapNotifyStatusToTransactionStatus,
   nonEmptyString,
+  normalizeMallMerchants,
   validateCreateMallTransactionRequest,
   validateGetMallTransactionParams,
   verificationKeysEqual,
@@ -16,6 +18,8 @@ import {
 import type {
   PaykuMallCreateResponse,
   PaykuMallGetResponse,
+  PaykuMallMerchantInput,
+  PaykuMallMerchantTuple,
   PaykuMallNotifyPayload,
   PaykuMallTransactionRequest,
   PaykuVerifyMallNotifyOptions,
@@ -27,6 +31,21 @@ export default class PaykuMall {
   public get = this.getTransaction.bind(this);
   public verifyNotify = this.verifyMallNotify.bind(this);
   public verifyCallback = this.verifyMallNotify.bind(this);
+
+  /**
+   * Arma la 5-tupla wire de un comercio. Igual que `buildMallMerchant`.
+   * `eventId` omitido queda `null`.
+   */
+  public static buildMerchant(
+    params: PaykuMallMerchantInput,
+  ): PaykuMallMerchantTuple {
+    return buildMallMerchant(params);
+  }
+
+  /** Igual que `PaykuMall.buildMerchant`. */
+  public buildMerchant(params: PaykuMallMerchantInput): PaykuMallMerchantTuple {
+    return PaykuMall.buildMerchant(params);
+  }
 
   constructor(
     private readonly http: HttpClient,
@@ -41,11 +60,15 @@ export default class PaykuMall {
     params: PaykuMallTransactionRequest,
   ): Promise<PaykuMallCreateResponse> {
     return this.wrap("mall.create", async () => {
-      validateCreateMallTransactionRequest(params);
+      const body: PaykuMallTransactionRequest = {
+        ...params,
+        merchant: normalizeMallMerchants(params.merchant),
+      };
+      validateCreateMallTransactionRequest(body);
       return this.http.request<PaykuMallCreateResponse>({
         method: "POST",
         path: "/mall",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
       });
     });

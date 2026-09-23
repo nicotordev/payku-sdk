@@ -9,22 +9,42 @@ import type { PaykuSuccessResponse } from "./payku.responses";
  */
 export type PaykuWalletAccountBankType = "1" | "2" | "3" | (string & {});
 
-export interface PaykuWalletPayoutRequest {
+/**
+ * Slug o código de tipo de cuenta.
+ * `checking`/`corriente` → `"1"`, `view`/`vista`/`rut` → `"2"`, `savings`/`ahorro` → `"3"`.
+ */
+export type PaykuBankAccountTypeInput =
+  | "1"
+  | "2"
+  | "3"
+  | 1
+  | 2
+  | 3
+  | "checking"
+  | "corriente"
+  | "view"
+  | "vista"
+  | "rut"
+  | "savings"
+  | "ahorro"
+  | (string & {});
+
+/** Cuenta nombrada. El cliente la serializa a `accountbank_*`. */
+export interface PaykuWalletBankAccount {
+  name: string;
+  rut: string;
+  sbif: string;
+  type: PaykuBankAccountTypeInput;
+  num: string;
+}
+
+interface PaykuWalletPayoutCommon {
   email: string;
   phone?: string;
   subject: string;
   currency: PaykuCurrency | string;
   order: string;
   amount: number;
-  accountbank_name: string;
-  accountbank_rut: string;
-  accountbank_sbif: string;
-  accountbank_type: PaykuWalletAccountBankType;
-  /**
-   * Número de cuenta bancaria.
-   * Para Banco Estado (SBIF `0012`), el máximo es 12 dígitos (evita ingresar tarjeta de débito).
-   */
-  accountbank_num: string;
   url_notify?: string;
   /**
    * Orden externa opcional (docs la listan top-level o en additional_parameters).
@@ -34,6 +54,41 @@ export interface PaykuWalletPayoutRequest {
     order_ext?: string;
   };
 }
+
+/** Body HTTP de `POST /api/wallet/payout`. Sin objeto `bank`. */
+export interface PaykuWalletPayoutBody extends PaykuWalletPayoutCommon {
+  accountbank_name: string;
+  accountbank_rut: string;
+  accountbank_sbif: string;
+  accountbank_type: "1" | "2" | "3";
+  /**
+   * Número de cuenta bancaria.
+   * Para Banco Estado (SBIF `0012`), el máximo es 12 dígitos (evita ingresar tarjeta de débito).
+   */
+  accountbank_num: string;
+}
+
+/**
+ * `wallet.payouts.create` acepta `accountbank_*` o `bank`.
+ * Si ambos vienen y no coinciden, el cliente lanza `PaykuError`.
+ */
+export type PaykuWalletPayoutRequest =
+  | (PaykuWalletPayoutCommon & {
+      bank?: undefined;
+      accountbank_name: string;
+      accountbank_rut: string;
+      accountbank_sbif: string;
+      accountbank_type: PaykuBankAccountTypeInput;
+      accountbank_num: string;
+    })
+  | (PaykuWalletPayoutCommon & {
+      bank: PaykuWalletBankAccount;
+      accountbank_name?: string;
+      accountbank_rut?: string;
+      accountbank_sbif?: string;
+      accountbank_type?: PaykuBankAccountTypeInput;
+      accountbank_num?: string;
+    });
 
 export interface PaykuWalletWithdrawRequest {
   subject: string;

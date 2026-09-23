@@ -58,6 +58,40 @@ describe("PaykuCreateEventSchema", () => {
     expect(resOver100.success).toBe(false);
   });
 
+  test("accepts named affiliation objects and transforms to wire tuples", () => {
+    const res = PaykuCreateEventSchema.safeParse({
+      ...validEvent,
+      affiliation: [
+        { email: "a@x.com", percent: 50 },
+        { email: "b@x.com", percent: "50" },
+      ],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.affiliation).toEqual([
+        ["a@x.com", 50],
+        ["b@x.com", 50],
+      ]);
+    }
+  });
+
+  test("accepts mixed affiliation tuples and objects", () => {
+    const res = PaykuCreateEventSchema.safeParse({
+      ...validEvent,
+      affiliation: [
+        ["a@x.com", 40],
+        { email: "b@x.com", percent: 60 },
+      ],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.affiliation).toEqual([
+        ["a@x.com", 40],
+        ["b@x.com", 60],
+      ]);
+    }
+  });
+
   test("rejects affiliation tuple with invalid email", () => {
     const res = PaykuCreateEventSchema.safeParse({
       ...validEvent,
@@ -182,6 +216,49 @@ describe("PaykuCreateMallTransactionSchema", () => {
       merchant: [["tok-1", 1000, "Item 1", "sub-1"]], // 4 items instead of 5
     });
     expect(res.success).toBe(false);
+  });
+
+  test("accepts named merchant objects and transforms omitted eventId to null", () => {
+    const res = PaykuCreateMallTransactionSchema.safeParse({
+      ...validMall,
+      merchant: [
+        {
+          tokenOrAffiliationId: "TOKEN_O_AFILIACION",
+          amount: 30000,
+          subject: "item1",
+          individualOrder: "4545",
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.merchant).toEqual([
+        ["TOKEN_O_AFILIACION", 30000, "item1", null, "4545"],
+      ]);
+    }
+  });
+
+  test("accepts mixed merchant tuples and objects", () => {
+    const res = PaykuCreateMallTransactionSchema.safeParse({
+      ...validMall,
+      merchant: [
+        ["token-a", "30000", "item1", null, "4545"],
+        {
+          tokenOrAffiliationId: "token-b",
+          amount: 25000,
+          subject: "item2",
+          eventId: "evt-1",
+          individualOrder: "4546",
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.merchant).toEqual([
+        ["token-a", "30000", "item1", null, "4545"],
+        ["token-b", 25000, "item2", "evt-1", "4546"],
+      ]);
+    }
   });
 
   test("rejects non-positive merchant amount", () => {

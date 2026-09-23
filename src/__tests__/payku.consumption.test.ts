@@ -2,6 +2,7 @@ import { URL } from "node:url";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import Payku from "../clients/payku";
 import PaykuConsumptionSubscriptions from "../clients/payku.consumption-subscriptions";
 import { PaykuError } from "../errors";
 import { HttpClient } from "../http/client";
@@ -51,6 +52,41 @@ describe("PaykuConsumptionSubscriptions wire format", () => {
       status: "success",
       id: "pl4293e97a87195bb9edcd",
     });
+  });
+
+  test("plans.create maps urlNotifySubscription onto url_notify_suscription and signs it", async () => {
+    const wire = {
+      name: "Delivery",
+      url_notify_suscription: "https://tu-sitio.com/notify-suscription",
+      url_notify_payment: "https://tu-sitio.com/notify-payment",
+    };
+
+    mock.onPost("/suplan/").reply((config) => {
+      expect(config.headers?.Sign).toBe(
+        buildSign("/api/suplan/", wire, "private-token"),
+      );
+      expect(JSON.parse(String(config.data))).toEqual(wire);
+      return [200, { status: "success", id: "pl4293e97a87195bb9edcd" }];
+    });
+
+    await consumption.plans.create({
+      name: "Delivery",
+      urlNotifySubscription: "https://tu-sitio.com/notify-suscription",
+      url_notify_payment: "https://tu-sitio.com/notify-payment",
+    });
+  });
+
+  test("plans.create rejects conflicting notify aliases", async () => {
+    await expect(
+      consumption.plans.create({
+        name: "Delivery",
+        url_notify_suscription: "https://tu-sitio.com/a",
+        url_notify_subscription: "https://tu-sitio.com/b",
+      }),
+    ).rejects.toThrow(
+      "urlNotifySubscription conflicts with url_notify_suscription",
+    );
+    expect(mock.history.post.length).toBe(0);
   });
 
   test("clients.create maps active fixture with subcriptions/update_at typos", async () => {
@@ -149,7 +185,7 @@ describe("PaykuConsumptionSubscriptions wire format", () => {
     });
 
     const response = await consumption.transactions.create({
-      suscription: "sucaab7865dceaff49d8b3",
+      subscription: "sucaab7865dceaff49d8b3",
       amount: "10000",
       order: "001",
       description: "cargo consumo",
@@ -278,5 +314,105 @@ describe("buildConsumptionGatewayUrl", () => {
         rootUrl: "not-a-url",
       }),
     ).toThrow("rootUrl is not a valid URL");
+  });
+});
+
+const gatewayClientParams = {
+  planId: gatewayFixture.planId,
+  verif: gatewayFixture.verif,
+  firstName: gatewayFixture.firstName,
+  lastName: gatewayFixture.lastName,
+  email: gatewayFixture.email,
+  phone: gatewayFixture.phone,
+};
+
+function consumptionWithRoot(rootUrl: string): PaykuConsumptionSubscriptions {
+  return new PaykuConsumptionSubscriptions(
+    new HttpClient({
+      baseUrl: "https://des.payku.cl/api",
+      rootUrl,
+      publicToken: "public-token",
+      privateToken: "private-token",
+    }),
+  );
+}
+
+describe("consumptionSubscriptions.gatewayUrl", () => {
+  test("uses the sandbox rootUrl from the client", () => {
+    const client = consumptionWithRoot("https://des.payku.cl");
+    const url = client.gatewayUrl(gatewayClientParams);
+
+    expect(url).toBe(buildConsumptionGatewayUrl(gatewayFixture));
+    expect(client.buildGatewayUrl(gatewayClientParams)).toBe(url);
+  });
+
+  test("uses the production rootUrl and collapses a trailing slash", () => {
+    const url = consumptionWithRoot("https://app.payku.cl/").gatewayUrl(
+      gatewayClientParams,
+    );
+
+    expect(url.startsWith("https://app.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+    expect(url).toContain("direct_full=true");
+    expect(url).not.toContain("app.payku.cl//");
+  });
+
+  test("collapses repeated trailing slashes on the client rootUrl", () => {
+    const url = consumptionWithRoot("https://des.payku.cl///").gatewayUrl(
+      gatewayClientParams,
+    );
+
+    expect(url.startsWith("https://des.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+  });
+
+  test("appends extra query params without overriding reserved keys", () => {
+    const url = consumptionWithRoot("https://des.payku.cl").gatewayUrl({
+      ...gatewayClientParams,
+      extra: {
+        rut: "11111111-1",
+        idplan: "999",
+        verif: "forged",
+      },
+    });
+
+    const parsed = new URL(url);
+    expect(parsed.searchParams.get("idplan")).toBe("607");
+    expect(parsed.searchParams.get("verif")).toBe("b4280f5e");
+    expect(parsed.searchParams.get("rut")).toBe("11111111-1");
+  });
+
+  test("Payku.forCountry CL exposes gatewayUrl with the country host", () => {
+    const config = {
+      publicToken: "public-token",
+      privateToken: "private-token",
+    } as const;
+
+    const sandbox = Payku.forCountry("CL", {
+      ...config,
+      environment: "sandbox",
+    }).consumptionSubscriptions.gatewayUrl(gatewayClientParams);
+    const production = Payku.forCountry("CL", {
+      ...config,
+      environment: "production",
+    }).consumptionSubscriptions.gatewayUrl(gatewayClientParams);
+
+    expect(sandbox.startsWith("https://des.payku.cl/suscripcion/index?")).toBe(
+      true,
+    );
+    expect(
+      production.startsWith("https://app.payku.cl/suscripcion/index?"),
+    ).toBe(true);
+  });
+
+  test("rejects missing required fields before any request", () => {
+    expect(() =>
+      consumptionWithRoot("https://des.payku.cl").gatewayUrl({
+        ...gatewayClientParams,
+        email: "  ",
+      }),
+    ).toThrow(PaykuError);
   });
 });

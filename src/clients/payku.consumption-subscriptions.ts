@@ -4,8 +4,15 @@ import {
   type PaykuClientOptions,
 } from "../errors";
 import type { HttpClient } from "../http/client";
-import { bodyAsRecord } from "../utils/payku.utils";
+import {
+  bodyAsRecord,
+  buildConsumptionGatewayUrl,
+  normalizeConsumptionPlanRequest,
+  normalizeSubscriptionTransactionRequest,
+  validateCreateSubscriptionTransactionRequest,
+} from "../utils/payku.utils";
 import type {
+  PaykuConsumptionGatewayUrlParams,
   PaykuCreateConsumptionPlanRequest,
   PaykuCreateConsumptionPlanResponse,
   PaykuCreateSubscriptionClientRequest,
@@ -38,14 +45,25 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public plans = {
-    create: (
+    create: async (
       params: PaykuCreateConsumptionPlanRequest,
-    ): Promise<PaykuCreateConsumptionPlanResponse> =>
-      this.post<PaykuCreateConsumptionPlanResponse>(
-        "/suplan/",
-        bodyAsRecord(params),
-        "consumption.plans.create",
-      ),
+    ): Promise<PaykuCreateConsumptionPlanResponse> => {
+      try {
+        const body = normalizeConsumptionPlanRequest(params);
+        return await this.post<PaykuCreateConsumptionPlanResponse>(
+          "/suplan/",
+          bodyAsRecord(body),
+          "consumption.plans.create",
+        );
+      } catch (error) {
+        throw createPaykuAPIError(
+          error,
+          "consumption.plans.create",
+          PaykuSubscriptionsError,
+          this.options,
+        );
+      }
+    },
   };
 
   public subscriptions = {
@@ -60,15 +78,43 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public transactions = {
-    create: (
+    create: async (
       params: PaykuCreateConsumptionTransactionRequest,
-    ): Promise<PaykuCreateSubscriptionTransactionResponse> =>
-      this.post<PaykuCreateSubscriptionTransactionResponse>(
-        "/sutransaction/",
-        bodyAsRecord(params),
-        "consumption.transactions.create",
-      ),
+    ): Promise<PaykuCreateSubscriptionTransactionResponse> => {
+      try {
+        const body = normalizeSubscriptionTransactionRequest(params);
+        validateCreateSubscriptionTransactionRequest(body);
+        return await this.post<PaykuCreateSubscriptionTransactionResponse>(
+          "/sutransaction/",
+          bodyAsRecord(body),
+          "consumption.transactions.create",
+        );
+      } catch (error) {
+        throw createPaykuAPIError(
+          error,
+          "consumption.transactions.create",
+          PaykuSubscriptionsError,
+          this.options,
+        );
+      }
+    },
   };
+
+  /**
+   * URL de pasarela Webpay `GET {rootUrl}/suscripcion/index`.
+   * No llama a la API. `rootUrl` sale del cliente (`des.payku.cl` / `app.payku.cl`).
+   */
+  public buildGatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
+    return buildConsumptionGatewayUrl({
+      ...params,
+      rootUrl: this.http.rootUrl,
+    });
+  }
+
+  /** Alias de `buildGatewayUrl`. */
+  public gatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
+    return this.buildGatewayUrl(params);
+  }
 
   public cards = {
     delete: (

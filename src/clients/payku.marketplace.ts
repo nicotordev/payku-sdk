@@ -6,7 +6,9 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  buildMarketplaceAffiliation,
   normalizeMarketplaceAffiliation,
+  normalizeMarketplaceClientBank,
   validateCreateMarketplaceAffiliationRequest,
   validateCreateMarketplaceClientRequest,
   validateMarketplaceTransactionRequest,
@@ -16,6 +18,8 @@ import type {
   PaykuCreateMarketplaceClientRequest,
   PaykuDeleteMarketplaceAffiliationResponse,
   PaykuDeleteMarketplaceClientResponse,
+  PaykuMarketplaceAffiliationMemberInput,
+  PaykuMarketplaceAffiliationPair,
   PaykuMarketplaceAffiliationResponse,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
@@ -42,6 +46,23 @@ export default class PaykuMarketplace {
     create: this.createTransaction.bind(this),
   };
 
+  /**
+   * Arma pares `[clientId, percentage]`. Igual que `buildMarketplaceAffiliation`.
+   * Recibe la lista de afiliados, no un solo objeto.
+   */
+  public static buildAffiliation(
+    members: PaykuMarketplaceAffiliationMemberInput[],
+  ): PaykuMarketplaceAffiliationPair[] {
+    return buildMarketplaceAffiliation(members);
+  }
+
+  /** Igual que `PaykuMarketplace.buildAffiliation`. */
+  public buildAffiliation(
+    members: PaykuMarketplaceAffiliationMemberInput[],
+  ): PaykuMarketplaceAffiliationPair[] {
+    return PaykuMarketplace.buildAffiliation(members);
+  }
+
   constructor(
     private readonly http: HttpClient,
     private readonly options?: PaykuClientOptions,
@@ -53,11 +74,14 @@ export default class PaykuMarketplace {
 
   private createClient(params: PaykuCreateMarketplaceClientRequest) {
     return this.wrap("marketplace.clients.create", async () => {
-      validateCreateMarketplaceClientRequest(params);
+      const body = params.bank
+        ? { ...params, bank: normalizeMarketplaceClientBank(params.bank) }
+        : params;
+      validateCreateMarketplaceClientRequest(body);
       return this.http.request<PaykuMarketplaceClientResponse>({
         method: "POST",
         path: "/maclient",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
       });
     });
   }
@@ -75,14 +99,17 @@ export default class PaykuMarketplace {
     id: string,
     params: PaykuUpdateMarketplaceClientRequest,
   ) {
-    return this.wrap("marketplace.clients.update", () =>
-      this.http.request<PaykuUpdateMarketplaceClientResponse>({
+    return this.wrap("marketplace.clients.update", () => {
+      const body = params.bank
+        ? { ...params, bank: normalizeMarketplaceClientBank(params.bank) }
+        : params;
+      return this.http.request<PaykuUpdateMarketplaceClientResponse>({
         method: "PUT",
         path: `/maclient/${id}`,
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private deleteClient(id: string) {

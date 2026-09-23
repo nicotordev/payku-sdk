@@ -508,11 +508,13 @@ const payout = await cl.wallet.payouts.create({
   currency: "CLP",
   order: "payout-001",
   amount: 25000,
-  accountbank_name: "Juan Pérez",
-  accountbank_rut: "111111111",
-  accountbank_sbif: "0001", // Código SBIF del banco
-  accountbank_type: "1",    // "1" Corriente, "2" Vista / Cuenta RUT, "3" Ahorro
-  accountbank_num: "123456789",
+  bank: {
+    name: "Juan Pérez",
+    rut: "111111111",
+    sbif: "0001",
+    type: "checking", // "checking" | "view" | "savings", o "1" | "2" | "3"
+    num: "123456789",
+  },
   url_notify: "https://tu-sitio.com/api/payout-notify",
   order_ext: "ext-ref-456", // Opcional
 });
@@ -565,6 +567,7 @@ if (verification.payout.status === "success") {
 ### Reglas y validaciones de cuenta bancaria
 
 - **Banco Estado (SBIF `0012`):** El número de cuenta (`accountbank_num`) tiene un máximo de **12 dígitos**. El SDK valida esto automáticamente para evitar que los usuarios ingresen el número de tarjeta de débito (16 dígitos), el cual no es un número de cuenta válido.
+- `payouts.create` acepta `bank: { name, rut, sbif, type, num }` o los campos planos `accountbank_*`. El body HTTP sigue siendo `accountbank_*`. Si ambos vienen y no coinciden, el SDK lanza `PaykuError`. `type` acepta `"checking"` / `"view"` / `"savings"` (también `corriente`, `vista`, `rut`, `ahorro`) o `"1"` / `"2"` / `"3"`. Lo mismo vale para `marketplace.clients` `bank.type`.
 - Para el resto de los bancos en Chile, los números de cuenta no están estandarizados y pueden tener longitudes variables.
 
 ### Ambiente Sandbox (`des.payku.cl`)
@@ -735,7 +738,7 @@ try {
     phone: "923122312",
     bank: {
       sbif: "0001",
-      type: "1",
+      type: "checking", // "checking" | "view" | "savings", o "1" | "2" | "3"
       num: "12312313121",
       rut: "111111111",
     },
@@ -777,11 +780,11 @@ Agrupa varias tiendas en **una** pasarela (`POST /api/mall`). Los ids son `mall�
 
 > [!NOTE]
 > - **Sign** en `mall.create`. `mall.get` va solo con Bearer (sandbox no exige Sign).
-> - Cada fila `merchant` es `[token público o id de afiliación, monto, descripción, eventId|null, orden individual]`.
+> - Cada fila `merchant` es un objeto `{ tokenOrAffiliationId, amount, subject, eventId, individualOrder }` o la tupla wire de 5 elementos. `eventId` omitido se envía como `null`.
 > - El callback `urlnotify` se verifica con `payku.mall.verifyNotify`, no con `webhooks.verifyNotify`. Ver [Webhooks](#webhooks).
 
 ```typescript
-import Payku, { buildMallMerchant, PaykuMallError } from "@nicotordev/payku";
+import Payku, { PaykuMallError } from "@nicotordev/payku";
 
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
@@ -794,13 +797,13 @@ try {
     email: "comprador@example.com",
     payment: 1,
     merchant: [
-      buildMallMerchant({
+      {
         tokenOrAffiliationId: "TOKEN_O_AFILIACION",
         amount: 30000,
         subject: "item1",
         eventId: null,
         individualOrder: "4545",
-      }),
+      },
       ["81b6179e4feeef2b50af71d66f7830de", 25000, "item2", null, "4546"],
     ],
     order: 123,
@@ -904,7 +907,7 @@ Diagrama Payku del cargo: [sutransaction](https://docs.payku.com/img/diagrams/Di
 
 ### Flujo delivery / cargo único
 
-El alta de la suscripción también cobra **$50 CLP** para validar la tarjeta. Cada delivery posterior es un `transactions.create` (wire `suscription`, no `subscription`). Opcionales de docs de consumo: `marketplace` (token de afiliación) y `card`.
+El alta de la suscripción también cobra **$50 CLP** para validar la tarjeta. Cada delivery posterior es un `transactions.create`. El request acepta `subscription`; el body HTTP y el `Sign` siguen usando `suscription`. Opcionales de docs de consumo: `marketplace` (token de afiliación) y `card`.
 
 ```typescript
 import Payku from "@nicotordev/payku";
@@ -917,7 +920,7 @@ const cl = Payku.forCountry("CL", {
 
 const plan = await cl.consumptionSubscriptions.plans.create({
   name: "Delivery",
-  url_notify_suscription: "https://tu-sitio.com/notify-suscription",
+  urlNotifySubscription: "https://tu-sitio.com/notify-suscription",
   url_notify_payment: "https://tu-sitio.com/notify-payment",
 });
 
@@ -931,10 +934,10 @@ const sub = await cl.consumptionSubscriptions.subscriptions.create({
   plan: plan.id,
   client: client.id as string,
 });
-// redirect sub.url  — o buildConsumptionGatewayUrl (abajo)
+// redirect sub.url  — o consumptionSubscriptions.gatewayUrl (abajo)
 
 const charge = await cl.consumptionSubscriptions.transactions.create({
-  suscription: sub.id,
+  subscription: sub.id, // el body HTTP sigue siendo suscription
   amount: "10000",
   order: "001",
   marketplace: "ma…", // opcional: token de afiliación
@@ -944,13 +947,10 @@ const charge = await cl.consumptionSubscriptions.transactions.create({
 
 Los callbacks `urlnotifysuscription` / `urlnotifypayment` son los mismos que en suscripción regular: verifícalos con `payku.subscriptions.verifyActivationNotify` y `verifyPaymentNotify` ([#59](https://github.com/nicotordev/payku-sdk/issues/59), [sección Callbacks](#callbacks-urlnotifysuscription-y-urlnotifypayment)). Docs Payku: [suscripción de consumo](https://docs.payku.com/).
 
-Para mandar al cliente **directo a Webpay** sin crear la transacción por API, construye `GET {rootUrl}/suscripcion/index`:
+Para mandar al cliente **directo a Webpay** sin crear la transacción por API, `gatewayUrl` arma `GET {rootUrl}/suscripcion/index` con el host del cliente:
 
 ```typescript
-import { buildConsumptionGatewayUrl } from "@nicotordev/payku";
-
-const gatewayUrl = buildConsumptionGatewayUrl({
-  rootUrl: payku.rootUrl,
+const gatewayUrl = cl.consumptionSubscriptions.gatewayUrl({
   planId: 607,
   verif: "b4280f5e",
   firstName: "vicente",
@@ -981,8 +981,8 @@ const created = await payku.events.create({
   date_closing_sales: "2023-12-19 23:59:00",
   date_payment: "2023-12-22",
   affiliation: [
-    ["a@x.com", 50],
-    ["b@x.com", 50],
+    { email: "a@x.com", percent: 50 },
+    { email: "b@x.com", percent: 50 },
   ],
 });
 

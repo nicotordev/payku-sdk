@@ -8,6 +8,7 @@ import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
   toQueryRecord,
+  normalizeWalletPayoutRequest,
   validateWalletPayoutRequest,
 } from "../utils/payku.utils";
 import type {
@@ -61,11 +62,12 @@ export default class PaykuWallet {
     params: PaykuWalletPayoutRequest,
   ): Promise<PaykuCreateWalletPayoutResponse> {
     return this.wrap("wallet.payouts.create", () => {
-      validateWalletPayoutRequest(params);
+      const body = normalizeWalletPayoutRequest(params);
+      validateWalletPayoutRequest(body);
       return this.http.request<PaykuCreateWalletPayoutResponse>({
         method: "POST",
         path: "/wallet/payout",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
       });
     });

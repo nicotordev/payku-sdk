@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuEvents from "../clients/payku.events";
 import { HttpClient } from "../http/client";
 import { PaykuEventsError } from "../errors";
+import type { PaykuEventAffiliationInput } from "../types/payku.events";
 import { buildEventAffiliation } from "../utils/payku.utils";
 
 const createFixture = {
@@ -78,6 +79,19 @@ describe("PaykuEvents", () => {
     mock.restore();
   });
 
+  test("buildAffiliation matches the standalone helper", () => {
+    const members = [
+      { email: "a@x.com", percent: 40 },
+      { email: "b@x.com", percent: 60 },
+    ];
+    expect(PaykuEvents.buildAffiliation(members)).toEqual(
+      buildEventAffiliation(members),
+    );
+    expect(events.buildAffiliation(members)).toEqual(
+      PaykuEvents.buildAffiliation(members),
+    );
+  });
+
   test("create posts documented event body and maps affiliation (singular) fixture", async () => {
     mock.onPost("/event").reply((config) => {
       const body = JSON.parse(String(config.data)) as Record<string, unknown>;
@@ -117,6 +131,54 @@ describe("PaykuEvents", () => {
     expect(response).toEqual(createFixture);
     expect(response.affiliation[0]?.status).toBe("pending");
     expect(response).not.toHaveProperty("affiliations");
+  });
+
+  test("create accepts named affiliation objects and posts wire tuples", async () => {
+    mock.onPost("/event").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.affiliation).toEqual([
+        ["a@x.com", 50],
+        ["b@x.com", 50],
+      ]);
+      return [200, createFixture];
+    });
+
+    const response = await events.create({
+      event: "98374",
+      name: "Event",
+      date_event: "2023-12-20",
+      date_closing_sales: "2023-12-19 23:59:00",
+      date_payment: "2023-12-22",
+      affiliation: [
+        { email: "a@x.com", percent: 50 },
+        { email: "b@x.com", percent: 50 },
+      ],
+    });
+
+    expect(response).toEqual(createFixture);
+  });
+
+  test("create accepts mixed affiliation tuples and objects and posts wire tuples", async () => {
+    mock.onPost("/event").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.affiliation).toEqual([
+        ["a@x.com", 50],
+        ["b@x.com", 50],
+      ]);
+      return [200, createFixture];
+    });
+
+    await events.create({
+      event: "98374",
+      name: "Event",
+      date_event: "2023-12-20",
+      date_closing_sales: "2023-12-19 23:59:00",
+      date_payment: "2023-12-22",
+      affiliation: [
+        ["a@x.com", 50],
+        { email: "b@x.com", percent: 50 },
+      ],
+    });
   });
 
   test("get maps affiliations (plural) without top-level status", async () => {
@@ -174,6 +236,35 @@ describe("PaykuEvents", () => {
           affiliation: [["a@b.com", "Infinity" as unknown as number]],
         }),
       ).rejects.toThrow(PaykuEventsError);
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [null] as unknown as PaykuEventAffiliationInput[],
+        }),
+      ).rejects.toThrow(
+        "affiliation[0] must be { email, percent } or a 2-element tuple [email, percent]",
+      );
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [
+            ["a@b.com", 50],
+            undefined,
+          ] as unknown as PaykuEventAffiliationInput[],
+        }),
+      ).rejects.toThrow(
+        "affiliation[1] must be { email, percent } or a 2-element tuple [email, percent]",
+      );
 
       expect(mock.history.post.length).toBe(0);
     });

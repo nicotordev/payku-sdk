@@ -3,6 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMarketplace from "../clients/payku.marketplace";
 import { HttpClient } from "../http/client";
+import { buildSign } from "../http/sign";
 import { PaykuError, PaykuMarketplaceError } from "../errors";
 import {
   buildMarketplaceAffiliation,
@@ -87,6 +88,77 @@ describe("PaykuMarketplace maclient", () => {
     expect(response.update_at).toBe("null");
   });
 
+  test("create serializes bank.type checking to 1", async () => {
+    mock.onPost("/maclient").reply((config) => {
+      const body = JSON.parse(String(config.data)) as {
+        bank: { type: string };
+      };
+      expect(body.bank.type).toBe("1");
+      return [200, clientFixture];
+    });
+
+    await marketplace.clients.create({
+      email: "johndoe@example.com",
+      name: "John Doe",
+      phone: "923122312",
+      bank: {
+        sbif: "0001",
+        type: "checking",
+        num: "12312313121",
+        rut: "111111111",
+      },
+    });
+  });
+
+  test("create rejects an unknown bank.type", async () => {
+    await expect(
+      marketplace.clients.create({
+        email: "johndoe@example.com",
+        name: "John Doe",
+        phone: "923122312",
+        bank: {
+          sbif: "0001",
+          type: "crypto",
+          num: "12312313121",
+          rut: "111111111",
+        },
+      }),
+    ).rejects.toThrow(
+      "bank.type must be 1, 2, 3, checking, corriente, view, vista, rut, savings, or ahorro",
+    );
+    expect(mock.history.post.length).toBe(0);
+  });
+
+  test("update serializes bank.type savings before Sign", async () => {
+    const wire = {
+      name: "John Doe Doe",
+      bank: {
+        sbif: "0012",
+        type: "3",
+        num: "123456789012",
+        rut: "111111111",
+      },
+    };
+
+    mock.onPut("/maclient/madb93fc00a2cf6f4449").reply((config) => {
+      expect(config.headers?.Sign).toBe(
+        buildSign("/api/maclient/madb93fc00a2cf6f4449", wire, "private-token"),
+      );
+      expect(JSON.parse(String(config.data))).toEqual(wire);
+      return [200, clientFixture];
+    });
+
+    await marketplace.clients.update("madb93fc00a2cf6f4449", {
+      name: "John Doe Doe",
+      bank: {
+        sbif: "0012",
+        type: "savings",
+        num: "123456789012",
+        rut: "111111111",
+      },
+    });
+  });
+
   test("get maps client fixture", async () => {
     mock.onGet("/maclient/madb93fc00a2cf6f4449").reply(200, clientFixture);
 
@@ -130,11 +202,24 @@ const affiliationFixture = {
 
 describe("marketplace affiliation helpers", () => {
   test("buildMarketplaceAffiliation builds wire pairs", () => {
-    expect(
-      buildMarketplaceAffiliation([
-        { clientId: "ma9fd16221a9645b0036", percentage: 80 },
-      ]),
-    ).toEqual([["ma9fd16221a9645b0036", "80"]]);
+    const members = [{ clientId: "ma9fd16221a9645b0036", percentage: 80 }];
+    expect(buildMarketplaceAffiliation(members)).toEqual([
+      ["ma9fd16221a9645b0036", "80"],
+    ]);
+    expect(PaykuMarketplace.buildAffiliation(members)).toEqual(
+      buildMarketplaceAffiliation(members),
+    );
+    const marketplace = new PaykuMarketplace(
+      new HttpClient({
+        baseUrl: "https://des.payku.cl/api",
+        rootUrl: "https://des.payku.cl",
+        publicToken: "public-token",
+        privateToken: "private-token",
+      }),
+    );
+    expect(marketplace.buildAffiliation(members)).toEqual(
+      PaykuMarketplace.buildAffiliation(members),
+    );
   });
 
   test("validateMarketplaceAffiliationPercentages accepts 100", () => {
@@ -453,6 +538,21 @@ describe("PaykuMarketplace validations", () => {
         bank: { sbif: "", type: "1", num: "1", rut: "1" },
       }),
     ).rejects.toThrow(PaykuMarketplaceError);
+
+    expect(mock.history.post.length).toBe(0);
+  });
+
+  test("clients.create rejects a missing bank before reading its fields", async () => {
+    await expect(
+      marketplace.clients.create({
+        email: "a@b.com",
+        name: "John",
+        phone: "123",
+        bank: null,
+      } as unknown as Parameters<
+        PaykuMarketplace["clients"]["create"]
+      >[0]),
+    ).rejects.toThrow("bank is required");
 
     expect(mock.history.post.length).toBe(0);
   });

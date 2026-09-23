@@ -18,9 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `transactions.create` acepta slugs de método de pago (`"webpay"`, `"fintoc"`, `"safety_pay"`, …) además de códigos numéricos; el body HTTP sigue siendo el código (#169).
 - `marketplace.affiliations.create` acepta `{ clientId, percentage }` además de tuplas `[clientId, percentage]`; el body HTTP sigue siendo array de pares (#179).
+- `mall.create` acepta objetos `{ tokenOrAffiliationId, amount, subject, eventId, individualOrder }` además de la 5-tupla; el body HTTP sigue siendo array de arrays y `eventId` omitido se envía como `null` (#180).
+- `events.create` acepta `{ email, percent }` además de tuplas `[email, percent]`; el body HTTP sigue siendo array de pares (#181).
 - README Chile: Marketplace, Mall, flujo de suscripción (8 pasos), flujo de consumo y tarjetas sandbox Webpay (#36, #44, #62, #71, #98).
 - README / sdk-spec: cuándo usar `consumptionSubscriptions` vs `subscriptions` (#69).
 - `buildConsumptionGatewayUrl`: construye `{rootUrl}/suscripcion/index` (pasarela Webpay `direct_full`) (#68).
+- `consumptionSubscriptions.gatewayUrl`: la misma URL usando el `rootUrl` del cliente, sin import ni `rootUrl` en el happy path (#183).
+- `consumptionSubscriptions.buildGatewayUrl` (alias de `gatewayUrl`), `mall.buildMerchant`, `marketplace.buildAffiliation` y `events.buildAffiliation` en instancia y estático. Los helpers `build*` siguen exportados (#194).
+- `transactions.create` y `cards.register` aceptan `subscription` además de `suscription`. `consumptionSubscriptions.plans.create` acepta `urlNotifySubscription` y `url_notify_subscription` además de `url_notify_suscription`. El body HTTP y el `Sign` usan solo las keys de Payku. Si las dos formas difieren, `PaykuError` (#184).
+- `wallet.payouts.create` acepta `bank: { name, rut, sbif, type, num }` además de `accountbank_*`. `type` en wallet y marketplace acepta `checking` / `view` / `savings` (y `corriente`, `vista`, `rut`, `ahorro`) o `"1"` / `"2"` / `"3"`. El body HTTP sigue siendo `accountbank_*` o `bank.type` `"1"`|`"2"`|`"3"`. Campos que chocan lanzan `PaykuError` (#185).
 - `subscriptions.verifyActivationNotify` y `subscriptions.verifyPaymentNotify`: reconsultan `GET /api/sususcription/{id}` para `urlnotifysuscription` y `urlnotifypayment` (#59).
 - `mall.verifyNotify` / `verifyCallback`: reconsulta `GET /api/mall/{id}` y valida status, monto y `verification_key` (#42).
 - `PaykuChileCreateTransactionRequest` y `PaykuChileTransactions`: campos requeridos en create CL (`email`, `order`, `subject`, `urlreturn`, `urlnotify`).

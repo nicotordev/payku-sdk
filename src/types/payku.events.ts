@@ -1,6 +1,17 @@
 /** Tupla wire de afiliado: `[email, percent]` (forma de los ejemplos CURL/JS). */
 export type PaykuEventAffiliationTuple = [email: string, percent: number];
 
+/** Objeto nombrado; el cliente lo serializa a `[email, percent]`. */
+export interface PaykuEventAffiliationMemberInput {
+  email: string;
+  percent: number;
+}
+
+/** Input de `affiliation[]`: tupla wire o `{ email, percent }`. */
+export type PaykuEventAffiliationInput =
+  | readonly [email: string, percent: number]
+  | PaykuEventAffiliationMemberInput;
+
 /**
  * `POST /api/event` — crear evento.
  * `event` es el indicador; no confundir con el nombre (`name`).
@@ -14,8 +25,8 @@ export interface PaykuCreateEventRequest {
   url_event?: string;
   url_logo?: string;
   service_sale?: number;
-  /** Ejemplos docs: tuplas `[email, percent]`. */
-  affiliation?: PaykuEventAffiliationTuple[];
+  /** Tuplas `[email, percent]` u objetos `{ email, percent }`. El wire sigue siendo tuplas. */
+  affiliation?: PaykuEventAffiliationInput[];
 }
 
 export interface PaykuEventDistribution {

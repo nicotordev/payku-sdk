@@ -9,6 +9,8 @@ import {
   bodyAsRecord,
   mapNotifyStatusToTransactionStatus,
   nonEmptyString,
+  normalizeRegisterCardRequest,
+  normalizeSubscriptionTransactionRequest,
   validateCreateSubscriptionClientRequest,
   validateCreateSubscriptionRequest,
   validateCreateSubscriptionTransactionRequest,
@@ -228,25 +230,27 @@ export default class PaykuSubscriptions {
     params: PaykuCreateSubscriptionTransactionRequest,
   ) {
     return this.wrap("subscriptions.transactions.create", async () => {
-      validateCreateSubscriptionTransactionRequest(params);
+      const body = normalizeSubscriptionTransactionRequest(params);
+      validateCreateSubscriptionTransactionRequest(body);
       return this.http.request<PaykuCreateSubscriptionTransactionResponse>({
         method: "POST",
         path: "/sutransaction",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
       });
     });
   }
 
   private registerCard(params: PaykuRegisterCardRequest) {
-    return this.wrap("subscriptions.cards.register", () =>
-      this.http.request<PaykuRegisterCardResponse>({
+    return this.wrap("subscriptions.cards.register", () => {
+      const body = normalizeRegisterCardRequest(params);
+      return this.http.request<PaykuRegisterCardResponse>({
         method: "POST",
         path: "/suinscriptionscards",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
-      }),
-    );
+      });
+    });
   }
 
   private deleteCard(params: PaykuDeleteCardRequest) {
