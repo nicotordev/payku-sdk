@@ -266,4 +266,5 @@ export {
 } from "./payku.transactions.scoped";
 export { default as PaykuTransactions } from "./payku.transactions";
 export { default as PaykuPaymentMethods } from "./payku.payment-methods";
+export { default as PaykuWebhooks } from "./payku.webhooks";
 export type { PaykuDefaultsConfig } from "../types/payku.common";

@@ -17,6 +17,7 @@ export {
   PaykuTransactions,
   PaykuVenezuelaTransactions,
   PaykuSharedWallet,
+  PaykuWebhooks,
 } from "./clients/payku";
 export {
   PaykuAPIError,
