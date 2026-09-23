@@ -777,11 +777,11 @@ Agrupa varias tiendas en **una** pasarela (`POST /api/mall`). Los ids son `mall�
 
 > [!NOTE]
 > - **Sign** en `mall.create`. `mall.get` va solo con Bearer (sandbox no exige Sign).
-> - Cada fila `merchant` es `[token público o id de afiliación, monto, descripción, eventId|null, orden individual]`.
+> - Cada fila `merchant` es un objeto `{ tokenOrAffiliationId, amount, subject, eventId, individualOrder }` o la tupla wire de 5 elementos. `eventId` omitido se envía como `null`.
 > - El callback `urlnotify` se verifica con `payku.mall.verifyNotify`, no con `webhooks.verifyNotify`. Ver [Webhooks](#webhooks).
 
 ```typescript
-import Payku, { buildMallMerchant, PaykuMallError } from "@nicotordev/payku";
+import Payku, { PaykuMallError } from "@nicotordev/payku";
 
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
@@ -794,13 +794,13 @@ try {
     email: "comprador@example.com",
     payment: 1,
     merchant: [
-      buildMallMerchant({
+      {
         tokenOrAffiliationId: "TOKEN_O_AFILIACION",
         amount: 30000,
         subject: "item1",
         eventId: null,
         individualOrder: "4545",
-      }),
+      },
       ["81b6179e4feeef2b50af71d66f7830de", 25000, "item2", null, "4546"],
     ],
     order: 123,
@@ -978,8 +978,8 @@ const created = await payku.events.create({
   date_closing_sales: "2023-12-19 23:59:00",
   date_payment: "2023-12-22",
   affiliation: [
-    ["a@x.com", 50],
-    ["b@x.com", 50],
+    { email: "a@x.com", percent: 50 },
+    { email: "b@x.com", percent: 50 },
   ],
 });
 

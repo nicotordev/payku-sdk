@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMall from "../clients/payku.mall";
 import { HttpClient } from "../http/client";
 import { PaykuAPIError, PaykuMallError } from "../errors";
-import type { PaykuMallNotifyPayload } from "../types/payku.mall";
+import type {
+  PaykuMallMerchantItem,
+  PaykuMallNotifyPayload,
+} from "../types/payku.mall";
 import { buildMallMerchant } from "../utils/payku.utils";
 
 const createFixture = {
@@ -138,6 +141,60 @@ describe("PaykuMall", () => {
     expect(response.individual_orders[0]?.event).toBeNull();
   });
 
+  test("create accepts named merchant objects and posts wire tuples", async () => {
+    mock.onPost("/mall").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.merchant).toEqual([
+        ["TOKEN_O_AFILIACION", 30000, "item1", null, "4545"],
+      ]);
+      return [200, createFixture];
+    });
+
+    const response = await mall.create({
+      email: "joedoe@example.com",
+      payment: 1,
+      merchant: [
+        {
+          tokenOrAffiliationId: "TOKEN_O_AFILIACION",
+          amount: 30000,
+          subject: "item1",
+          individualOrder: "4545",
+        },
+      ],
+      order: 123,
+      urlreturn: "https://youwebsite.com/urlreturn",
+    });
+
+    expect(response).toEqual(createFixture);
+  });
+
+  test("create accepts mixed merchant tuples and objects and posts wire tuples", async () => {
+    mock.onPost("/mall").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.merchant).toEqual([
+        ["token-a", "30000", "item1", null, "4545"],
+        ["token-b", 25000, "item2", "evt-1", "4546"],
+      ]);
+      return [200, createFixture];
+    });
+
+    await mall.create({
+      email: "joedoe@example.com",
+      payment: 1,
+      merchant: [
+        {
+          tokenOrAffiliationId: "token-a",
+          amount: "30000",
+          subject: "item1",
+          individualOrder: "4545",
+        },
+        ["token-b", 25000, "item2", "evt-1", "4546"],
+      ],
+      order: 123,
+      urlreturn: "https://youwebsite.com/urlreturn",
+    });
+  });
+
   test("get maps merchant and payment fixture without Sign", async () => {
     mock.onGet("/mall/malld200058ab44739ddee2adcd2f5").reply((config) => {
       expect(config.headers?.Authorization).toBe("Bearer public-token");
@@ -209,6 +266,50 @@ describe("PaykuMall", () => {
           urlreturn: "https://example.com/return",
         }),
       ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [
+            {
+              tokenOrAffiliationId: "",
+              amount: 1000,
+              subject: "sub",
+              individualOrder: "ord1",
+            },
+          ],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [null] as unknown as PaykuMallMerchantItem[],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(
+        "merchant[0] must be a merchant object or a 5-element tuple",
+      );
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [
+            ["token1", "1000", "sub", null, "ord1"],
+            undefined,
+          ] as unknown as PaykuMallMerchantItem[],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(
+        "merchant[1] must be a merchant object or a 5-element tuple",
+      );
 
       expect(mock.history.post.length).toBe(0);
     });

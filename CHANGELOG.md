@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `transactions.create` acepta slugs de método de pago (`"webpay"`, `"fintoc"`, `"safety_pay"`, …) además de códigos numéricos; el body HTTP sigue siendo el código (#169).
 - `marketplace.affiliations.create` acepta `{ clientId, percentage }` además de tuplas `[clientId, percentage]`; el body HTTP sigue siendo array de pares (#179).
+- `mall.create` acepta objetos `{ tokenOrAffiliationId, amount, subject, eventId, individualOrder }` además de la 5-tupla; el body HTTP sigue siendo array de arrays y `eventId` omitido se envía como `null` (#180).
+- `events.create` acepta `{ email, percent }` además de tuplas `[email, percent]`; el body HTTP sigue siendo array de pares (#181).
 - README Chile: Marketplace, Mall, flujo de suscripción (8 pasos), flujo de consumo y tarjetas sandbox Webpay (#36, #44, #62, #71, #98).
 - README / sdk-spec: cuándo usar `consumptionSubscriptions` vs `subscriptions` (#69).
 - `buildConsumptionGatewayUrl`: construye `{rootUrl}/suscripcion/index` (pasarela Webpay `direct_full`) (#68).
