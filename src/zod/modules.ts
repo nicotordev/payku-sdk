@@ -34,20 +34,36 @@ const requireEventDateTime = (field: string) =>
       message: `${field} must be a valid datetime (YYYY-MM-DD or YYYY-MM-DD HH:mm:ss)`,
     });
 
+const eventAffiliationEmailSchema = z
+  .string({ message: "affiliation email is required" })
+  .trim()
+  .email("affiliation email must be a valid email address");
+
+const eventAffiliationPercentSchema = z
+  .union([z.number(), z.string().transform((v) => Number(v))])
+  .refine(
+    (v) => Number.isFinite(v) && v > 0 && v <= 100,
+    "affiliation percent must be a finite number between 0 and 100",
+  );
+
 /**
  * Tupla de afiliado para eventos: [email, percent]
  */
 export const PaykuEventAffiliationTupleSchema = z.tuple([
-  z
-    .string({ message: "affiliation email is required" })
-    .trim()
-    .email("affiliation email must be a valid email address"),
-  z
-    .union([z.number(), z.string().transform((v) => Number(v))])
-    .refine(
-      (v) => Number.isFinite(v) && v > 0 && v <= 100,
-      "affiliation percent must be a finite number between 0 and 100",
-    ),
+  eventAffiliationEmailSchema,
+  eventAffiliationPercentSchema,
+]);
+
+export const PaykuEventAffiliationObjectSchema = z
+  .object({
+    email: eventAffiliationEmailSchema,
+    percent: eventAffiliationPercentSchema,
+  })
+  .transform((member): [string, number] => [member.email, member.percent]);
+
+export const PaykuEventAffiliationItemSchema = z.union([
+  PaykuEventAffiliationTupleSchema,
+  PaykuEventAffiliationObjectSchema,
 ]);
 
 export type PaykuEventAffiliationTuple = z.infer<
@@ -68,7 +84,7 @@ export const PaykuCreateEventSchema = z
     url_event: z.string().optional(),
     url_logo: z.string().optional(),
     service_sale: z.number().optional(),
-    affiliation: z.array(PaykuEventAffiliationTupleSchema).optional(),
+    affiliation: z.array(PaykuEventAffiliationItemSchema).optional(),
   })
   .loose()
   .superRefine((data, ctx) => {
@@ -99,30 +115,55 @@ export type PaykuCreateEventRequestInput = z.infer<
 export type PaykuCreateEventInput = PaykuCreateEventRequestInput;
 export type PaykuCreateEvent = PaykuCreateEventRequestInput;
 
+const mallMerchantAmountSchema = z
+  .union([
+    z.number(),
+    z.string().refine(
+      (s) => s.trim().length > 0 && Number.isFinite(Number(s)),
+      "amount must be finite",
+    ),
+  ])
+  .refine(
+    (val) => {
+      const num = Number(val);
+      return Number.isFinite(num) && num > 0;
+    },
+    "merchant amount must be greater than 0",
+  );
+
 /**
  * Tupla wire de un beneficiario Mall de 5 elementos:
  * [tokenOrAffiliationId, amount, subject, eventId, individualOrder]
  */
 export const PaykuMallMerchantTupleSchema = z.tuple([
   requireNonEmptyString("tokenOrAffiliationId"),
-  z
-    .union([
-      z.number(),
-      z.string().refine(
-        (s) => s.trim().length > 0 && Number.isFinite(Number(s)),
-        "amount must be finite",
-      ),
-    ])
-    .refine(
-      (val) => {
-        const num = Number(val);
-        return Number.isFinite(num) && num > 0;
-      },
-      "merchant amount must be greater than 0",
-    ),
+  mallMerchantAmountSchema,
   requireNonEmptyString("subject"),
   z.string().nullable().optional(),
   requireNonEmptyString("individualOrder"),
+]);
+
+export const PaykuMallMerchantObjectSchema = z
+  .object({
+    tokenOrAffiliationId: requireNonEmptyString("tokenOrAffiliationId"),
+    amount: mallMerchantAmountSchema,
+    subject: requireNonEmptyString("subject"),
+    eventId: z.string().nullable().optional(),
+    individualOrder: requireNonEmptyString("individualOrder"),
+  })
+  .transform(
+    (merchant): [string, string | number, string, string | null, string] => [
+      merchant.tokenOrAffiliationId,
+      merchant.amount,
+      merchant.subject,
+      merchant.eventId ?? null,
+      merchant.individualOrder,
+    ],
+  );
+
+export const PaykuMallMerchantItemSchema = z.union([
+  PaykuMallMerchantTupleSchema,
+  PaykuMallMerchantObjectSchema,
 ]);
 
 export type PaykuMallMerchantTuple = z.infer<
@@ -142,7 +183,7 @@ export const PaykuCreateMallTransactionSchema = z
         { message: "payment code is invalid for Mall" },
       ),
     merchant: z
-      .array(PaykuMallMerchantTupleSchema)
+      .array(PaykuMallMerchantItemSchema)
       .min(1, "merchant must be a non-empty array"),
     order: z.union([
       requireNonEmptyString("order"),

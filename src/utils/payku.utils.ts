@@ -10,9 +10,13 @@ import {
 import type { PaykuConciliationRequest } from "../types/payku.conciliation";
 import type {
   PaykuCreateEventRequest,
+  PaykuEventAffiliationInput,
+  PaykuEventAffiliationMemberInput,
   PaykuEventAffiliationTuple,
 } from "../types/payku.events";
 import type {
+  PaykuMallMerchantInput,
+  PaykuMallMerchantItem,
   PaykuMallMerchantTuple,
   PaykuMallTransactionRequest,
 } from "../types/payku.mall";
@@ -141,13 +145,9 @@ export function buildConsumptionGatewayUrl(
 }
 
 /** Construye la tupla `merchant[]` esperada por `POST /api/mall`. */
-export function buildMallMerchant(params: {
-  tokenOrAffiliationId: string;
-  amount: string | number;
-  subject: string;
-  eventId?: string | null;
-  individualOrder: string;
-}): PaykuMallMerchantTuple {
+export function buildMallMerchant(
+  params: PaykuMallMerchantInput,
+): PaykuMallMerchantTuple {
   return [
     params.tokenOrAffiliationId,
     params.amount,
@@ -157,11 +157,117 @@ export function buildMallMerchant(params: {
   ];
 }
 
+function isMallMerchantObject(
+  item: PaykuMallMerchantItem,
+): item is PaykuMallMerchantInput {
+  return !Array.isArray(item);
+}
+
+function toMallMerchantTuple(
+  item: PaykuMallMerchantItem,
+  index: number,
+): PaykuMallMerchantTuple {
+  if (isMallMerchantObject(item)) {
+    if (typeof item.tokenOrAffiliationId !== "string") {
+      throw new PaykuError(
+        `merchant[${index}].tokenOrAffiliationId must be a non-empty string`,
+      );
+    }
+    if (typeof item.subject !== "string") {
+      throw new PaykuError(
+        `merchant[${index}].subject must be a non-empty string`,
+      );
+    }
+    if (typeof item.individualOrder !== "string") {
+      throw new PaykuError(
+        `merchant[${index}].individualOrder must be a non-empty string`,
+      );
+    }
+    if (
+      item.eventId !== undefined &&
+      item.eventId !== null &&
+      typeof item.eventId !== "string"
+    ) {
+      throw new PaykuError(
+        `merchant[${index}].eventId must be a string or null`,
+      );
+    }
+    return buildMallMerchant(item);
+  }
+
+  if (item.length !== 5) {
+    throw new PaykuError(
+      `merchant[${index}] must be a valid merchant tuple of 5 elements`,
+    );
+  }
+
+  return [item[0], item[1], item[2], item[3], item[4]];
+}
+
+/** Serializa objetos/tuplas de `merchant` al wire de 5 elementos. */
+export function normalizeMallMerchants(
+  merchant: PaykuMallMerchantItem[],
+): PaykuMallMerchantTuple[] {
+  if (!Array.isArray(merchant)) {
+    throw new PaykuError("merchant must be an array");
+  }
+  return merchant.map((item, index) => toMallMerchantTuple(item, index));
+}
+
+function isEventAffiliationMember(
+  item: PaykuEventAffiliationInput,
+): item is PaykuEventAffiliationMemberInput {
+  return !Array.isArray(item);
+}
+
+function toEventAffiliationTuple(
+  item: PaykuEventAffiliationInput,
+  index: number,
+): PaykuEventAffiliationTuple {
+  if (isEventAffiliationMember(item)) {
+    if (typeof item.email !== "string") {
+      throw new PaykuError(
+        `affiliation[${index}].email must be a non-empty string`,
+      );
+    }
+    if (typeof item.percent !== "number") {
+      throw new PaykuError(
+        `affiliation[${index}].percent must be a finite number between 0 and 100`,
+      );
+    }
+    return [item.email, item.percent];
+  }
+
+  if (item.length !== 2) {
+    throw new PaykuError(
+      `affiliation[${index}] must be a 2-element tuple [email, percent]`,
+    );
+  }
+
+  const email = item[0];
+  if (typeof email !== "string") {
+    throw new PaykuError(
+      `affiliation[${index}].email must be a non-empty string`,
+    );
+  }
+  return [email, item[1]];
+}
+
+/** Serializa objetos/tuplas de `affiliation` al wire `[[email, percent], ...]`. */
+export function normalizeEventAffiliation(
+  affiliation: PaykuEventAffiliationInput[],
+): PaykuEventAffiliationTuple[] {
+  if (!Array.isArray(affiliation)) {
+    throw new PaykuError("affiliation must be an array");
+  }
+  return affiliation.map((item, index) => toEventAffiliationTuple(item, index));
+}
+
 /** Construye tuplas `[email, percent]` para `POST /api/event`. */
 export function buildEventAffiliation(
-  members: Array<{ email: string; percent: number }>,
+  members: PaykuEventAffiliationMemberInput[],
 ): PaykuEventAffiliationTuple[] {
-  return members.map((member) => [member.email, member.percent]);
+  return normalizeEventAffiliation(members);
 }
 
 export function toQueryRecord(
@@ -953,13 +1059,11 @@ export function validateCreateEventRequest(
   }
 
   if (params.affiliation !== undefined) {
-    if (!Array.isArray(params.affiliation)) {
-      throw new PaykuError("affiliation must be an array");
-    }
+    const affiliation = normalizeEventAffiliation(params.affiliation);
 
-    for (let i = 0; i < params.affiliation.length; i++) {
-      const item = params.affiliation[i];
-      if (!Array.isArray(item) || item.length !== 2) {
+    for (let i = 0; i < affiliation.length; i++) {
+      const item = affiliation[i];
+      if (!item || item.length !== 2) {
         throw new PaykuError(
           `affiliation[${i}] must be a 2-element tuple [email, percent]`,
         );
@@ -1004,10 +1108,14 @@ export function validateCreateMallTransactionRequest(
     throw new PaykuError("merchant must be a non-empty array");
   }
 
-  for (let i = 0; i < params.merchant.length; i++) {
-    const item = params.merchant[i];
-    if (!Array.isArray(item) || item.length !== 5) {
-      throw new PaykuError(`merchant[${i}] must be a valid merchant tuple of 5 elements`);
+  const merchant = normalizeMallMerchants(params.merchant);
+
+  for (let i = 0; i < merchant.length; i++) {
+    const item = merchant[i];
+    if (!item || item.length !== 5) {
+      throw new PaykuError(
+        `merchant[${i}] must be a valid merchant tuple of 5 elements`,
+      );
     }
     const [tokenOrAffiliationId, amount, subject, , individualOrder] = item;
     requireNonEmptyField(

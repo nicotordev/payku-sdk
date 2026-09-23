@@ -6,6 +6,7 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  normalizeEventAffiliation,
   validateCreateEventRequest,
   validateGetEventParams,
 } from "../utils/payku.utils";
@@ -32,11 +33,17 @@ export default class PaykuEvents {
     params: PaykuCreateEventRequest,
   ): Promise<PaykuCreateEventResponse> {
     return this.wrap("events.create", async () => {
-      validateCreateEventRequest(params);
+      const body: PaykuCreateEventRequest = {
+        ...params,
+        ...(params.affiliation !== undefined
+          ? { affiliation: normalizeEventAffiliation(params.affiliation) }
+          : {}),
+      };
+      validateCreateEventRequest(body);
       return this.http.request<PaykuCreateEventResponse>({
         method: "POST",
         path: "/event",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
       });
     });
   }

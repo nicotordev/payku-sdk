@@ -9,6 +9,7 @@ import {
   bodyAsRecord,
   mapNotifyStatusToTransactionStatus,
   nonEmptyString,
+  normalizeMallMerchants,
   validateCreateMallTransactionRequest,
   validateGetMallTransactionParams,
   verificationKeysEqual,
@@ -41,11 +42,15 @@ export default class PaykuMall {
     params: PaykuMallTransactionRequest,
   ): Promise<PaykuMallCreateResponse> {
     return this.wrap("mall.create", async () => {
-      validateCreateMallTransactionRequest(params);
+      const body: PaykuMallTransactionRequest = {
+        ...params,
+        merchant: normalizeMallMerchants(params.merchant),
+      };
+      validateCreateMallTransactionRequest(body);
       return this.http.request<PaykuMallCreateResponse>({
         method: "POST",
         path: "/mall",
-        body: bodyAsRecord(params),
+        body: bodyAsRecord(body),
         signed: true,
       });
     });
