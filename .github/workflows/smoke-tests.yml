@@ -26,10 +26,10 @@ on:
           - smoke
           - integration
 
-# Cola global para prevenir saturación del Sandbox de Payku sin cancelar ejecuciones de otras PRs
+# Cancelar únicamente ejecuciones anteriores de la misma PR
 concurrency:
-  group: payku-sandbox-smoke-tests
-  cancel-in-progress: false
+  group: payku-sandbox-smoke-tests-pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -39,6 +39,11 @@ jobs:
     name: smoke-sandbox
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Exclusividad global del Sandbox, con hasta 100 ejecuciones pendientes
+    concurrency:
+      group: payku-sandbox-smoke-tests
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout repository

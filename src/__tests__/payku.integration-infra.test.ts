@@ -235,17 +235,51 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
-    test("createSandboxChileClient configures sandbox environment and default redacting logger", () => {
-      const client = createSandboxChileClient();
+    test("createSandboxChileClient configures sandbox environment and redacts messages sent to the base logger", () => {
+      let loggedMessage = "";
+      const client = createSandboxChileClient({
+        logger: {
+          error(event) {
+            loggedMessage = event.message;
+          },
+        },
+      });
       expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
       expect(client.options.logger).toBeDefined();
+      const signature = "ab".repeat(32);
+      client.options.logger?.error({
+        operation: "testOp",
+        statusCode: 500,
+        type: "ApiError",
+        message: `Failed with Bearer sandbox-test-token and Sign: ${signature}`,
+      });
+      expect(loggedMessage).toBe(
+        "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
     });
 
-    test("createSandboxClient configures sandbox environment and default redacting logger", () => {
-      const client = createSandboxClient();
+    test("createSandboxClient configures sandbox environment and redacts messages sent to the base logger", () => {
+      let loggedMessage = "";
+      const client = createSandboxClient({
+        logger: {
+          error(event) {
+            loggedMessage = event.message;
+          },
+        },
+      });
       expect(client.environment).toBe("sandbox");
       expect(client.options.logger).toBeDefined();
+      const signature = "ab".repeat(32);
+      client.options.logger?.error({
+        operation: "testOp",
+        statusCode: 500,
+        type: "ApiError",
+        message: `Failed with Bearer sandbox-test-token and Sign: ${signature}`,
+      });
+      expect(loggedMessage).toBe(
+        "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
     });
   });
 });
