@@ -1,7 +1,14 @@
 import { URL } from "node:url";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  setSystemTime,
+  test,
+} from "bun:test";
 import Payku, { PaykuChile } from "../clients/payku";
 import PaykuTransactions from "../clients/payku.transactions";
 import { PaykuChileTransactions } from "../clients/payku.transactions.scoped";
@@ -883,6 +890,77 @@ describe("PaykuTransactions HTTP", () => {
 
     expect(items.map((item) => item.id)).toEqual(["tx-2a", "tx-2b", "tx-3"]);
     expect(mock.history.get).toHaveLength(2);
+  });
+
+  test("listAll and iterate pin omitted dates to the Santiago day and ignore later mutations", async () => {
+    setSystemTime(new Date("2026-06-16T02:30:00.000Z"));
+
+    try {
+      const seen: Array<Record<string, unknown>> = [];
+
+      mock.onGet("/transaction").reply((config) => {
+        const page = Number(config.params.page);
+        seen.push({ ...config.params });
+
+        if (page === 1) {
+          return [200, { transaction: [{ id: "a" }, { id: "b" }] }];
+        }
+
+        return [200, { transaction: [{ id: "c" }] }];
+      });
+
+      const params: {
+        per_page: number;
+        success: boolean;
+        date_end?: string;
+      } = { per_page: 2, success: true };
+
+      const iterator = transactions.iterate(params);
+      expect((await iterator.next()).value?.id).toBe("a");
+
+      params.success = false;
+      params.date_end = "2020-01-01";
+
+      const ids: string[] = [(await iterator.next()).value?.id ?? ""];
+      const last = await iterator.next();
+      if (last.value?.id) {
+        ids.push(last.value.id);
+      }
+
+      expect(ids).toEqual(["b", "c"]);
+      expect(seen).toEqual([
+        {
+          page: 1,
+          per_page: 2,
+          success: true,
+          date_init: "2026-06-15",
+          date_end: "2026-06-15",
+        },
+        {
+          page: 2,
+          per_page: 2,
+          success: true,
+          date_init: "2026-06-15",
+          date_end: "2026-06-15",
+        },
+      ]);
+
+      const partial = await transactions.listAll({
+        per_page: 2,
+        date_init: "2026-01-01",
+      });
+      expect(partial.map((item) => item.id)).toEqual(["a", "b", "c"]);
+      expect(seen[2]).toMatchObject({
+        date_init: "2026-01-01",
+        date_end: "2026-06-15",
+      });
+      expect(seen[3]).toMatchObject({
+        date_init: "2026-01-01",
+        date_end: "2026-06-15",
+      });
+    } finally {
+      setSystemTime();
+    }
   });
 
   test("listAll defaults omitted per_page to 4000 and stops on a short page", async () => {

@@ -193,6 +193,8 @@ console.log(order.url);
 
 Si omites `per_page`, cada request usa 4000 (`PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE`). La paginación termina cuando una página viene vacía o trae menos registros que `per_page`. `page` es la página inicial (por defecto `1`). Los mismos métodos están en `Payku.forCountry(...)`.
 
+Si omites `date_init` o `date_end`, Payku usa la fecha actual. `listAll()` e `iterate()` fijan ese día una sola vez, en `America/Santiago` (`YYYY-MM-DD`), y lo reenvían en cada página. Sin un rango explícito solo cubren el día de hoy, no el historial. Para transacciones anteriores indica `date_init` y `date_end`.
+
 ```typescript
 const transactions = await payku.transactions.listAll({
   date_init: "2026-01-01",

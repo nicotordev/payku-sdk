@@ -37,6 +37,37 @@ import {
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
 
+/** Día calendario `YYYY-MM-DD` en America/Santiago, el huso que usa Payku. */
+function formatPaykuListDateInSantiago(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? "00";
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/**
+ * Copia los filtros una vez. Payku usa la fecha actual si faltan `date_init` o
+ * `date_end`; fijarlas aquí evita que un cambio de día, o una mutación del
+ * objeto del llamador, altere las páginas siguientes.
+ */
+function snapshotListTransactionsParams(
+  params: PaykuListTransactionsParams,
+): PaykuListTransactionsParams {
+  const today = formatPaykuListDateInSantiago(new Date());
+
+  return {
+    ...params,
+    date_init: params.date_init ?? today,
+    date_end: params.date_end ?? today,
+  };
+}
+
 export default class PaykuTransactions {
   constructor(
     private readonly http: HttpClient,
@@ -62,12 +93,14 @@ export default class PaykuTransactions {
   /**
    * Acumula todas las transacciones del filtro, página a página, hasta agotar resultados.
    * Si omites `per_page`, cada request usa `PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE`.
+   * `date_init` y `date_end` omitidos se fijan al día actual en America/Santiago
+   * antes de la primera página y se reutilizan en el resto.
    */
   public listAll = this.listAllTransactions.bind(this);
 
   /**
    * Generador asíncrono. Pide la página siguiente al consumir los ítems de la actual.
-   * Misma paginación y límite de `per_page` que `listAll`.
+   * Misma paginación, límite de `per_page` y fijación de fechas que `listAll`.
    */
   public iterate = this.iterateTransactions.bind(this);
 
@@ -222,12 +255,14 @@ export default class PaykuTransactions {
   private async *iterateTransactions(
     params: PaykuListTransactionsParams = {},
   ): AsyncGenerator<PaykuTransaction> {
-    const perPage = params.per_page ?? PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE;
-    let page = params.page ?? 1;
+    const fixedParams = snapshotListTransactionsParams(params);
+    const perPage =
+      fixedParams.per_page ?? PAYKU_LIST_TRANSACTIONS_MAX_PER_PAGE;
+    let page = fixedParams.page ?? 1;
 
     while (true) {
       const batch = await this.listTransactions({
-        ...params,
+        ...fixedParams,
         page,
         per_page: perPage,
       });
