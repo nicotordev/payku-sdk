@@ -12,6 +12,7 @@ export {
   PaykuChileTransactions,
   PaykuScopedBanks,
   PaykuScopedPaymentMethods,
+  PaykuPaymentMethods,
   PaykuScopedTransactions,
   PaykuTransactions,
   PaykuVenezuelaTransactions,
