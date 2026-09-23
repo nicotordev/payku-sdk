@@ -81,8 +81,19 @@ export class PaykuScopedTransactions {
     return this.inner.handleReturn(queryOrUrl);
   }
 
+  /**
+   * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
+   */
   public isPaid = PaykuTransactions.isPaid;
+
+  /**
+   * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
+   */
   public isPending = PaykuTransactions.isPending;
+
+  /**
+   * Determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
+   */
   public isFailed = PaykuTransactions.isFailed;
 }
 

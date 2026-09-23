@@ -84,8 +84,19 @@ export default class PaykuTransactions {
    */
   public handleReturn = this.handleReturnPayment.bind(this);
 
+  /**
+   * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
+   */
   public static isPaid = isTransactionPaid;
+
+  /**
+   * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
+   */
   public static isPending = isTransactionPending;
+
+  /**
+   * Determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
+   */
   public static isFailed = isTransactionFailed;
 
   /**
