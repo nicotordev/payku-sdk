@@ -1,9 +1,11 @@
 import {
   PaykuAuthenticationError,
   PaykuError,
+  isPaykuError,
   type PaykuClientOptions,
 } from "../errors";
 import { HttpClient } from "../http/client";
+import { buildSign, type SignParams } from "../http/sign";
 import {
   getBaseUrl,
   getRootUrl,
@@ -90,6 +92,15 @@ export function resolvePaykuConfigFromEnv(
  * Para un comercio de un solo país preferí `Payku.forCountry("CL" | "PE" | "VE")`.
  */
 export default class Payku {
+  /**
+   * Misma firma que `buildSign`: path, parámetros y token privado.
+   * En una instancia, `sign(path, params)` usa el token ya configurado.
+   */
+  static sign = buildSign;
+
+  /** Alias estático de `isPaykuError`. */
+  static isError = isPaykuError;
+
   readonly publicToken: string;
   readonly privateToken: string;
   readonly environment: PaykuEnvironment;
@@ -236,6 +247,10 @@ export default class Payku {
   get rootUrl(): string {
     return getRootUrl(this.environment);
   }
+
+  /** HMAC-SHA256 del path y los parámetros, con el token privado de esta instancia. */
+  sign = (apiPath: string, params: SignParams = {}): string =>
+    buildSign(apiPath, params, this.privateToken);
 }
 
 export { PaykuChile } from "./payku.chile";
@@ -250,4 +265,5 @@ export {
   PaykuVenezuelaTransactions,
 } from "./payku.transactions.scoped";
 export { default as PaykuTransactions } from "./payku.transactions";
+export { default as PaykuPaymentMethods } from "./payku.payment-methods";
 export type { PaykuDefaultsConfig } from "../types/payku.common";

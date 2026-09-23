@@ -1,11 +1,14 @@
 import type { PaykuClientOptions } from "../errors";
 import type { HttpClient } from "../http/client";
+import { buildSign, type SignParams } from "../http/sign";
 import type {
   PaykuCountry,
   PaykuCurrency,
   PaykuDefaultsConfig,
   PaykuEnvironment,
+  PaykuFeature,
 } from "../types/payku.common";
+import { isFeatureSupported } from "../utils/payku.country";
 import type PaykuBanks from "./payku.banks";
 import type PaykuConciliation from "./payku.conciliation";
 import type PaykuConsumptionSubscriptions from "./payku.consumption-subscriptions";
@@ -94,4 +97,12 @@ export abstract class PaykuCountryBase implements PaykuCountryClient {
   get rootUrl(): string {
     return this.core.rootUrl;
   }
+
+  /** HMAC-SHA256 del path y los parámetros, con el token privado de esta instancia. */
+  sign = (apiPath: string, params: SignParams = {}): string =>
+    buildSign(apiPath, params, this.privateToken);
+
+  /** `true` si este país incluye el módulo. No lanza. */
+  isSupported = (feature: PaykuFeature): boolean =>
+    isFeatureSupported(this.country, feature);
 }

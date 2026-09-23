@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `payku.sign(path, params)` usa el token privado del cliente. `Payku.sign` sigue la firma de `buildSign`. `paymentMethods.toSlug` / `resolve` (instancia y estático; en `forCountry` la moneda es la del país). `isSupported(feature)` en clientes de país. `Payku.isError` alias de `isPaykuError`. Los helpers sueltos siguen exportados (#195).
 - `transactions.listAll` y `transactions.iterate`: paginación automática de `GET /transaction` hasta página vacía o incompleta. `per_page` omitido usa el máximo 4000. `date_init` y `date_end` omitidos se fijan al día actual en `America/Santiago` una vez y se reenvían en cada página. Disponible en el cliente base y en `forCountry` (#174).
 - `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `transactions.create` acepta slugs de método de pago (`"webpay"`, `"fintoc"`, `"safety_pay"`, …) además de códigos numéricos; el body HTTP sigue siendo el código (#169).
