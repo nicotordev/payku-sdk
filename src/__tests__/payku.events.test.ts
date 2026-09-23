@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuEvents from "../clients/payku.events";
 import { HttpClient } from "../http/client";
 import { PaykuEventsError } from "../errors";
+import type { PaykuEventAffiliationInput } from "../types/payku.events";
 import { buildEventAffiliation } from "../utils/payku.utils";
 
 const createFixture = {
@@ -222,6 +223,35 @@ describe("PaykuEvents", () => {
           affiliation: [["a@b.com", "Infinity" as unknown as number]],
         }),
       ).rejects.toThrow(PaykuEventsError);
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [null] as unknown as PaykuEventAffiliationInput[],
+        }),
+      ).rejects.toThrow(
+        "affiliation[0] must be { email, percent } or a 2-element tuple [email, percent]",
+      );
+
+      await expect(
+        events.create({
+          event: "98374",
+          name: "Event",
+          date_event: "2023-12-20",
+          date_closing_sales: "2023-12-19 23:59:00",
+          date_payment: "2023-12-22",
+          affiliation: [
+            ["a@b.com", 50],
+            undefined,
+          ] as unknown as PaykuEventAffiliationInput[],
+        }),
+      ).rejects.toThrow(
+        "affiliation[1] must be { email, percent } or a 2-element tuple [email, percent]",
+      );
 
       expect(mock.history.post.length).toBe(0);
     });

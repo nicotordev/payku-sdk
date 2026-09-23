@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuMall from "../clients/payku.mall";
 import { HttpClient } from "../http/client";
 import { PaykuAPIError, PaykuMallError } from "../errors";
-import type { PaykuMallNotifyPayload } from "../types/payku.mall";
+import type {
+  PaykuMallMerchantItem,
+  PaykuMallNotifyPayload,
+} from "../types/payku.mall";
 import { buildMallMerchant } from "../utils/payku.utils";
 
 const createFixture = {
@@ -280,6 +283,33 @@ describe("PaykuMall", () => {
           urlreturn: "https://example.com/return",
         }),
       ).rejects.toThrow(PaykuMallError);
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [null] as unknown as PaykuMallMerchantItem[],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(
+        "merchant[0] must be a merchant object or a 5-element tuple",
+      );
+
+      await expect(
+        mall.create({
+          email: "test@example.com",
+          payment: 1,
+          merchant: [
+            ["token1", "1000", "sub", null, "ord1"],
+            undefined,
+          ] as unknown as PaykuMallMerchantItem[],
+          order: 123,
+          urlreturn: "https://example.com/return",
+        }),
+      ).rejects.toThrow(
+        "merchant[1] must be a merchant object or a 5-element tuple",
+      );
 
       expect(mock.history.post.length).toBe(0);
     });

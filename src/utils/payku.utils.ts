@@ -158,50 +158,54 @@ export function buildMallMerchant(
 }
 
 function isMallMerchantObject(
-  item: PaykuMallMerchantItem,
+  item: unknown,
 ): item is PaykuMallMerchantInput {
-  return !Array.isArray(item);
+  return typeof item === "object" && item !== null && !Array.isArray(item);
 }
 
 function toMallMerchantTuple(
   item: PaykuMallMerchantItem,
   index: number,
 ): PaykuMallMerchantTuple {
-  if (isMallMerchantObject(item)) {
-    if (typeof item.tokenOrAffiliationId !== "string") {
+  if (Array.isArray(item)) {
+    if (item.length !== 5) {
       throw new PaykuError(
-        `merchant[${index}].tokenOrAffiliationId must be a non-empty string`,
+        `merchant[${index}] must be a valid merchant tuple of 5 elements`,
       );
     }
-    if (typeof item.subject !== "string") {
-      throw new PaykuError(
-        `merchant[${index}].subject must be a non-empty string`,
-      );
-    }
-    if (typeof item.individualOrder !== "string") {
-      throw new PaykuError(
-        `merchant[${index}].individualOrder must be a non-empty string`,
-      );
-    }
-    if (
-      item.eventId !== undefined &&
-      item.eventId !== null &&
-      typeof item.eventId !== "string"
-    ) {
-      throw new PaykuError(
-        `merchant[${index}].eventId must be a string or null`,
-      );
-    }
-    return buildMallMerchant(item);
+
+    return [item[0], item[1], item[2], item[3], item[4]];
   }
 
-  if (item.length !== 5) {
+  if (!isMallMerchantObject(item)) {
     throw new PaykuError(
-      `merchant[${index}] must be a valid merchant tuple of 5 elements`,
+      `merchant[${index}] must be a merchant object or a 5-element tuple`,
     );
   }
 
-  return [item[0], item[1], item[2], item[3], item[4]];
+  if (typeof item.tokenOrAffiliationId !== "string") {
+    throw new PaykuError(
+      `merchant[${index}].tokenOrAffiliationId must be a non-empty string`,
+    );
+  }
+  if (typeof item.subject !== "string") {
+    throw new PaykuError(
+      `merchant[${index}].subject must be a non-empty string`,
+    );
+  }
+  if (typeof item.individualOrder !== "string") {
+    throw new PaykuError(
+      `merchant[${index}].individualOrder must be a non-empty string`,
+    );
+  }
+  if (
+    item.eventId !== undefined &&
+    item.eventId !== null &&
+    typeof item.eventId !== "string"
+  ) {
+    throw new PaykuError(`merchant[${index}].eventId must be a string or null`);
+  }
+  return buildMallMerchant(item);
 }
 
 /** Serializa objetos/tuplas de `merchant` al wire de 5 elementos. */
@@ -215,42 +219,48 @@ export function normalizeMallMerchants(
 }
 
 function isEventAffiliationMember(
-  item: PaykuEventAffiliationInput,
+  item: unknown,
 ): item is PaykuEventAffiliationMemberInput {
-  return !Array.isArray(item);
+  return typeof item === "object" && item !== null && !Array.isArray(item);
 }
 
 function toEventAffiliationTuple(
   item: PaykuEventAffiliationInput,
   index: number,
 ): PaykuEventAffiliationTuple {
-  if (isEventAffiliationMember(item)) {
-    if (typeof item.email !== "string") {
+  if (Array.isArray(item)) {
+    if (item.length !== 2) {
+      throw new PaykuError(
+        `affiliation[${index}] must be a 2-element tuple [email, percent]`,
+      );
+    }
+
+    const email = item[0];
+    if (typeof email !== "string") {
       throw new PaykuError(
         `affiliation[${index}].email must be a non-empty string`,
       );
     }
-    if (typeof item.percent !== "number") {
-      throw new PaykuError(
-        `affiliation[${index}].percent must be a finite number between 0 and 100`,
-      );
-    }
-    return [item.email, item.percent];
+    return [email, item[1]];
   }
 
-  if (item.length !== 2) {
+  if (!isEventAffiliationMember(item)) {
     throw new PaykuError(
-      `affiliation[${index}] must be a 2-element tuple [email, percent]`,
+      `affiliation[${index}] must be { email, percent } or a 2-element tuple [email, percent]`,
     );
   }
 
-  const email = item[0];
-  if (typeof email !== "string") {
+  if (typeof item.email !== "string") {
     throw new PaykuError(
       `affiliation[${index}].email must be a non-empty string`,
     );
   }
-  return [email, item[1]];
+  if (typeof item.percent !== "number") {
+    throw new PaykuError(
+      `affiliation[${index}].percent must be a finite number between 0 and 100`,
+    );
+  }
+  return [item.email, item.percent];
 }
 
 /** Serializa objetos/tuplas de `affiliation` al wire `[[email, percent], ...]`. */
