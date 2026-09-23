@@ -223,15 +223,17 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
-    test("createSandboxChileClient configures sandbox environment", () => {
+    test("createSandboxChileClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxChileClient();
       expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
     });
 
-    test("createSandboxClient configures sandbox environment", () => {
+    test("createSandboxClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxClient();
       expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
     });
   });
 });

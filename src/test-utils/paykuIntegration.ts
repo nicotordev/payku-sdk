@@ -377,9 +377,7 @@ export function createSandboxChileClient(
     environment: "sandbox",
     options: {
       ...options,
-      logger: options.logger
-        ? createSandboxRedactingLogger(options.logger)
-        : undefined,
+      logger: createSandboxRedactingLogger(options.logger),
     },
   });
 }
@@ -400,9 +398,7 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
     "sandbox",
     {
       ...options,
-      logger: options.logger
-        ? createSandboxRedactingLogger(options.logger)
-        : undefined,
+      logger: createSandboxRedactingLogger(options.logger),
     },
   );
 }
