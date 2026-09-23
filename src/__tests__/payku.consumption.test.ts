@@ -54,6 +54,41 @@ describe("PaykuConsumptionSubscriptions wire format", () => {
     });
   });
 
+  test("plans.create maps urlNotifySubscription onto url_notify_suscription and signs it", async () => {
+    const wire = {
+      name: "Delivery",
+      url_notify_suscription: "https://tu-sitio.com/notify-suscription",
+      url_notify_payment: "https://tu-sitio.com/notify-payment",
+    };
+
+    mock.onPost("/suplan/").reply((config) => {
+      expect(config.headers?.Sign).toBe(
+        buildSign("/api/suplan/", wire, "private-token"),
+      );
+      expect(JSON.parse(String(config.data))).toEqual(wire);
+      return [200, { status: "success", id: "pl4293e97a87195bb9edcd" }];
+    });
+
+    await consumption.plans.create({
+      name: "Delivery",
+      urlNotifySubscription: "https://tu-sitio.com/notify-suscription",
+      url_notify_payment: "https://tu-sitio.com/notify-payment",
+    });
+  });
+
+  test("plans.create rejects conflicting notify aliases", async () => {
+    await expect(
+      consumption.plans.create({
+        name: "Delivery",
+        url_notify_suscription: "https://tu-sitio.com/a",
+        url_notify_subscription: "https://tu-sitio.com/b",
+      }),
+    ).rejects.toThrow(
+      "urlNotifySubscription conflicts with url_notify_suscription",
+    );
+    expect(mock.history.post.length).toBe(0);
+  });
+
   test("clients.create maps active fixture with subcriptions/update_at typos", async () => {
     const request = {
       email: "johndoe@example.com",
@@ -150,7 +185,7 @@ describe("PaykuConsumptionSubscriptions wire format", () => {
     });
 
     const response = await consumption.transactions.create({
-      suscription: "sucaab7865dceaff49d8b3",
+      subscription: "sucaab7865dceaff49d8b3",
       amount: "10000",
       order: "001",
       description: "cargo consumo",

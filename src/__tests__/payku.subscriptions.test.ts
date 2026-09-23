@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import PaykuSubscriptions from "../clients/payku.subscriptions";
 import { PaykuAPIError } from "../errors";
 import { HttpClient } from "../http/client";
+import { buildSign } from "../http/sign";
 import type {
   PaykuGetSubscriptionResponse,
   PaykuSubscriptionActivationNotifyPayload,
@@ -89,6 +90,38 @@ describe("PaykuSubscriptions sutransaction", () => {
         amount: "-100",
       }),
     ).rejects.toThrow("amount must be greater than 0");
+
+    await expect(
+      subscriptions.transactions.create({
+        suscription: "suc-a",
+        subscription: "suc-b",
+        amount: "1000",
+      }),
+    ).rejects.toThrow("subscription conflicts with suscription");
+  });
+
+  test("create accepts subscription alias and signs the suscription body", async () => {
+    const wire = {
+      suscription: "sucaab7865dceaff49d8b3",
+      amount: "10000",
+      order: "001",
+    };
+
+    mock.onPost("/sutransaction").reply((config) => {
+      expect(config.headers?.Sign).toBe(
+        buildSign("/api/sutransaction", wire, "private-token"),
+      );
+      expect(JSON.parse(String(config.data))).toEqual(wire);
+      return [200, { status: "success", ...wire, transaction_id: "204444" }];
+    });
+
+    const response = await subscriptions.transactions.create({
+      subscription: "sucaab7865dceaff49d8b3",
+      amount: "10000",
+      order: "001",
+    });
+
+    expect(response.transaction_id).toBe("204444");
   });
 
   test("cards.register posts suscription key on /suinscriptionscards", async () => {
@@ -108,7 +141,7 @@ describe("PaykuSubscriptions sutransaction", () => {
     });
 
     const response = await subscriptions.cards.register({
-      suscription: "sucaab7865dceaff49d8b3",
+      subscription: "sucaab7865dceaff49d8b3",
     });
 
     expect(response.status).toBe("success");

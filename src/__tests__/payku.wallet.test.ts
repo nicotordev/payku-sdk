@@ -5,6 +5,7 @@ import Payku from "../clients/payku";
 import PaykuWallet from "../clients/payku.wallet";
 import { PaykuUnsupportedFeatureError, PaykuWalletError } from "../errors";
 import { HttpClient } from "../http/client";
+import { buildSign } from "../http/sign";
 import {
   PAYKU_WALLET_SANDBOX_AMOUNTS,
   type PaykuGetPayoutResponse,
@@ -153,6 +154,90 @@ describe("PaykuWallet payout create", () => {
     expect(response).toEqual(payoutCreateFixture);
     expect(response.identifier_wallet).toBe("wab5f7232dafff18f9");
     expect(response.identifier_payout).toBe("mor33e36b01e8a11b9ee");
+  });
+
+  test("create accepts a named bank and signs accountbank fields", async () => {
+    const wire = {
+      email: "vendedor@example.com",
+      subject: "Pago",
+      currency: "CLP",
+      order: "payout-001",
+      amount: 10000,
+      accountbank_name: "Juan Perez",
+      accountbank_rut: "111111111",
+      accountbank_sbif: "0001",
+      accountbank_type: "1",
+      accountbank_num: "12312313121",
+      url_notify: "https://tu-sitio.com/payout-notify",
+    };
+
+    mock.onPost("/wallet/payout").reply((config) => {
+      expect(config.headers?.Sign).toBe(
+        buildSign("/api/wallet/payout", wire, "private-token"),
+      );
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body).toEqual(wire);
+      expect(body).not.toHaveProperty("bank");
+      return [200, payoutCreateFixture];
+    });
+
+    const response = await wallet.payouts.create({
+      email: wire.email,
+      subject: wire.subject,
+      currency: "CLP",
+      order: wire.order,
+      amount: wire.amount,
+      bank: {
+        name: "Juan Perez",
+        rut: "111111111",
+        sbif: "0001",
+        type: "checking",
+        num: "12312313121",
+      },
+      url_notify: wire.url_notify,
+    });
+
+    expect(response.status).toBe("success");
+  });
+
+  test("create accepts a flat account type slug and rejects a conflicting bank", async () => {
+    mock.onPost("/wallet/payout").reply((config) => {
+      const body = JSON.parse(String(config.data)) as Record<string, unknown>;
+      expect(body.accountbank_type).toBe("2");
+      expect(body).not.toHaveProperty("bank");
+      return [200, payoutCreateFixture];
+    });
+
+    await wallet.payouts.create({
+      email: "test@test.com",
+      subject: "payout order",
+      currency: "CLP",
+      order: "367734544",
+      amount: 1000,
+      accountbank_name: "test",
+      accountbank_rut: "111111111",
+      accountbank_sbif: "0001",
+      accountbank_type: "vista",
+      accountbank_num: "123123123",
+    });
+
+    await expect(
+      wallet.payouts.create({
+        email: "test@test.com",
+        subject: "payout order",
+        currency: "CLP",
+        order: "367734544",
+        amount: 1000,
+        accountbank_type: "2",
+        bank: {
+          name: "test",
+          rut: "111111111",
+          sbif: "0001",
+          type: "checking",
+          num: "123123123",
+        },
+      }),
+    ).rejects.toThrow("bank.type conflicts with accountbank_type");
   });
 
   test("validation: throws error when Banco Estado (SBIF 0012) account number exceeds 12 digits", async () => {
