@@ -1,10 +1,11 @@
 import { describe } from "bun:test";
 import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
-import type {
-  PaykuAPIErrorLogEvent,
-  PaykuClientOptions,
-  PaykuLogger,
+import {
+  PaykuError,
+  type PaykuAPIErrorLogEvent,
+  type PaykuClientOptions,
+  type PaykuLogger,
 } from "../errors";
 
 /** Timeout estándar recomendado para llamadas contra Payku Sandbox (20 segundos). */
@@ -385,4 +386,75 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
         : undefined,
     },
   );
+}
+
+const CAPABILITY_HINTS = [
+  "no habilit",
+  "not enabled",
+  "not available",
+  "sin acceso",
+  "forbidden",
+  "permission",
+  "permiso",
+] as const;
+
+/** Payku rechazó la firma, no el producto. */
+export function isSignRejection(error: unknown): boolean {
+  if (!(error instanceof PaykuError)) {
+    return false;
+  }
+
+  const text = `${error.type ?? ""} ${error.message}`.toLowerCase();
+  return (
+    text.includes("waiting sign") ||
+    text.includes("invalid sign") ||
+    text.includes("firma")
+  );
+}
+
+/**
+ * Producto no habilitado en la cuenta sandbox.
+ * No trata un rechazo de firma como falta de capability.
+ */
+export function capabilityDependentReason(error: unknown): string | undefined {
+  if (!(error instanceof PaykuError) || isSignRejection(error)) {
+    return undefined;
+  }
+
+  if (error.statusCode === 403) {
+    return `HTTP ${error.statusCode}`;
+  }
+
+  const message = error.message.toLowerCase();
+  if (CAPABILITY_HINTS.some((hint) => message.includes(hint))) {
+    return error.message;
+  }
+
+  return undefined;
+}
+
+/** Avisa y devuelve true cuando el sandbox no tiene ese producto habilitado. */
+export function noteCapabilityDependent(
+  product: string,
+  error: unknown,
+): boolean {
+  const reason = capabilityDependentReason(error);
+  if (reason === undefined) {
+    return false;
+  }
+
+  console.warn(
+    `CAPABILITY_DEPENDENT ${product}: ${redactSensitiveString(reason)}`,
+  );
+  return true;
+}
+
+/** Fecha `YYYY-MM-DD` en America/Santiago. */
+export function santiagoDateOnly(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 }

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Smoke sandbox de banks, payment methods y transactions (#204), firma HMAC válida e inválida (#205) y suscripciones regulares más consumo (#206).
 - `transactions.listAll` y `transactions.iterate`: paginación automática de `GET /transaction` hasta página vacía o incompleta. `per_page` omitido usa el máximo 4000. `date_init` y `date_end` omitidos se fijan al día actual en `America/Santiago` una vez y se reenvían en cada página. Disponible en el cliente base y en `forCountry` (#174).
 - `webhooks.handleRequest`: acepta `Request` o payload parseado y reusa `verifyNotify` (#172).
 - `transactions.create` acepta slugs de método de pago (`"webpay"`, `"fintoc"`, `"safety_pay"`, …) además de códigos numéricos; el body HTTP sigue siendo el código (#169).
