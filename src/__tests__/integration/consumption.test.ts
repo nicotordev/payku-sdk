@@ -1,16 +1,16 @@
-import { expect, test } from "bun:test";
 import {
   createSandboxChileClient,
   describePaykuIntegration,
+  generateUniqueId,
 } from "../../test-utils/paykuIntegration";
 
 describePaykuIntegration("integration / consumption", () => {
   test("plans.create signs /api/suplan/ and returns plan id", async () => {
     const payku = createSandboxChileClient();
-    const suffix = String(Math.floor(Math.random() * 1e6)).padStart(6, "0");
+    const name = generateUniqueId("p", 20);
 
     const response = await payku.consumptionSubscriptions.plans.create({
-      name: `p${suffix}`,
+      name,
       description: "sdk integration",
     });
 

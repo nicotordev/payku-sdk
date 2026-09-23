@@ -111,6 +111,13 @@ Integration/smoke hits Payku sandbox when tokens are present:
 bun run test:integration
 ```
 
+To run a specific smoke test module (e.g. transactions):
+
+```bash
+bun test --path-ignore-patterns '' src/__tests__/integration/transactions.test.ts
+```
+
+For full details, safeguards, and CI setup, see [Smoke tests guide](./docs/smoke-tests.md).
 CI only runs unit tests; keep production tokens out of `.env`.
 
 ## Pull requests

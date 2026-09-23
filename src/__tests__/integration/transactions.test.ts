@@ -3,6 +3,9 @@ import { PaykuError } from "../../errors";
 import {
   createSandboxChileClient,
   describePaykuIntegration,
+  generateUniqueEmail,
+  generateUniqueOrder,
+  SANDBOX_TIMEOUT_MS,
 } from "../../test-utils/paykuIntegration";
 
 describePaykuIntegration("integration / transactions", () => {
@@ -11,14 +14,15 @@ describePaykuIntegration("integration / transactions", () => {
     const transactions = await payku.transactions.list({ page: 1 });
 
     expect(Array.isArray(transactions)).toBe(true);
-  });
+  }, SANDBOX_TIMEOUT_MS);
 
   test("creates a pending CLP transaction and fetches detail", async () => {
     const payku = createSandboxChileClient();
-    const order = `smoke-${Date.now()}`;
+    const order = generateUniqueOrder();
+    const email = generateUniqueEmail("tx");
 
     const created = await payku.transactions.create({
-      email: "smoke-test@example.com",
+      email,
       order,
       subject: "SDK smoke test",
       amount: 1000,
