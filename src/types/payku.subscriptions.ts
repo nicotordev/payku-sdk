@@ -414,6 +414,12 @@ export interface PaykuBuildConsumptionGatewayUrlParams {
   extra?: Record<string, string | number | boolean>;
 }
 
+/** Params de `consumptionSubscriptions.gatewayUrl`. `rootUrl` sale del cliente. */
+export type PaykuConsumptionGatewayUrlParams = Omit<
+  PaykuBuildConsumptionGatewayUrlParams,
+  "rootUrl"
+>;
+
 /**
  * `POST /urlnotifysuscription` — activación de suscripción.
  * Docs: `{ id, status }` (register | active | finish | delete | cancel | suspended).

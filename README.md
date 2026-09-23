@@ -931,7 +931,7 @@ const sub = await cl.consumptionSubscriptions.subscriptions.create({
   plan: plan.id,
   client: client.id as string,
 });
-// redirect sub.url  — o buildConsumptionGatewayUrl (abajo)
+// redirect sub.url  — o consumptionSubscriptions.gatewayUrl (abajo)
 
 const charge = await cl.consumptionSubscriptions.transactions.create({
   suscription: sub.id,
@@ -944,13 +944,10 @@ const charge = await cl.consumptionSubscriptions.transactions.create({
 
 Los callbacks `urlnotifysuscription` / `urlnotifypayment` son los mismos que en suscripción regular: verifícalos con `payku.subscriptions.verifyActivationNotify` y `verifyPaymentNotify` ([#59](https://github.com/nicotordev/payku-sdk/issues/59), [sección Callbacks](#callbacks-urlnotifysuscription-y-urlnotifypayment)). Docs Payku: [suscripción de consumo](https://docs.payku.com/).
 
-Para mandar al cliente **directo a Webpay** sin crear la transacción por API, construye `GET {rootUrl}/suscripcion/index`:
+Para mandar al cliente **directo a Webpay** sin crear la transacción por API, `gatewayUrl` arma `GET {rootUrl}/suscripcion/index` con el host del cliente:
 
 ```typescript
-import { buildConsumptionGatewayUrl } from "@nicotordev/payku";
-
-const gatewayUrl = buildConsumptionGatewayUrl({
-  rootUrl: payku.rootUrl,
+const gatewayUrl = cl.consumptionSubscriptions.gatewayUrl({
   planId: 607,
   verif: "b4280f5e",
   firstName: "vicente",
