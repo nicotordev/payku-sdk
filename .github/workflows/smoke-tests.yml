@@ -26,10 +26,10 @@ on:
           - smoke
           - integration
 
-# Cola global para prevenir saturación del Sandbox de Payku
+# Cola global para prevenir saturación del Sandbox de Payku sin cancelar ejecuciones de otras PRs
 concurrency:
   group: payku-sandbox-smoke-tests
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -54,10 +54,18 @@ jobs:
 
       - name: Check secrets availability
         id: check-secrets
+        env:
+          PAYKU_PUBLIC_TOKEN: ${{ secrets.PAYKU_PUBLIC_TOKEN }}
+          PAYKU_PRIVATE_TOKEN: ${{ secrets.PAYKU_PRIVATE_TOKEN }}
         run: |
-          if [ -z "${{ secrets.PAYKU_PUBLIC_TOKEN }}" ] || [ -z "${{ secrets.PAYKU_PRIVATE_TOKEN }}" ]; then
-            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Smoke tests omitidos::Los secrets de Payku Sandbox no están disponibles en este entorno (ej. pull request proveniente de un fork sin acceso a secrets)."
+          if [ -z "$PAYKU_PUBLIC_TOKEN" ] || [ -z "$PAYKU_PRIVATE_TOKEN" ]; then
+            if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+              echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Smoke tests omitidos::Los secrets de Payku Sandbox no están disponibles en este entorno (pull request proveniente de un fork)."
+            else
+              echo "::error title=Faltan secrets::PAYKU_PUBLIC_TOKEN y PAYKU_PRIVATE_TOKEN deben estar configurados en el repositorio."
+              exit 1
+            fi
           else
             echo "has_secrets=true" >> "$GITHUB_OUTPUT"
           fi

@@ -2,6 +2,7 @@ import {
   createSandboxChileClient,
   describePaykuIntegration,
   generateUniqueId,
+  SANDBOX_TIMEOUT_MS,
 } from "../../test-utils/paykuIntegration";
 
 describePaykuIntegration("integration / consumption", () => {
@@ -16,5 +17,5 @@ describePaykuIntegration("integration / consumption", () => {
 
     expect(response.status).toBe("success");
     expect(response.id).toMatch(/^pl/);
-  });
+  }, SANDBOX_TIMEOUT_MS);
 });

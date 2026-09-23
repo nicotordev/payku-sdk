@@ -7,7 +7,7 @@ Esta guía describe la infraestructura común y las pautas para ejecutar pruebas
 ## 1. Filosofía: Smoke Tests vs Unit Tests
 
 - **Unit Tests (`bun run test:unit`)**: Validan exhaustivamente la lógica interna del SDK, validaciones Zod, firmas HMAC, serialización wire, transformaciones de respuesta, manejo de errores y compatibilidad de métodos con mocks controlados. Se ejecutan automáticamente en cada commit y en CI pública sin requerir credenciales ni conectividad.
-- **Smoke Tests (`bun run test:integration`)**: Validan la conectividad y el contrato real contra los endpoints en vivo de Payku Sandbox (`https://des.payku.cl`). Comprueban que la API responde con los esquemas esperados, que las firmas HMAC son aceptadas por la pasarela y que las credenciales funcionan correctamente.
+- **Smoke Tests (`bun run test:smoke`)**: Validan la conectividad y el contrato real contra los endpoints en vivo de Payku Sandbox (`https://des.payku.cl`). Comprueban que la API responde con los esquemas esperados, que las firmas HMAC son aceptadas por la pasarela y que las credenciales funcionan correctamente.
 
 ---
 
@@ -161,10 +161,10 @@ Los tests de smoke deben validar que los campos críticos y tipos básicos exist
 
 ## 6. Ejecución en CI Protegida (`smoke-tests.yml`)
 
-El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](file:///.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
+El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](../.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
 
 ### Prevención de saturación y colas en Sandbox
-1. **Cola de concurrencia global (`concurrency: group: payku-sandbox-smoke-tests, cancel-in-progress: true`)**: A nivel de todo el repositorio solo corre 1 ejecución simultánea contra el Sandbox. Si se empujan nuevos commits a una PR o rama, la ejecución anterior se cancela inmediatamente.
+1. **Cola de concurrencia global (`concurrency: group: payku-sandbox-smoke-tests, cancel-in-progress: false`)**: A nivel de todo el repositorio solo corre 1 ejecución simultánea contra el Sandbox, encolando las demás ejecuciones para evitar colisiones y asegurar que ninguna PR cancele los checks de otra.
 2. **Suite Core (`bun run test:smoke`)**: En cada PR y push solo se ejecutan los tests mínimos de lectura y flujo crítico para evitar cuellos de botella y consumo innecesario de cuota.
 3. **Filtro de rutas (`paths`)**: No se dispara si los cambios solo tocan documentación (`docs/**`, `wiki/**`, `*.md`).
 4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow emite un aviso de GitHub Actions y finaliza con éxito de forma limpia sin bloquear el merge.

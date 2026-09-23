@@ -22,10 +22,11 @@ describe("Payku Integration Test Infrastructure", () => {
     test("accepts sandbox environment", () => {
       expect(() => assertSandboxEnvironment("sandbox")).not.toThrow();
       expect(() => assertSandboxEnvironment("SANDBOX")).not.toThrow();
-      expect(() => assertSandboxEnvironment(undefined)).not.toThrow();
     });
 
-    test("throws security error on production or any other environment", () => {
+    test("throws security error on production, non-sandbox or missing environment", () => {
+      expect(() => assertSandboxEnvironment(undefined)).toThrow(/SECURITY ERROR/i);
+      expect(() => assertSandboxEnvironment("")).toThrow(/SECURITY ERROR/i);
       expect(() => assertSandboxEnvironment("production")).toThrow(
         /SECURITY ERROR/i,
       );
@@ -138,6 +139,17 @@ describe("Payku Integration Test Infrastructure", () => {
 
       expect(cleanedUpOnError).toBe(true);
     });
+
+    test("withCleanup throws AggregateError when a cleanup task fails on successful action", async () => {
+      await expect(
+        withCleanup(async (tracker) => {
+          tracker.register(async () => {
+            throw new Error("Cleanup failed");
+          });
+          return "ok";
+        }),
+      ).rejects.toThrow("Fallaron 1 tareas de cleanup en Sandbox");
+    });
   });
 
   describe("withRetry", () => {
@@ -223,15 +235,17 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
-    test("createSandboxChileClient configures sandbox environment", () => {
+    test("createSandboxChileClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxChileClient();
       expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
     });
 
-    test("createSandboxClient configures sandbox environment", () => {
+    test("createSandboxClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxClient();
       expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
     });
   });
 });

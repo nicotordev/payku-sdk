@@ -5,6 +5,7 @@ import {
   describePaykuIntegration,
   generateUniqueEmail,
   generateUniqueOrder,
+  SANDBOX_LONG_TIMEOUT_MS,
   SANDBOX_TIMEOUT_MS,
 } from "../../test-utils/paykuIntegration";
 
@@ -39,7 +40,7 @@ describePaykuIntegration("integration / transactions", () => {
     expect(detail.status).toBeTruthy();
     expect(detail.amount).toBeDefined();
     expect(detail.payment).toBeDefined();
-  });
+  }, SANDBOX_LONG_TIMEOUT_MS);
 
   test("throws PaykuError for missing transaction", async () => {
     const payku = createSandboxChileClient();
@@ -57,5 +58,5 @@ describePaykuIntegration("integration / transactions", () => {
           err.type === "Unprocessable Entity",
       ).toBe(true);
     }
-  });
+  }, SANDBOX_TIMEOUT_MS);
 });
