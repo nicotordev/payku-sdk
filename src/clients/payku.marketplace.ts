@@ -6,6 +6,7 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  buildMarketplaceAffiliation,
   normalizeMarketplaceAffiliation,
   normalizeMarketplaceClientBank,
   validateCreateMarketplaceAffiliationRequest,
@@ -17,6 +18,8 @@ import type {
   PaykuCreateMarketplaceClientRequest,
   PaykuDeleteMarketplaceAffiliationResponse,
   PaykuDeleteMarketplaceClientResponse,
+  PaykuMarketplaceAffiliationMemberInput,
+  PaykuMarketplaceAffiliationPair,
   PaykuMarketplaceAffiliationResponse,
   PaykuMarketplaceClientResponse,
   PaykuMarketplaceTransactionRequest,
@@ -42,6 +45,23 @@ export default class PaykuMarketplace {
   public transactions = {
     create: this.createTransaction.bind(this),
   };
+
+  /**
+   * Arma pares `[clientId, percentage]`. Igual que `buildMarketplaceAffiliation`.
+   * Recibe la lista de afiliados, no un solo objeto.
+   */
+  public static buildAffiliation(
+    members: PaykuMarketplaceAffiliationMemberInput[],
+  ): PaykuMarketplaceAffiliationPair[] {
+    return buildMarketplaceAffiliation(members);
+  }
+
+  /** Igual que `PaykuMarketplace.buildAffiliation`. */
+  public buildAffiliation(
+    members: PaykuMarketplaceAffiliationMemberInput[],
+  ): PaykuMarketplaceAffiliationPair[] {
+    return PaykuMarketplace.buildAffiliation(members);
+  }
 
   constructor(
     private readonly http: HttpClient,

@@ -79,6 +79,19 @@ describe("PaykuEvents", () => {
     mock.restore();
   });
 
+  test("buildAffiliation matches the standalone helper", () => {
+    const members = [
+      { email: "a@x.com", percent: 40 },
+      { email: "b@x.com", percent: 60 },
+    ];
+    expect(PaykuEvents.buildAffiliation(members)).toEqual(
+      buildEventAffiliation(members),
+    );
+    expect(events.buildAffiliation(members)).toEqual(
+      PaykuEvents.buildAffiliation(members),
+    );
+  });
+
   test("create posts documented event body and maps affiliation (singular) fixture", async () => {
     mock.onPost("/event").reply((config) => {
       const body = JSON.parse(String(config.data)) as Record<string, unknown>;

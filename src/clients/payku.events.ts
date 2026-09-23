@@ -6,6 +6,7 @@ import {
 import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
+  buildEventAffiliation,
   normalizeEventAffiliation,
   validateCreateEventRequest,
   validateGetEventParams,
@@ -13,12 +14,31 @@ import {
 import type {
   PaykuCreateEventRequest,
   PaykuCreateEventResponse,
+  PaykuEventAffiliationMemberInput,
+  PaykuEventAffiliationTuple,
   PaykuGetEventResponse,
 } from "../types/payku.events";
 
 export default class PaykuEvents {
   public create = this.createEvent.bind(this);
   public get = this.getEvent.bind(this);
+
+  /**
+   * Arma tuplas `[email, percent]`. Igual que `buildEventAffiliation`.
+   * Recibe la lista de afiliados, no un solo objeto.
+   */
+  public static buildAffiliation(
+    members: PaykuEventAffiliationMemberInput[],
+  ): PaykuEventAffiliationTuple[] {
+    return buildEventAffiliation(members);
+  }
+
+  /** Igual que `PaykuEvents.buildAffiliation`. */
+  public buildAffiliation(
+    members: PaykuEventAffiliationMemberInput[],
+  ): PaykuEventAffiliationTuple[] {
+    return PaykuEvents.buildAffiliation(members);
+  }
 
   constructor(
     private readonly http: HttpClient,
