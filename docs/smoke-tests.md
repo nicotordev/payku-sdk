@@ -46,6 +46,14 @@ PAYKU_ENVIRONMENT=sandbox
 
 ## 4. Ejecución de Tests
 
+### Ejecutar Core Smoke Tests (Recomendado para CI y validación rápida)
+
+Ejecuta únicamente el subconjunto esencial de pruebas de lectura y flujo crítico (`credentials`, `banks`, `payment-methods`, `transactions` - ~4 llamadas HTTP en ~1.5 segundos):
+
+```bash
+bun run test:smoke
+```
+
 ### Ejecutar toda la suite de integración
 
 ```bash
@@ -151,12 +159,21 @@ Los tests de smoke deben validar que los campos críticos y tipos básicos exist
 
 ---
 
-## 6. Ejecución en CI Protegida
+## 6. Ejecución en CI Protegida (`smoke-tests.yml`)
 
-En flujos de CI (por ejemplo, workflows manuales con `workflow_dispatch` o jobs nocturnos programados):
+El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](file:///.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
 
-1. Configura los secretos del repositorio:
-   - `PAYKU_SANDBOX_PUBLIC_TOKEN`
-   - `PAYKU_SANDBOX_PRIVATE_TOKEN`
-2. Pasa `PAYKU_STRICT_INTEGRATION=1` para que el job falle de inmediato si algún secreto falta o expira.
-3. Ejecuta `bun run test:integration`.
+### Prevención de saturación y colas en Sandbox
+1. **Cola de concurrencia global (`concurrency: group: payku-sandbox-smoke-tests, cancel-in-progress: true`)**: A nivel de todo el repositorio solo corre 1 ejecución simultánea contra el Sandbox. Si se empujan nuevos commits a una PR o rama, la ejecución anterior se cancela inmediatamente.
+2. **Suite Core (`bun run test:smoke`)**: En cada PR y push solo se ejecutan los tests mínimos de lectura y flujo crítico para evitar cuellos de botella y consumo innecesario de cuota.
+3. **Filtro de rutas (`paths`)**: No se dispara si los cambios solo tocan documentación (`docs/**`, `wiki/**`, `*.md`).
+4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow emite un aviso de GitHub Actions y finaliza con éxito de forma limpia sin bloquear el merge.
+5. **Ejecución manual flexible (`workflow_dispatch`)**: Permite correr manualmente el workflow desde la pestaña Actions de GitHub seleccionando la suite:
+   - `smoke` (Core rápida, predeterminada).
+   - `integration` (Suite completa de integración).
+
+### Secretos en GitHub Actions
+Los siguientes secretos están configurados en el repositorio:
+- `PAYKU_PUBLIC_TOKEN`
+- `PAYKU_PRIVATE_TOKEN`
+- `PAYKU_ENVIRONMENT` (`sandbox`)
