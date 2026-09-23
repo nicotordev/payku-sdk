@@ -82,7 +82,6 @@ export class PaykuScopedTransactions {
   }
 
   public isPaid = PaykuTransactions.isPaid;
-  public isSuccess = PaykuTransactions.isSuccess;
   public isPending = PaykuTransactions.isPending;
   public isFailed = PaykuTransactions.isFailed;
 }
