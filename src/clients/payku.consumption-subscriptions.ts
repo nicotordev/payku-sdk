@@ -102,13 +102,18 @@ export default class PaykuConsumptionSubscriptions {
 
   /**
    * URL de pasarela Webpay `GET {rootUrl}/suscripcion/index`.
-   * No llama a la API. `rootUrl` es el del cliente (`des.payku.cl` / `app.payku.cl`).
+   * No llama a la API. `rootUrl` sale del cliente (`des.payku.cl` / `app.payku.cl`).
    */
-  public gatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
+  public buildGatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
     return buildConsumptionGatewayUrl({
       ...params,
       rootUrl: this.http.rootUrl,
     });
+  }
+
+  /** Alias de `buildGatewayUrl`. */
+  public gatewayUrl(params: PaykuConsumptionGatewayUrlParams): string {
+    return this.buildGatewayUrl(params);
   }
 
   public cards = {

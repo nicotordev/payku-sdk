@@ -81,6 +81,22 @@ describe("PaykuMall", () => {
     mock.restore();
   });
 
+  test("buildMerchant matches the standalone helper", () => {
+    const merchant = {
+      tokenOrAffiliationId: "tok",
+      amount: 30000,
+      subject: "item1",
+      individualOrder: "4545",
+    };
+    expect(PaykuMall.buildMerchant(merchant)).toEqual(
+      buildMallMerchant(merchant),
+    );
+    expect(mall.buildMerchant(merchant)).toEqual(
+      PaykuMall.buildMerchant(merchant),
+    );
+    expect(mall.buildMerchant(merchant)[3]).toBeNull();
+  });
+
   test("create posts documented mall body with merchant tuples", async () => {
     mock.onPost("/mall").reply((config) => {
       expect(config.headers?.Authorization).toBe("Bearer public-token");

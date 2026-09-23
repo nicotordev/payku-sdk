@@ -202,11 +202,24 @@ const affiliationFixture = {
 
 describe("marketplace affiliation helpers", () => {
   test("buildMarketplaceAffiliation builds wire pairs", () => {
-    expect(
-      buildMarketplaceAffiliation([
-        { clientId: "ma9fd16221a9645b0036", percentage: 80 },
-      ]),
-    ).toEqual([["ma9fd16221a9645b0036", "80"]]);
+    const members = [{ clientId: "ma9fd16221a9645b0036", percentage: 80 }];
+    expect(buildMarketplaceAffiliation(members)).toEqual([
+      ["ma9fd16221a9645b0036", "80"],
+    ]);
+    expect(PaykuMarketplace.buildAffiliation(members)).toEqual(
+      buildMarketplaceAffiliation(members),
+    );
+    const marketplace = new PaykuMarketplace(
+      new HttpClient({
+        baseUrl: "https://des.payku.cl/api",
+        rootUrl: "https://des.payku.cl",
+        publicToken: "public-token",
+        privateToken: "private-token",
+      }),
+    );
+    expect(marketplace.buildAffiliation(members)).toEqual(
+      PaykuMarketplace.buildAffiliation(members),
+    );
   });
 
   test("validateMarketplaceAffiliationPercentages accepts 100", () => {

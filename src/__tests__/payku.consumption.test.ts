@@ -339,11 +339,11 @@ function consumptionWithRoot(rootUrl: string): PaykuConsumptionSubscriptions {
 
 describe("consumptionSubscriptions.gatewayUrl", () => {
   test("uses the sandbox rootUrl from the client", () => {
-    const url = consumptionWithRoot("https://des.payku.cl").gatewayUrl(
-      gatewayClientParams,
-    );
+    const client = consumptionWithRoot("https://des.payku.cl");
+    const url = client.gatewayUrl(gatewayClientParams);
 
     expect(url).toBe(buildConsumptionGatewayUrl(gatewayFixture));
+    expect(client.buildGatewayUrl(gatewayClientParams)).toBe(url);
   });
 
   test("uses the production rootUrl and collapses a trailing slash", () => {
