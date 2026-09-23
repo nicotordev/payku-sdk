@@ -198,6 +198,22 @@ export interface PaykuGetTransactionResponse {
   gateway_response?: PaykuTransactionGatewayResponse;
 }
 
+/** Transacción con estado "success". */
+export type PaykuPaidTransaction<T = PaykuTransaction> = T & {
+  status: "success";
+};
+
+/** Transacción con estado "pending" o "register". */
+export type PaykuPendingTransaction<T = PaykuTransaction> = T & {
+  status: "pending" | "register";
+};
+
+/** Transacción con estado "rejected" o "failed". */
+export type PaykuFailedTransaction<T = PaykuTransaction> = T & {
+  status: "rejected" | "failed";
+};
+
+
 /**
  * Entrada flexible para procesar el retorno del cliente en urlreturn.
  * Acepta string de URL / query, instancia de URL, URLSearchParams o un objeto record (Next.js, Express, etc.).

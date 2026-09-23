@@ -21,7 +21,7 @@ import {
   validateChileCreateTransactionRequest,
   type ValidateCreateTransactionOptions,
 } from "../utils/payku.utils";
-import type PaykuTransactions from "./payku.transactions";
+import PaykuTransactions from "./payku.transactions";
 
 export type PaykuScopedCreateTransactionRequest = Omit<
   PaykuCreateTransactionRequest,
@@ -68,6 +68,11 @@ export class PaykuScopedTransactions {
   handleReturn(queryOrUrl: PaykuReturnInput): Promise<PaykuReturnResult> {
     return this.inner.handleReturn(queryOrUrl);
   }
+
+  public isPaid = PaykuTransactions.isPaid;
+  public isSuccess = PaykuTransactions.isSuccess;
+  public isPending = PaykuTransactions.isPending;
+  public isFailed = PaykuTransactions.isFailed;
 }
 
 /**

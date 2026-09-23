@@ -249,4 +249,5 @@ export {
   PaykuScopedTransactions,
   PaykuVenezuelaTransactions,
 } from "./payku.transactions.scoped";
+export { default as PaykuTransactions } from "./payku.transactions";
 export type { PaykuDefaultsConfig } from "../types/payku.common";

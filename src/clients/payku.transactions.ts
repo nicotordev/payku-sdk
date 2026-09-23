@@ -24,6 +24,10 @@ import {
   bodyAsRecord,
   formatPaykuExpiredInSantiago,
   isNoRecordsErrorMessage,
+  isTransactionFailed,
+  isTransactionPaid,
+  isTransactionPending,
+  isTransactionSuccess,
   parsePaymentReturnQuery,
   resolveCreateTransactionPayment,
   resolveTransactionPayerRutParameters,
@@ -68,7 +72,33 @@ export default class PaykuTransactions {
    */
   public handleReturn = this.handleReturnPayment.bind(this);
 
+  public static isPaid = isTransactionPaid;
+  public static isSuccess = isTransactionSuccess;
+  public static isPending = isTransactionPending;
+  public static isFailed = isTransactionFailed;
+
+  /**
+   * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
+   */
+  public isPaid = PaykuTransactions.isPaid;
+
+  /**
+   * Alias de `isPaid`: determina si una transacción fue exitosa (`status: "success"`).
+   */
+  public isSuccess = PaykuTransactions.isSuccess;
+
+  /**
+   * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
+   */
+  public isPending = PaykuTransactions.isPending;
+
+  /**
+   * Determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
+   */
+  public isFailed = PaykuTransactions.isFailed;
+
   private async createTransaction(
+
     params: PaykuCreateTransactionRequest,
     options?: ValidateCreateTransactionOptions,
   ): Promise<PaykuCreateTransactionResponse> {
@@ -209,12 +239,11 @@ export default class PaykuTransactions {
       transaction?.status ?? parsed.status
     )?.trim().toLowerCase();
 
+    const statusTarget = normalizedStatus;
     const isPaid =
-      transaction !== undefined && normalizedStatus === "success";
-    const isPending =
-      normalizedStatus === "pending" || normalizedStatus === "register";
-    const isFailed =
-      normalizedStatus === "rejected" || normalizedStatus === "failed";
+      transaction !== undefined && isTransactionPaid(statusTarget);
+    const isPending = isTransactionPending(statusTarget);
+    const isFailed = isTransactionFailed(statusTarget);
     const isExpired = normalizedStatus === "expired" || parsed.expired;
     const rawStatus = transaction?.status ?? parsed.status;
 
