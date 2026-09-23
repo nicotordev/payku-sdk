@@ -10,15 +10,84 @@ import {
   isRecord,
   mapNotifyStatusToTransactionStatus,
   nonEmptyString,
+  parsePaymentReturnQuery,
   verificationKeysEqual,
+  type PaykuPaymentReturnResult,
 } from "../utils/payku.utils";
 import type PaykuTransactions from "./payku.transactions";
 
 export { isRecord };
+export type { PaykuPaymentReturnResult };
 
 type PaykuTransactionsClient = Pick<PaykuTransactions, "get">;
 
 export default class PaykuWebhooks {
+  /**
+   * Parsea la query string o los parámetros devueltos por la pasarela en `urlreturn`
+   * e identifica si la transacción expiró o registró error.
+   *
+   * @param input URL, URLSearchParams, query string o query record (Next.js, Express, etc.).
+   * @returns Datos parseados de la query de retorno ({ id, status, messageError, expired }).
+   *
+   * @example
+   * ```typescript
+   * const parsed = PaykuWebhooks.parseReturnQuery(req.url);
+   * if (parsed.expired) {
+   *   console.log("Transacción expirada");
+   * }
+   * ```
+   */
+  public static parseReturnQuery = parsePaymentReturnQuery;
+
+  /**
+   * Mapea el status de notificación (`urlnotify`) al status equivalente de la API de transacciones.
+   *
+   * En Payku, las notificaciones usan `"failed"`, mientras que la API transaccional usa `"rejected"`.
+   *
+   * @param status Status recibido en el payload de notificación (ej. "success", "failed").
+   * @returns Status unificado para contrastar con `transaction.status`.
+   *
+   * @example
+   * ```typescript
+   * const apiStatus = PaykuWebhooks.mapStatus(notifyPayload.status);
+   * // "failed" -> "rejected"
+   * ```
+   */
+  public static mapStatus = mapNotifyStatusToTransactionStatus;
+
+  /**
+   * Parsea la query string o los parámetros devueltos por la pasarela en `urlreturn`
+   * e identifica si la transacción expiró o registró error.
+   *
+   * @param input URL, URLSearchParams, query string o query record (Next.js, Express, etc.).
+   * @returns Datos parseados de la query de retorno ({ id, status, messageError, expired }).
+   *
+   * @example
+   * ```typescript
+   * const parsed = payku.webhooks.parseReturnQuery(req.url);
+   * if (parsed.expired) {
+   *   console.log("Transacción expirada");
+   * }
+   * ```
+   */
+  public parseReturnQuery = PaykuWebhooks.parseReturnQuery;
+
+  /**
+   * Mapea el status de notificación (`urlnotify`) al status equivalente de la API de transacciones.
+   *
+   * En Payku, las notificaciones usan `"failed"`, mientras que la API transaccional usa `"rejected"`.
+   *
+   * @param status Status recibido en el payload de notificación (ej. "success", "failed").
+   * @returns Status unificado para contrastar con `transaction.status`.
+   *
+   * @example
+   * ```typescript
+   * const apiStatus = payku.webhooks.mapStatus(notifyPayload.status);
+   * // "failed" -> "rejected"
+   * ```
+   */
+  public mapStatus = PaykuWebhooks.mapStatus;
+
   public verifyNotify = this.verifyNotification.bind(this);
   public verifyCallback = this.verifyNotification.bind(this);
   public handleRequest = this.handleWebhookRequest.bind(this);
