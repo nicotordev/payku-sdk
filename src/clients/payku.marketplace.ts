@@ -54,10 +54,9 @@ export default class PaykuMarketplace {
 
   private createClient(params: PaykuCreateMarketplaceClientRequest) {
     return this.wrap("marketplace.clients.create", async () => {
-      const body = {
-        ...params,
-        bank: normalizeMarketplaceClientBank(params.bank),
-      };
+      const body = params.bank
+        ? { ...params, bank: normalizeMarketplaceClientBank(params.bank) }
+        : params;
       validateCreateMarketplaceClientRequest(body);
       return this.http.request<PaykuMarketplaceClientResponse>({
         method: "POST",

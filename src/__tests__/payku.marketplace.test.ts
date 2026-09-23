@@ -529,6 +529,21 @@ describe("PaykuMarketplace validations", () => {
     expect(mock.history.post.length).toBe(0);
   });
 
+  test("clients.create rejects a missing bank before reading its fields", async () => {
+    await expect(
+      marketplace.clients.create({
+        email: "a@b.com",
+        name: "John",
+        phone: "123",
+        bank: null,
+      } as unknown as Parameters<
+        PaykuMarketplace["clients"]["create"]
+      >[0]),
+    ).rejects.toThrow("bank is required");
+
+    expect(mock.history.post.length).toBe(0);
+  });
+
   test("affiliations.create throws PaykuMarketplaceError when affiliation array or percentages are invalid", async () => {
     await expect(
       marketplace.affiliations.create({
