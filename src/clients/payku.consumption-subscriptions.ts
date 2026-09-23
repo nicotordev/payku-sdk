@@ -7,6 +7,9 @@ import type { HttpClient } from "../http/client";
 import {
   bodyAsRecord,
   buildConsumptionGatewayUrl,
+  normalizeConsumptionPlanRequest,
+  normalizeSubscriptionTransactionRequest,
+  validateCreateSubscriptionTransactionRequest,
 } from "../utils/payku.utils";
 import type {
   PaykuConsumptionGatewayUrlParams,
@@ -42,14 +45,25 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public plans = {
-    create: (
+    create: async (
       params: PaykuCreateConsumptionPlanRequest,
-    ): Promise<PaykuCreateConsumptionPlanResponse> =>
-      this.post<PaykuCreateConsumptionPlanResponse>(
-        "/suplan/",
-        bodyAsRecord(params),
-        "consumption.plans.create",
-      ),
+    ): Promise<PaykuCreateConsumptionPlanResponse> => {
+      try {
+        const body = normalizeConsumptionPlanRequest(params);
+        return await this.post<PaykuCreateConsumptionPlanResponse>(
+          "/suplan/",
+          bodyAsRecord(body),
+          "consumption.plans.create",
+        );
+      } catch (error) {
+        throw createPaykuAPIError(
+          error,
+          "consumption.plans.create",
+          PaykuSubscriptionsError,
+          this.options,
+        );
+      }
+    },
   };
 
   public subscriptions = {
@@ -64,14 +78,26 @@ export default class PaykuConsumptionSubscriptions {
   };
 
   public transactions = {
-    create: (
+    create: async (
       params: PaykuCreateConsumptionTransactionRequest,
-    ): Promise<PaykuCreateSubscriptionTransactionResponse> =>
-      this.post<PaykuCreateSubscriptionTransactionResponse>(
-        "/sutransaction/",
-        bodyAsRecord(params),
-        "consumption.transactions.create",
-      ),
+    ): Promise<PaykuCreateSubscriptionTransactionResponse> => {
+      try {
+        const body = normalizeSubscriptionTransactionRequest(params);
+        validateCreateSubscriptionTransactionRequest(body);
+        return await this.post<PaykuCreateSubscriptionTransactionResponse>(
+          "/sutransaction/",
+          bodyAsRecord(body),
+          "consumption.transactions.create",
+        );
+      } catch (error) {
+        throw createPaykuAPIError(
+          error,
+          "consumption.transactions.create",
+          PaykuSubscriptionsError,
+          this.options,
+        );
+      }
+    },
   };
 
   /**

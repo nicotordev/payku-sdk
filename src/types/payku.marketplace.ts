@@ -1,6 +1,8 @@
+import type { PaykuBankAccountTypeInput } from "./payku.wallet";
+
 export interface PaykuMarketplaceClientBank {
   sbif: string;
-  type: string | number;
+  type: PaykuBankAccountTypeInput;
   num: string;
   rut: string;
 }

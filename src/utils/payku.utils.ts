@@ -39,13 +39,22 @@ import type {
   PaykuTransactionAdditionalParameters,
 } from "../types/payku.transactions";
 import type { PaykuNullificationCreateRequest } from "../types/payku.nullification";
-import type { PaykuWalletPayoutRequest } from "../types/payku.wallet";
+import type {
+  PaykuBankAccountTypeInput,
+  PaykuWalletBankAccount,
+  PaykuWalletPayoutBody,
+  PaykuWalletPayoutRequest,
+} from "../types/payku.wallet";
 import type {
   PaykuBuildConsumptionGatewayUrlParams,
+  PaykuConsumptionPlanBody,
+  PaykuCreateConsumptionPlanRequest,
   PaykuCreateSubscriptionClientRequest,
   PaykuCreateSubscriptionRequest,
   PaykuCreateSubscriptionTransactionRequest,
   PaykuListSubscriptionClientsParams,
+  PaykuRegisterCardRequest,
+  PaykuSubscriptionTransactionBody,
 } from "../types/payku.subscriptions";
 import {
   PAYKU_CLP_CREATE_PAYMENT_CODES,
@@ -1266,8 +1275,288 @@ export function validateCreateSubscriptionRequest(
   }
 }
 
-export function validateCreateSubscriptionTransactionRequest(
+const BANK_ACCOUNT_TYPE_CODES = {
+  "1": "1",
+  checking: "1",
+  corriente: "1",
+  "2": "2",
+  view: "2",
+  vista: "2",
+  rut: "2",
+  "3": "3",
+  savings: "3",
+  ahorro: "3",
+} as const;
+
+/**
+ * Normaliza un tipo de cuenta a `"1"` | `"2"` | `"3"`.
+ * `checking`/`corriente` → corriente, `view`/`vista`/`rut` → vista, `savings`/`ahorro` → ahorro.
+ */
+export function resolvePaykuBankAccountType(
+  value: unknown,
+  field: string,
+): "1" | "2" | "3" {
+  const key =
+    typeof value === "number" && Number.isInteger(value)
+      ? String(value)
+      : typeof value === "string"
+        ? value.trim().toLowerCase()
+        : undefined;
+  const codes: Record<string, "1" | "2" | "3" | undefined> =
+    BANK_ACCOUNT_TYPE_CODES;
+  const code = key ? codes[key] : undefined;
+  if (code) {
+    return code;
+  }
+
+  throw new PaykuError(
+    `${field} must be 1, 2, 3, checking, corriente, view, vista, rut, savings, or ahorro`,
+  );
+}
+
+function trimmedScalar(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (typeof value !== "string") {
+    throw new PaykuError(`${field} must be a string`);
+  }
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function requireExclusiveAlias(
+  wire: unknown,
+  alias: unknown,
+  wireKey: string,
+  aliasKey: string,
+): string {
+  const wireValue = typeof wire === "string" ? wire.trim() : undefined;
+  const aliasValue = typeof alias === "string" ? alias.trim() : undefined;
+  const wirePresent = wireValue !== undefined && wireValue !== "";
+  const aliasPresent = aliasValue !== undefined && aliasValue !== "";
+
+  if (wirePresent && aliasPresent && wireValue !== aliasValue) {
+    throw new PaykuError(`${aliasKey} conflicts with ${wireKey}`);
+  }
+  if (wirePresent && wireValue !== undefined) {
+    return wireValue;
+  }
+  if (aliasPresent && aliasValue !== undefined) {
+    return aliasValue;
+  }
+
+  throw new PaykuError(`${wireKey} is required`);
+}
+
+/** Deja solo `suscription` en el body de `transactions.create`. */
+export function normalizeSubscriptionTransactionRequest(
   params: PaykuCreateSubscriptionTransactionRequest,
+): PaykuSubscriptionTransactionBody {
+  const suscription = requireExclusiveAlias(
+    params.suscription,
+    params.subscription,
+    "suscription",
+    "subscription",
+  );
+  const { subscription: _subscription, ...rest } = params;
+  return { ...rest, suscription };
+}
+
+/** Deja solo `suscription` en el body de `cards.register`. */
+export function normalizeRegisterCardRequest(
+  params: PaykuRegisterCardRequest,
+): { suscription: string } {
+  return {
+    suscription: requireExclusiveAlias(
+      params.suscription,
+      params.subscription,
+      "suscription",
+      "subscription",
+    ),
+  };
+}
+
+/** Deja solo `url_notify_suscription` en el body de `plans.create`. */
+export function normalizeConsumptionPlanRequest(
+  params: PaykuCreateConsumptionPlanRequest,
+): PaykuConsumptionPlanBody {
+  const candidates = [
+    params.url_notify_suscription,
+    params.url_notify_subscription,
+    params.urlNotifySubscription,
+  ].flatMap((value) => {
+    if (typeof value !== "string") {
+      return [];
+    }
+    const trimmed = value.trim();
+    return trimmed === "" ? [] : [trimmed];
+  });
+  const unique = new Set(candidates);
+  if (unique.size > 1) {
+    throw new PaykuError(
+      "urlNotifySubscription conflicts with url_notify_suscription",
+    );
+  }
+
+  const {
+    url_notify_subscription: _snake,
+    urlNotifySubscription: _camel,
+    url_notify_suscription: _wire,
+    ...rest
+  } = params;
+
+  if (candidates.length > 0) {
+    const urlNotify = candidates[0];
+    if (urlNotify !== undefined) {
+      return { ...rest, url_notify_suscription: urlNotify };
+    }
+  }
+
+  const explicitEmpty =
+    typeof params.url_notify_suscription === "string" ||
+    typeof params.url_notify_subscription === "string" ||
+    typeof params.urlNotifySubscription === "string";
+  if (explicitEmpty) {
+    return { ...rest, url_notify_suscription: "" };
+  }
+
+  return rest;
+}
+
+/** `bank.type` de marketplace queda como `"1"` | `"2"` | `"3"`. */
+export function normalizeMarketplaceClientBank<
+  T extends { type?: PaykuBankAccountTypeInput },
+>(bank: T): T {
+  if (bank.type === undefined) {
+    return bank;
+  }
+
+  return {
+    ...bank,
+    type: resolvePaykuBankAccountType(bank.type, "bank.type"),
+  };
+}
+
+function payoutScalar(
+  bankValue: unknown,
+  flatValue: unknown,
+  bankField: string,
+  flatField: string,
+  kind: "text" | "type",
+  bankProvided: boolean,
+): string {
+  const read = (value: unknown, field: string): string | undefined => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    if (typeof value === "string" && value.trim() === "") {
+      return undefined;
+    }
+    return kind === "type"
+      ? resolvePaykuBankAccountType(value, field)
+      : trimmedScalar(value, field);
+  };
+
+  const fromBank = read(bankValue, `bank.${bankField}`);
+  const fromFlat = read(flatValue, flatField);
+  if (fromBank !== undefined && fromFlat !== undefined && fromBank !== fromFlat) {
+    throw new PaykuError(`bank.${bankField} conflicts with ${flatField}`);
+  }
+
+  const chosen = fromBank ?? fromFlat;
+  if (chosen === undefined) {
+    throw new PaykuError(
+      bankProvided ? `bank.${bankField} is required` : `${flatField} is required`,
+    );
+  }
+  return chosen;
+}
+
+/** Serializa `bank` o `accountbank_*` al body plano de `POST /api/wallet/payout`. */
+export function normalizeWalletPayoutRequest(
+  params: PaykuWalletPayoutRequest,
+): PaykuWalletPayoutBody {
+  if (!params || typeof params !== "object") {
+    throw new PaykuError("Payout request params are required");
+  }
+
+  const bank = params.bank;
+  if (
+    bank !== undefined &&
+    (typeof bank !== "object" || bank === null || Array.isArray(bank))
+  ) {
+    throw new PaykuError("bank must be an object");
+  }
+
+  const account = bank as PaykuWalletBankAccount | undefined;
+  const bankProvided = account !== undefined;
+  const accountbank_name = payoutScalar(
+    account?.name,
+    params.accountbank_name,
+    "name",
+    "accountbank_name",
+    "text",
+    bankProvided,
+  );
+  const accountbank_rut = payoutScalar(
+    account?.rut,
+    params.accountbank_rut,
+    "rut",
+    "accountbank_rut",
+    "text",
+    bankProvided,
+  );
+  const accountbank_sbif = payoutScalar(
+    account?.sbif,
+    params.accountbank_sbif,
+    "sbif",
+    "accountbank_sbif",
+    "text",
+    bankProvided,
+  );
+  const accountbank_type = payoutScalar(
+    account?.type,
+    params.accountbank_type,
+    "type",
+    "accountbank_type",
+    "type",
+    bankProvided,
+  ) as "1" | "2" | "3";
+  const accountbank_num = payoutScalar(
+    account?.num,
+    params.accountbank_num,
+    "num",
+    "accountbank_num",
+    "text",
+    bankProvided,
+  );
+
+  const {
+    bank: _bank,
+    accountbank_name: _name,
+    accountbank_rut: _rut,
+    accountbank_sbif: _sbif,
+    accountbank_type: _type,
+    accountbank_num: _num,
+    ...rest
+  } = params;
+
+  return {
+    ...rest,
+    accountbank_name,
+    accountbank_rut,
+    accountbank_sbif,
+    accountbank_type,
+    accountbank_num,
+  };
+}
+
+export function validateCreateSubscriptionTransactionRequest(
+  params: PaykuSubscriptionTransactionBody,
 ): void {
   requireNonEmptyField(params.suscription, "suscription");
 
@@ -1380,13 +1669,10 @@ export function validateConciliationRequest(
 export function validateWalletPayoutRequest(
   params: PaykuWalletPayoutRequest,
 ): void {
-  if (!params) {
-    throw new PaykuError("Payout request params are required");
-  }
-
-  const sbif = String(params.accountbank_sbif ?? "").trim();
+  const body = normalizeWalletPayoutRequest(params);
+  const sbif = body.accountbank_sbif.trim();
   if (sbif === "0012" || sbif === "12") {
-    const num = String(params.accountbank_num ?? "").trim();
+    const num = body.accountbank_num.trim();
     if (num.length > 12) {
       throw new PaykuError(
         "accountbank_num for Banco Estado (SBIF 0012) must not exceed 12 digits",

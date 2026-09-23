@@ -286,7 +286,8 @@ export type PaykuSubscriptionsListResponse =
   | PaykuListSubscriptionClientsResponse
   | PaykuSuccessResponse;
 
-export interface PaykuCreateSubscriptionTransactionRequest {
+/** Body HTTP de `POST /api/sutransaction`. Solo la key wire `suscription`. */
+export interface PaykuSubscriptionTransactionBody {
   /** Wire format Payku: `suscription` (ortografía de la API). */
   suscription: string;
   amount?: string;
@@ -297,6 +298,21 @@ export interface PaykuCreateSubscriptionTransactionRequest {
   /** Opcional: tarjeta activa a cobrar (consumo). */
   card?: string;
 }
+
+/**
+ * `transactions.create` acepta `suscription` (wire) o `subscription`.
+ * Si ambas vienen y difieren, el cliente lanza `PaykuError`.
+ */
+export type PaykuCreateSubscriptionTransactionRequest =
+  | (Omit<PaykuSubscriptionTransactionBody, "suscription"> & {
+      suscription: string;
+      /** Alias de `suscription`. No se envía en el body. */
+      subscription?: string;
+    })
+  | (Omit<PaykuSubscriptionTransactionBody, "suscription"> & {
+      subscription: string;
+      suscription?: string;
+    });
 
 /**
  * Alias explícito para `consumptionSubscriptions.transactions.create`
@@ -319,9 +335,13 @@ export interface PaykuCreateSubscriptionTransactionResponse {
  * `POST /api/suinscriptionscards` — afiliar/renovar tarjeta.
  * Payku espera el ID de suscripción en `suscription` (no `client`).
  */
-export interface PaykuRegisterCardRequest {
-  suscription: string;
-}
+/**
+ * `cards.register` acepta `suscription` (wire) o `subscription`.
+ * El body HTTP solo lleva `suscription`.
+ */
+export type PaykuRegisterCardRequest =
+  | { suscription: string; subscription?: string }
+  | { subscription: string; suscription?: string };
 
 /** Respuesta 200 de afiliar tarjeta (`status`, `id`, `url`). */
 export interface PaykuRegisterCardResponse {
@@ -384,10 +404,20 @@ export interface PaykuCreateConsumptionPlanRequest {
   description?: string;
   /** Wire typo Payku: `url_notify_suscription`. */
   url_notify_suscription?: string;
+  /** Alias de `url_notify_suscription`. No se envía en el body. */
+  url_notify_subscription?: string;
+  /** Alias de `url_notify_suscription`. No se envía en el body. */
+  urlNotifySubscription?: string;
   url_notify_payment?: string;
   url_success_payment?: string;
   url_failed_payment?: string;
 }
+
+/** Body HTTP de `POST /api/suplan/`. Solo keys wire. */
+export type PaykuConsumptionPlanBody = Omit<
+  PaykuCreateConsumptionPlanRequest,
+  "url_notify_subscription" | "urlNotifySubscription"
+>;
 
 /** Response 200 de `POST /api/suplan/` (consumo). */
 export interface PaykuCreateConsumptionPlanResponse {

@@ -508,11 +508,13 @@ const payout = await cl.wallet.payouts.create({
   currency: "CLP",
   order: "payout-001",
   amount: 25000,
-  accountbank_name: "Juan Pérez",
-  accountbank_rut: "111111111",
-  accountbank_sbif: "0001", // Código SBIF del banco
-  accountbank_type: "1",    // "1" Corriente, "2" Vista / Cuenta RUT, "3" Ahorro
-  accountbank_num: "123456789",
+  bank: {
+    name: "Juan Pérez",
+    rut: "111111111",
+    sbif: "0001",
+    type: "checking", // "checking" | "view" | "savings", o "1" | "2" | "3"
+    num: "123456789",
+  },
   url_notify: "https://tu-sitio.com/api/payout-notify",
   order_ext: "ext-ref-456", // Opcional
 });
@@ -565,6 +567,7 @@ if (verification.payout.status === "success") {
 ### Reglas y validaciones de cuenta bancaria
 
 - **Banco Estado (SBIF `0012`):** El número de cuenta (`accountbank_num`) tiene un máximo de **12 dígitos**. El SDK valida esto automáticamente para evitar que los usuarios ingresen el número de tarjeta de débito (16 dígitos), el cual no es un número de cuenta válido.
+- `payouts.create` acepta `bank: { name, rut, sbif, type, num }` o los campos planos `accountbank_*`. El body HTTP sigue siendo `accountbank_*`. Si ambos vienen y no coinciden, el SDK lanza `PaykuError`. `type` acepta `"checking"` / `"view"` / `"savings"` (también `corriente`, `vista`, `rut`, `ahorro`) o `"1"` / `"2"` / `"3"`. Lo mismo vale para `marketplace.clients` `bank.type`.
 - Para el resto de los bancos en Chile, los números de cuenta no están estandarizados y pueden tener longitudes variables.
 
 ### Ambiente Sandbox (`des.payku.cl`)
@@ -735,7 +738,7 @@ try {
     phone: "923122312",
     bank: {
       sbif: "0001",
-      type: "1",
+      type: "checking", // "checking" | "view" | "savings", o "1" | "2" | "3"
       num: "12312313121",
       rut: "111111111",
     },
@@ -904,7 +907,7 @@ Diagrama Payku del cargo: [sutransaction](https://docs.payku.com/img/diagrams/Di
 
 ### Flujo delivery / cargo único
 
-El alta de la suscripción también cobra **$50 CLP** para validar la tarjeta. Cada delivery posterior es un `transactions.create` (wire `suscription`, no `subscription`). Opcionales de docs de consumo: `marketplace` (token de afiliación) y `card`.
+El alta de la suscripción también cobra **$50 CLP** para validar la tarjeta. Cada delivery posterior es un `transactions.create`. El request acepta `subscription`; el body HTTP y el `Sign` siguen usando `suscription`. Opcionales de docs de consumo: `marketplace` (token de afiliación) y `card`.
 
 ```typescript
 import Payku from "@nicotordev/payku";
@@ -917,7 +920,7 @@ const cl = Payku.forCountry("CL", {
 
 const plan = await cl.consumptionSubscriptions.plans.create({
   name: "Delivery",
-  url_notify_suscription: "https://tu-sitio.com/notify-suscription",
+  urlNotifySubscription: "https://tu-sitio.com/notify-suscription",
   url_notify_payment: "https://tu-sitio.com/notify-payment",
 });
 
@@ -934,7 +937,7 @@ const sub = await cl.consumptionSubscriptions.subscriptions.create({
 // redirect sub.url  — o consumptionSubscriptions.gatewayUrl (abajo)
 
 const charge = await cl.consumptionSubscriptions.transactions.create({
-  suscription: sub.id,
+  subscription: sub.id, // el body HTTP sigue siendo suscription
   amount: "10000",
   order: "001",
   marketplace: "ma…", // opcional: token de afiliación
