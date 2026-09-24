@@ -223,17 +223,55 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
+    function captureDefaultLoggerMessage(
+      logger: { error(event: {
+        operation: string;
+        statusCode?: number;
+        type?: string;
+        message: string;
+      }): void } | undefined,
+    ): string {
+      const originalConsoleError = console.error;
+      let capturedMessage = "";
+      console.error = ((...args: unknown[]) => {
+        const event = args[1];
+        if (
+          typeof event === "object" &&
+          event !== null &&
+          "message" in event &&
+          typeof event.message === "string"
+        ) {
+          capturedMessage = event.message;
+        }
+      }) as typeof console.error;
+      try {
+        logger?.error({
+          operation: "testOp",
+          statusCode: 500,
+          type: "ApiError",
+          message: "Bearer sandbox-test-token",
+        });
+      } finally {
+        console.error = originalConsoleError;
+      }
+      return capturedMessage;
+    }
+
     test("createSandboxChileClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxChileClient();
       expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
-      expect(client.options.logger).toBeDefined();
+      expect(captureDefaultLoggerMessage(client.options.logger)).toBe(
+        "Bearer [REDACTED]",
+      );
     });
 
     test("createSandboxClient configures sandbox environment and default redacting logger", () => {
       const client = createSandboxClient();
       expect(client.environment).toBe("sandbox");
-      expect(client.options.logger).toBeDefined();
+      expect(captureDefaultLoggerMessage(client.options.logger)).toBe(
+        "Bearer [REDACTED]",
+      );
     });
   });
 });
