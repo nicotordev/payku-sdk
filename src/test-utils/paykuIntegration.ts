@@ -4,6 +4,7 @@ import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
 import {
   isPaykuError,
+  PaykuError,
   type PaykuAPIErrorLogEvent,
   type PaykuClientOptions,
   type PaykuLogger,
@@ -494,4 +495,75 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
       logger: createSandboxRedactingLogger(options.logger),
     },
   );
+}
+
+const CAPABILITY_HINTS = [
+  "no habilit",
+  "not enabled",
+  "not available",
+  "sin acceso",
+  "forbidden",
+  "permission",
+  "permiso",
+] as const;
+
+/** Payku rechazó la firma, no el producto. */
+export function isSignRejection(error: unknown): boolean {
+  if (!(error instanceof PaykuError)) {
+    return false;
+  }
+
+  const text = `${error.type ?? ""} ${error.message}`.toLowerCase();
+  return /\b(waiting|invalid) sign\b|\bfirma\b/u.test(text);
+}
+
+/**
+ * Producto no habilitado en la cuenta sandbox.
+ * Un 401 no cuenta: credenciales inválidas deben fallar la suite.
+ */
+export function capabilityDependentReason(error: unknown): string | undefined {
+  if (!(error instanceof PaykuError) || isSignRejection(error)) {
+    return undefined;
+  }
+
+  if (error.statusCode === 401) {
+    return undefined;
+  }
+
+  if (error.statusCode === 403) {
+    return `HTTP ${error.statusCode}`;
+  }
+
+  const message = error.message.toLowerCase();
+  if (CAPABILITY_HINTS.some((hint) => message.includes(hint))) {
+    return error.message;
+  }
+
+  return undefined;
+}
+
+/** Avisa y devuelve true cuando el sandbox no tiene ese producto habilitado. */
+export function noteCapabilityDependent(
+  product: string,
+  error: unknown,
+): boolean {
+  const reason = capabilityDependentReason(error);
+  if (reason === undefined) {
+    return false;
+  }
+
+  console.warn(
+    `CAPABILITY_DEPENDENT ${product}: ${redactSensitiveString(reason)}`,
+  );
+  return true;
+}
+
+/** Fecha `YYYY-MM-DD` en America/Santiago. */
+export function santiagoDateOnly(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 }

@@ -11,9 +11,14 @@ describePaykuIntegration("integration / banks", () => {
 
     expect(Array.isArray(banks)).toBe(true);
     expect(banks.length).toBeGreaterThan(0);
-    expect(banks[0]).toMatchObject({
-      code: expect.any(String),
-      name: expect.any(String),
-    });
+
+    for (const bank of banks) {
+      expect(bank.code).toEqual(expect.any(String));
+      expect(bank.code.length).toBeGreaterThan(0);
+      expect(bank.name).toEqual(expect.any(String));
+      expect(bank.name.length).toBeGreaterThan(0);
+      expect(bank.currency).toEqual(expect.any(String));
+      expect(String(bank.currency).toLowerCase()).toBe("clp");
+    }
   });
 });

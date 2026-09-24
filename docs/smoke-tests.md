@@ -64,8 +64,12 @@ Para ejecutar únicamente los smoke tests de un módulo específico (por ejemplo
 
 ```bash
 bun test --path-ignore-patterns '' src/__tests__/integration/transactions.test.ts
-bun test --path-ignore-patterns '' src/__tests__/integration/marketplace.test.ts
 bun test --path-ignore-patterns '' src/__tests__/integration/banks.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/payment-methods.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/sign.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/subscriptions.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/consumption.test.ts
+bun test --path-ignore-patterns '' src/__tests__/integration/marketplace.test.ts
 ```
 
 O usando el flag de filtro por nombre de suite:
