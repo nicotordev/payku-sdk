@@ -58,6 +58,8 @@ const fromEnv = Payku.fromEnvForCountry("CL");
 
 Si llamás un módulo no soportado (p. ej. `wallet.withdraw` en Perú), el SDK lanza `PaykuUnsupportedFeatureError`. `payku.isSupported("mall")` responde si el país incluye ese módulo, sin lanzar. `payku.sign(path, params)` firma con el token privado ya configurado.
 
+> **💡 Principio de diseño de la API:** La instancia del cliente (`payku` o `Payku.forCountry(...)`) expone todos los métodos de negocio, verificaciones, firmas y parseos a través de sus namespaces (`payku.transactions`, `payku.wallet`, `payku.webhooks`, etc.). No necesitas realizar importaciones manuales de funciones utilitarias independientes a menos que las requieras para un uso específico fuera del cliente.
+
 ### Modo global (multi-país)
 
 ```typescript
@@ -100,36 +102,27 @@ Endpoints sensibles envían además el header `Sign`, calculado con el **token p
 5. Concatenar `pathCodificado&key=value&...` (o solo el path si no hay params)
 6. `HMAC-SHA256(concat, privateToken)` en hex
 
-El SDK firma solo donde corresponde (`signed: true`). En una instancia, `payku.sign(path, params)` usa el token privado ya configurado. `Payku.sign` y `buildSign` piden el token como tercer argumento:
+El SDK firma automáticamente las peticiones donde corresponde (`signed: true`). En cualquier instancia del cliente, `payku.sign(path, params)` calcula el header de firma usando el token privado ya configurado en la instancia:
 
 ```typescript
-import Payku, { buildSign } from "@nicotordev/payku";
+import Payku from "@nicotordev/payku";
 
 const payku = Payku.fromEnv();
-const sign = payku.sign(
-  "/api/suclient",
-  {
-    email: "johndoe@example.com",
-    name: "John Doe",
-    phone: "923122312",
-    address: "Moneda 101",
-    country: "Chile",
-    region: "Metropolitana",
-    city: "Santiago",
-    postal_code: "850000",
-    additional_parameters: {
-      parameter_1: "example",
-      parameter_2: "example 2",
-    },
-  },
-);
+const sign = payku.sign("/api/suclient", {
+  email: "johndoe@example.com",
+  name: "John Doe",
+  phone: "923122312",
+  address: "Moneda 101",
+  country: "Chile",
+  region: "Metropolitana",
+  city: "Santiago",
+  postal_code: "850000",
+});
 
-// Sin instancia, el token sigue siendo explícito:
-Payku.sign("/api/suclient", { email: "johndoe@example.com" }, process.env.PAYKU_PRIVATE_TOKEN!);
-buildSign("/api/suclient", { email: "johndoe@example.com" }, process.env.PAYKU_PRIVATE_TOKEN!);
-
-// Header: Sign: <sign>
+// Header generado: Sign: <sign>
 ```
+
+> **Importación manual (Opcional):** Si prefieres firmar manualmente sin usar una instancia configurada, también puedes usar `Payku.sign(path, params, privateToken)` o importar la función utilitaria `import { buildSign } from "@nicotordev/payku"`.
 
 ### Matriz Sign por módulo (SDK)
 
@@ -214,20 +207,40 @@ for await (const tx of payku.transactions.iterate({
 
 ### Retorno de pasarela (`urlreturn`) y expiración
 
-Puedes parsear los parámetros devueltos por Payku a la `urlreturn` usando `parsePaymentReturnQuery`:
+El cliente de transacciones de la instancia `payku` ofrece métodos integrados para procesar y validar el retorno del pagador en la `urlreturn`.
+
+#### Reconsulta completa y estado de negocio (`handleReturn`) — Recomendado
+
+Procesa la URL o query devuelta por Payku, reconsulta la API para verificar el estado real y retorna flags de estado (`isPaid`, `isPending`, `isFailed`, `isExpired`):
 
 ```typescript
-import { parsePaymentReturnQuery } from "@nicotordev/payku";
-
 // Acepta URL completa, query string, URLSearchParams o un objeto query (Next.js / Express)
-const result = parsePaymentReturnQuery(req.query); // o searchParams / window.location.search
+const result = await payku.transactions.handleReturn(req.query);
 
-if (result.expired) {
+if (result.isExpired) {
   console.log(`La transacción ${result.id} ha expirado.`);
-} else {
-  console.log(`Transacción retornada id: ${result.id}, status: ${result.status}`);
+} else if (result.isPaid) {
+  console.log(`Transacción ${result.id} pagada exitosamente.`);
+} else if (result.isPending) {
+  console.log(`Transacción ${result.id} en proceso de pago.`);
 }
 ```
+
+#### Parseo local de query (`parseReturnQuery`)
+
+Si deseas analizar únicamente la query devuelta sin realizar llamadas HTTP adicionales:
+
+```typescript
+const parsed = payku.transactions.parseReturnQuery(req.query);
+
+if (parsed.expired) {
+  console.log(`Transacción ${parsed.id} expiró según la pasarela.`);
+} else {
+  console.log(`Transacción id: ${parsed.id}, status: ${parsed.status}`);
+}
+```
+
+> **Importación manual (Opcional):** Las funciones standalone como `parseReturnQuery` o `isTransactionPaid` también están disponibles como exportaciones directas (`import { parseReturnQuery } from "@nicotordev/payku"`), aunque su uso manual no es necesario ya que la instancia `payku.transactions` incluye todo integrado.
 
 ## Catálogo
 
@@ -422,7 +435,7 @@ Este SDK ya inspecciona el body en `HttpClient`: si `status === "failed"` (o `ty
 ### try / catch con el SDK
 
 ```typescript
-import Payku, { PaykuAPIError, isPaykuError } from "@nicotordev/payku";
+import Payku, { PaykuAPIError } from "@nicotordev/payku";
 
 const payku = Payku.forCountry("CL", {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN!,
@@ -445,7 +458,8 @@ try {
     return;
   }
 
-  if (isPaykuError(error) || Payku.isError(error)) {
+  // Comprobar si cualquier error proviene del SDK mediante la clase Payku:
+  if (Payku.isError(error)) {
     console.error(error.message, error.statusCode, error.type);
     return;
   }
@@ -454,9 +468,11 @@ try {
 }
 ```
 
+> **Importación manual (Opcional):** Si no usas la clase `Payku`, las utilidades como `isPaykuError`, `isPaykuFailedResponse` y `extractPaykuErrorMessage` también pueden importarse manualmente (`import { isPaykuError } from "@nicotordev/payku"`).
+
 ### Inspeccionar JSON crudo
 
-Si lees respuestas API fuera del cliente (proxy, log), usa los type guards públicos:
+Si lees respuestas API fuera del cliente (proxy, log), las utilidades públicas te permiten inspeccionar respuestas JSON crudas:
 
 ```typescript
 import {
@@ -589,11 +605,7 @@ En el ambiente de desarrollo (`sandbox`), Payku procesa los montos de payout de 
 | `1000`, `2000`, `3000` | Auto-aprobados (`success`) |
 | `1500`, `2500`, `3500` | Auto-rechazados (`banking_error`) |
 
-También puedes importar la constante `PAYKU_WALLET_SANDBOX_AMOUNTS` desde `@nicotordev/payku`:
-
-```typescript
-import { PAYKU_WALLET_SANDBOX_AMOUNTS } from "@nicotordev/payku";
-```
+> **Importación manual (Opcional):** Si requieres la constante para validaciones tipadas en pruebas, también puedes importarla directamente: `import { PAYKU_WALLET_SANDBOX_AMOUNTS } from "@nicotordev/payku"`.
 
 
 ## Anulación (Chile)
