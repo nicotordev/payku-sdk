@@ -26,10 +26,10 @@ on:
           - smoke
           - integration
 
-# Cancelar únicamente ejecuciones anteriores de la misma PR
+# Conservar ejecuciones activas y reemplazar únicamente pendientes de la misma PR
 concurrency:
   group: payku-sandbox-smoke-tests-pr-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 permissions:
   contents: read

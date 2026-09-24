@@ -164,7 +164,7 @@ Los tests de smoke deben validar que los campos críticos y tipos básicos exist
 El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](../.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
 
 ### Prevención de saturación y colas en Sandbox
-1. **Cola de concurrencia global (`group: payku-sandbox-smoke-tests`, `cancel-in-progress: false`, `queue: max`)**: A nivel del job solo corre 1 ejecución simultánea contra el Sandbox en todo el repositorio, con hasta 100 ejecuciones pendientes; si la cola está llena, GitHub cancela las ejecuciones adicionales. A nivel del workflow, un grupo por PR cancela únicamente ejecuciones anteriores de esa misma PR.
+1. **Cola de concurrencia global (`group: payku-sandbox-smoke-tests`, `cancel-in-progress: false`, `queue: max`)**: A nivel del job solo corre 1 ejecución simultánea contra el Sandbox en todo el repositorio, con hasta 100 ejecuciones pendientes; si la cola está llena, GitHub cancela las ejecuciones adicionales. A nivel del workflow, un grupo por PR conserva la ejecución activa y reemplaza únicamente la ejecución pendiente de esa misma PR cuando llega una nueva.
 2. **Suite Core (`bun run test:smoke`)**: En cada PR y push solo se ejecutan los tests mínimos de lectura y flujo crítico para evitar cuellos de botella y consumo innecesario de cuota.
 3. **Filtro de rutas (`paths`)**: No se dispara si los cambios solo tocan documentación (`docs/**`, `wiki/**`, `*.md`).
 4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow emite un aviso de GitHub Actions y finaliza con éxito de forma limpia sin bloquear el merge.

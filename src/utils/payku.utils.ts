@@ -166,9 +166,7 @@ export function buildMallMerchant(
   ];
 }
 
-function isMallMerchantObject(
-  item: unknown,
-): item is PaykuMallMerchantInput {
+function isMallMerchantObject(item: unknown): item is PaykuMallMerchantInput {
   return typeof item === "object" && item !== null && !Array.isArray(item);
 }
 
@@ -1129,22 +1127,26 @@ export function validateCreateMallTransactionRequest(
 
   const merchant = normalizeMallMerchants(params.merchant);
 
-  for (let i = 0; i < merchant.length; i++) {
-    const item = merchant[i];
+  for (const [i, item] of merchant.entries()) {
     if (!item || item.length !== 5) {
       throw new PaykuError(
         `merchant[${i}] must be a valid merchant tuple of 5 elements`,
       );
     }
+
     const [tokenOrAffiliationId, amount, subject, , individualOrder] = item;
+
     requireNonEmptyField(
       tokenOrAffiliationId,
       `merchant[${i}].tokenOrAffiliationId`,
     );
+
     requireNonEmptyField(subject, `merchant[${i}].subject`);
+
     requireNonEmptyField(individualOrder, `merchant[${i}].individualOrder`);
 
     const numAmount = Number(amount);
+
     if (!Number.isFinite(numAmount) || numAmount <= 0) {
       throw new PaykuError(`merchant[${i}].amount must be greater than 0`);
     }
@@ -1463,14 +1465,20 @@ function payoutScalar(
 
   const fromBank = read(bankValue, `bank.${bankField}`);
   const fromFlat = read(flatValue, flatField);
-  if (fromBank !== undefined && fromFlat !== undefined && fromBank !== fromFlat) {
+  if (
+    fromBank !== undefined &&
+    fromFlat !== undefined &&
+    fromBank !== fromFlat
+  ) {
     throw new PaykuError(`bank.${bankField} conflicts with ${flatField}`);
   }
 
   const chosen = fromBank ?? fromFlat;
   if (chosen === undefined) {
     throw new PaykuError(
-      bankProvided ? `bank.${bankField} is required` : `${flatField} is required`,
+      bankProvided
+        ? `bank.${bankField} is required`
+        : `${flatField} is required`,
     );
   }
   return chosen;
