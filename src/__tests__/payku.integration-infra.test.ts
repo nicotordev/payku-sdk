@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   IntegrationCleanupTracker,
   SANDBOX_TEST_RUT,
@@ -22,10 +22,13 @@ describe("Payku Integration Test Infrastructure", () => {
     test("accepts sandbox environment", () => {
       expect(() => assertSandboxEnvironment("sandbox")).not.toThrow();
       expect(() => assertSandboxEnvironment("SANDBOX")).not.toThrow();
-      expect(() => assertSandboxEnvironment(undefined)).not.toThrow();
     });
 
-    test("throws security error on production or any other environment", () => {
+    test("throws security error on production, non-sandbox or missing environment", () => {
+      expect(() => assertSandboxEnvironment(undefined)).toThrow(
+        /SECURITY ERROR/i,
+      );
+      expect(() => assertSandboxEnvironment("")).toThrow(/SECURITY ERROR/i);
       expect(() => assertSandboxEnvironment("production")).toThrow(
         /SECURITY ERROR/i,
       );
@@ -138,6 +141,17 @@ describe("Payku Integration Test Infrastructure", () => {
 
       expect(cleanedUpOnError).toBe(true);
     });
+
+    test("withCleanup throws AggregateError when a cleanup task fails on successful action", async () => {
+      await expect(
+        withCleanup(async (tracker) => {
+          tracker.register(async () => {
+            throw new Error("Cleanup failed");
+          });
+          return "ok";
+        }),
+      ).rejects.toThrow("Fallaron 1 tareas de cleanup en Sandbox");
+    });
   });
 
   describe("withRetry", () => {
@@ -171,7 +185,8 @@ describe("Payku Integration Test Infrastructure", () => {
 
   describe("redactSensitiveData and redactSensitiveString", () => {
     test("redacts Bearer tokens and Sign headers in strings", () => {
-      const input = "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
+      const input =
+        "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
       const redacted = redactSensitiveString(input);
       expect(redacted).not.toContain("mysecrettoken123");
       expect(redacted).toContain("Bearer [REDACTED]");
@@ -224,12 +239,16 @@ describe("Payku Integration Test Infrastructure", () => {
 
   describe("client factories", () => {
     function captureDefaultLoggerMessage(
-      logger: { error(event: {
-        operation: string;
-        statusCode?: number;
-        type?: string;
-        message: string;
-      }): void } | undefined,
+      logger:
+        | {
+            error(event: {
+              operation: string;
+              statusCode?: number;
+              type?: string;
+              message: string;
+            }): void;
+          }
+        | undefined,
     ): string {
       const originalConsoleError = console.error;
       let capturedMessage = "";
