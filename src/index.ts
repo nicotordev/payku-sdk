@@ -97,6 +97,7 @@ export {
   normalizePaykuRut,
   normalizeRut,
   parsePaymentReturnQuery,
+  parseReturnQuery,
   parsePaykuExpiredInSantiago,
   paymentMethodToSlug,
   resolvePaymentMethod,

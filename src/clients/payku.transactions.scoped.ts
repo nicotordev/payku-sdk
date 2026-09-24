@@ -84,6 +84,31 @@ export class PaykuScopedTransactions {
   /**
    * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
    */
+  public static isPaid = PaykuTransactions.isPaid;
+
+  /**
+   * Determina si una transacción está pendiente de pago (`status: "pending"` o `"register"`).
+   */
+  public static isPending = PaykuTransactions.isPending;
+
+  /**
+   * Determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
+   */
+  public static isFailed = PaykuTransactions.isFailed;
+
+  /**
+   * Parsea la query string o los parámetros devueltos por la pasarela en `urlreturn`.
+   */
+  public static parseReturnQuery = PaykuTransactions.parseReturnQuery;
+
+  /**
+   * Alias de `PaykuTransactions.parseReturnQuery`.
+   */
+  public static parsePaymentReturnQuery = PaykuTransactions.parsePaymentReturnQuery;
+
+  /**
+   * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).
+   */
   public isPaid = PaykuTransactions.isPaid;
 
   /**
@@ -95,6 +120,16 @@ export class PaykuScopedTransactions {
    * Determina si una transacción falló o fue rechazada (`status: "rejected"` o `"failed"`).
    */
   public isFailed = PaykuTransactions.isFailed;
+
+  /**
+   * Parsea la query string o los parámetros devueltos por la pasarela en `urlreturn`.
+   */
+  public parseReturnQuery = PaykuTransactions.parseReturnQuery;
+
+  /**
+   * Alias de `payku.transactions.parseReturnQuery`.
+   */
+  public parsePaymentReturnQuery = PaykuTransactions.parsePaymentReturnQuery;
 }
 
 /**

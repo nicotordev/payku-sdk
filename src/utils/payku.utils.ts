@@ -1062,6 +1062,8 @@ export function parsePaymentReturnQuery(
   };
 }
 
+export const parseReturnQuery = parsePaymentReturnQuery;
+
 export function validateCreateEventRequest(
   params: PaykuCreateEventRequest,
 ): void {

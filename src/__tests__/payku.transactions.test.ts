@@ -1154,11 +1154,33 @@ describe("SDK entrypoint exports", () => {
     expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
     expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
     expect(typeof PaykuSDK.parsePaymentReturnQuery).toBe("function");
+    expect(typeof PaykuSDK.parseReturnQuery).toBe("function");
     expect(typeof PaykuSDK.formatPaykuExpiredInSantiago).toBe("function");
     expect(typeof PaykuSDK.formatPaykuExpired).toBe("function");
     expect(typeof PaykuSDK.normalizeRut).toBe("function");
     expect(typeof PaykuSDK.normalizePaykuRut).toBe("function");
     expect(typeof PaykuSDK.parsePaykuExpiredInSantiago).toBe("function");
+    expect(typeof PaykuSDK.PaykuTransactions.parseReturnQuery).toBe("function");
+    expect(typeof PaykuSDK.PaykuTransactions.parsePaymentReturnQuery).toBe("function");
+  });
+
+  test("payku.transactions includes parseReturnQuery and parsePaymentReturnQuery methods", () => {
+    const payku = new PaykuSDK.default("pub_key", "priv_key", "sandbox");
+    expect(typeof payku.transactions.parseReturnQuery).toBe("function");
+    expect(typeof payku.transactions.parsePaymentReturnQuery).toBe("function");
+
+    const parsed = payku.transactions.parseReturnQuery("https://example.com/return?id=trx_obj_1&status=success");
+    expect(parsed.id).toBe("trx_obj_1");
+    expect(parsed.expired).toBe(false);
+
+    const parsedAlias = payku.transactions.parsePaymentReturnQuery("https://example.com/return?id=trx_obj_2&message_error=expired");
+    expect(parsedAlias.id).toBe("trx_obj_2");
+    expect(parsedAlias.expired).toBe(true);
+
+    const chile = PaykuSDK.default.forCountry("CL", { publicToken: "pub", privateToken: "priv", environment: "sandbox" });
+    expect(typeof chile.transactions.parseReturnQuery).toBe("function");
+    expect(typeof chile.transactions.parsePaymentReturnQuery).toBe("function");
+    expect(chile.transactions.parseReturnQuery("?id=chile_trx").id).toBe("chile_trx");
   });
 });
 
