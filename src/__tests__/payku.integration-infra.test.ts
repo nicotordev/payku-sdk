@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   IntegrationCleanupTracker,
   SANDBOX_TEST_RUT,
@@ -235,6 +235,21 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
+    let originalEnvironment: string | undefined;
+
+    beforeEach(() => {
+      originalEnvironment = process.env.PAYKU_ENVIRONMENT;
+      process.env.PAYKU_ENVIRONMENT = "sandbox";
+    });
+
+    afterEach(() => {
+      if (originalEnvironment === undefined) {
+        delete process.env.PAYKU_ENVIRONMENT;
+      } else {
+        process.env.PAYKU_ENVIRONMENT = originalEnvironment;
+      }
+    });
+
     test("createSandboxChileClient configures sandbox environment and redacts messages sent to the base logger", () => {
       let loggedMessage = "";
       const client = createSandboxChileClient({
