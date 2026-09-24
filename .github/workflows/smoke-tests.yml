@@ -1,0 +1,92 @@
+name: smoke-tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/smoke-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/smoke-tests.yml"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Suite de pruebas a ejecutar (smoke: core rápido | integration: completa)"
+        required: false
+        default: "smoke"
+        type: choice
+        options:
+          - smoke
+          - integration
+
+# Conservar ejecuciones activas y reemplazar únicamente pendientes de la misma PR
+concurrency:
+  group: payku-sandbox-smoke-tests-pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-sandbox:
+    name: smoke-sandbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Exclusividad global del Sandbox, con hasta 100 ejecuciones pendientes
+    concurrency:
+      group: payku-sandbox-smoke-tests
+      cancel-in-progress: false
+      queue: max
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check secrets availability
+        id: check-secrets
+        env:
+          PAYKU_PUBLIC_TOKEN: ${{ secrets.PAYKU_PUBLIC_TOKEN }}
+          PAYKU_PRIVATE_TOKEN: ${{ secrets.PAYKU_PRIVATE_TOKEN }}
+        run: |
+          if [ -z "$PAYKU_PUBLIC_TOKEN" ] || [ -z "$PAYKU_PRIVATE_TOKEN" ]; then
+            if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+              echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Smoke tests omitidos::Los secrets de Payku Sandbox no están disponibles en este entorno (pull request proveniente de un fork)."
+            else
+              echo "::error title=Faltan secrets::PAYKU_PUBLIC_TOKEN y PAYKU_PRIVATE_TOKEN deben estar configurados en el repositorio."
+              exit 1
+            fi
+          else
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Core Smoke Tests
+        if: steps.check-secrets.outputs.has_secrets == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.suite == 'smoke')
+        env:
+          PAYKU_PUBLIC_TOKEN: ${{ secrets.PAYKU_PUBLIC_TOKEN }}
+          PAYKU_PRIVATE_TOKEN: ${{ secrets.PAYKU_PRIVATE_TOKEN }}
+          PAYKU_ENVIRONMENT: ${{ secrets.PAYKU_ENVIRONMENT || 'sandbox' }}
+        run: bun run test:smoke
+
+      - name: Run Full Integration Suite
+        if: steps.check-secrets.outputs.has_secrets == 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.suite == 'integration'
+        env:
+          PAYKU_PUBLIC_TOKEN: ${{ secrets.PAYKU_PUBLIC_TOKEN }}
+          PAYKU_PRIVATE_TOKEN: ${{ secrets.PAYKU_PRIVATE_TOKEN }}
+          PAYKU_ENVIRONMENT: ${{ secrets.PAYKU_ENVIRONMENT || 'sandbox' }}
+        run: bun run test:integration

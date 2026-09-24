@@ -31,14 +31,13 @@ const hasRealCredential = (value: string | undefined): boolean =>
  * Valida de forma estricta que el entorno configurado sea "sandbox".
  * Lanza un error de seguridad inmediato si se detecta cualquier otro entorno.
  */
-export function assertSandboxEnvironment(
-  env: string | undefined = process.env.PAYKU_ENVIRONMENT,
-): void {
-  const normalized = (env ?? "sandbox").trim().toLowerCase();
+export function assertSandboxEnvironment(env?: string): void {
+  const targetEnv = arguments.length > 0 ? env : process.env.PAYKU_ENVIRONMENT;
+  const normalized = (targetEnv ?? "").trim().toLowerCase();
   if (normalized !== "sandbox") {
     throw new Error(
-      `[SECURITY ERROR] Las pruebas de integración de Payku están estrictamente restringidas a "sandbox". ` +
-        `Se detectó PAYKU_ENVIRONMENT="${env}". Se aborta la ejecución para prevenir alteraciones en producción.`,
+      `[SECURITY ERROR] Las pruebas de integración de Payku están estrictamente restringidas a "sandbox" y requieren PAYKU_ENVIRONMENT="sandbox" explícito. ` +
+        `Se detectó PAYKU_ENVIRONMENT="${targetEnv}". Se aborta la ejecución para prevenir alteraciones en producción.`,
     );
   }
 }
@@ -54,7 +53,7 @@ if (
 export const paykuIntegrationConfig = {
   publicToken: process.env.PAYKU_PUBLIC_TOKEN ?? "",
   privateToken: process.env.PAYKU_PRIVATE_TOKEN ?? "",
-  environment: process.env.PAYKU_ENVIRONMENT ?? "sandbox",
+  environment: process.env.PAYKU_ENVIRONMENT ?? "",
 };
 
 export const hasPaykuIntegrationCredentials =
@@ -65,7 +64,7 @@ export const hasPaykuIntegrationCredentials =
  * Corre solo con tokens reales y `PAYKU_ENVIRONMENT=sandbox`.
  */
 export const shouldRunIntegrationTests =
-  paykuIntegrationConfig.environment === "sandbox" &&
+  paykuIntegrationConfig.environment.trim().toLowerCase() === "sandbox" &&
   hasPaykuIntegrationCredentials;
 
 // Si se activa PAYKU_STRICT_INTEGRATION (ej. en CI con secrets configurados) y faltan credenciales, fallar con error accionable
@@ -117,7 +116,8 @@ let sequenceCounter = 0;
 export function generateUniqueId(prefix = "smoke", maxLength?: number): string {
   sequenceCounter = (sequenceCounter + 1) % 1000;
   const time = Date.now().toString(36);
-  const rand = randomBytes(3).toString("base64url").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 4);
+  const seq = sequenceCounter.toString(36).padStart(2, "0");
+  const rand = `${seq}${randomBytes(3).toString("hex")}`;
   const raw = `${prefix}_${time}_${rand}`;
 
   if (maxLength && raw.length > maxLength) {
@@ -220,22 +220,28 @@ export class IntegrationCleanupTracker {
     this.tasks.push({ name, fn });
   }
 
-  public async runAll(): Promise<{ executed: number; failed: number }> {
+  public async runAll(): Promise<{
+    executed: number;
+    failed: number;
+    errors: unknown[];
+  }> {
     const toRun = [...this.tasks].reverse();
     this.tasks = [];
     let executed = 0;
     let failed = 0;
+    const errors: unknown[] = [];
 
     for (const task of toRun) {
       try {
         await task.fn();
         executed++;
-      } catch {
+      } catch (error) {
         failed++;
+        errors.push(error);
       }
     }
 
-    return { executed, failed };
+    return { executed, failed, errors };
   }
 
   public get pendingCount(): number {
@@ -251,11 +257,21 @@ export async function withCleanup<T>(
   action: (tracker: IntegrationCleanupTracker) => Promise<T>,
 ): Promise<T> {
   const tracker = new IntegrationCleanupTracker();
+  let result: T;
   try {
-    return await action(tracker);
-  } finally {
+    result = await action(tracker);
+  } catch (error) {
     await tracker.runAll();
+    throw error;
   }
+  const { errors } = await tracker.runAll();
+  if (errors.length > 0) {
+    throw new AggregateError(
+      errors,
+      `Fallaron ${errors.length} tareas de cleanup en Sandbox`,
+    );
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -378,9 +394,7 @@ export function createSandboxChileClient(
     environment: "sandbox",
     options: {
       ...options,
-      logger: options.logger
-        ? createSandboxRedactingLogger(options.logger)
-        : undefined,
+      logger: createSandboxRedactingLogger(options.logger),
     },
   });
 }
@@ -401,9 +415,7 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
     "sandbox",
     {
       ...options,
-      logger: options.logger
-        ? createSandboxRedactingLogger(options.logger)
-        : undefined,
+      logger: createSandboxRedactingLogger(options.logger),
     },
   );
 }

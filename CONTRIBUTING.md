@@ -105,7 +105,13 @@ Unit tests must pass:
 bun run test:unit
 ```
 
-Integration/smoke hits Payku sandbox when tokens are present:
+Run the Core Smoke tests (fast, read-heavy and critical-flow suite against Sandbox):
+
+```bash
+bun run test:smoke
+```
+
+Or the entire integration suite:
 
 ```bash
 bun run test:integration
@@ -118,7 +124,7 @@ bun test --path-ignore-patterns '' src/__tests__/integration/transactions.test.t
 ```
 
 For full details, safeguards, and CI setup, see [Smoke tests guide](./docs/smoke-tests.md).
-CI only runs unit tests; keep production tokens out of `.env`.
+Pull requests run unit tests (`verify-build`) and core smoke tests (`smoke-tests`) with rate-limit and concurrency protections; keep production tokens out of `.env`.
 
 ## Pull requests
 

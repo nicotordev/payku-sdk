@@ -6,6 +6,7 @@ import {
   generateUniqueEmail,
   generateUniqueOrder,
   noteCapabilityDependent,
+  SANDBOX_LONG_TIMEOUT_MS,
   SANDBOX_TIMEOUT_MS,
   santiagoDateOnly,
 } from "../../test-utils/paykuIntegration";
@@ -71,7 +72,7 @@ describePaykuIntegration("integration / transactions", () => {
         expect(Number(match.amount)).toBe(amount);
       }
     },
-    SANDBOX_TIMEOUT_MS,
+    SANDBOX_LONG_TIMEOUT_MS,
   );
 
   test("throws PaykuAPIError for a missing transaction", async () => {
@@ -99,5 +100,5 @@ describePaykuIntegration("integration / transactions", () => {
           err.type === "Unprocessable Entity",
       ).toBe(true);
     }
-  });
+  }, SANDBOX_TIMEOUT_MS);
 });

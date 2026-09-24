@@ -7,7 +7,7 @@ Esta guía describe la infraestructura común y las pautas para ejecutar pruebas
 ## 1. Filosofía: Smoke Tests vs Unit Tests
 
 - **Unit Tests (`bun run test:unit`)**: Validan exhaustivamente la lógica interna del SDK, validaciones Zod, firmas HMAC, serialización wire, transformaciones de respuesta, manejo de errores y compatibilidad de métodos con mocks controlados. Se ejecutan automáticamente en cada commit y en CI pública sin requerir credenciales ni conectividad.
-- **Smoke Tests (`bun run test:integration`)**: Validan la conectividad y el contrato real contra los endpoints en vivo de Payku Sandbox (`https://des.payku.cl`). Comprueban que la API responde con los esquemas esperados, que las firmas HMAC son aceptadas por la pasarela y que las credenciales funcionan correctamente.
+- **Smoke Tests (`bun run test:smoke`)**: Validan la conectividad y el contrato real contra los endpoints en vivo de Payku Sandbox (`https://des.payku.cl`). Comprueban que la API responde con los esquemas esperados, que las firmas HMAC son aceptadas por la pasarela y que las credenciales funcionan correctamente.
 
 ---
 
@@ -45,6 +45,14 @@ PAYKU_ENVIRONMENT=sandbox
 ---
 
 ## 4. Ejecución de Tests
+
+### Ejecutar Core Smoke Tests (Recomendado para CI y validación rápida)
+
+Ejecuta únicamente el subconjunto esencial de pruebas de lectura y flujo crítico (`credentials`, `banks`, `payment-methods`, `transactions` - ~4 llamadas HTTP en ~1.5 segundos):
+
+```bash
+bun run test:smoke
+```
 
 ### Ejecutar toda la suite de integración
 
@@ -155,12 +163,21 @@ Los tests de smoke deben validar que los campos críticos y tipos básicos exist
 
 ---
 
-## 6. Ejecución en CI Protegida
+## 6. Ejecución en CI Protegida (`smoke-tests.yml`)
 
-En flujos de CI (por ejemplo, workflows manuales con `workflow_dispatch` o jobs nocturnos programados):
+El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](../.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
 
-1. Configura los secretos del repositorio:
-   - `PAYKU_SANDBOX_PUBLIC_TOKEN`
-   - `PAYKU_SANDBOX_PRIVATE_TOKEN`
-2. Pasa `PAYKU_STRICT_INTEGRATION=1` para que el job falle de inmediato si algún secreto falta o expira.
-3. Ejecuta `bun run test:integration`.
+### Prevención de saturación y colas en Sandbox
+1. **Cola de concurrencia global (`group: payku-sandbox-smoke-tests`, `cancel-in-progress: false`, `queue: max`)**: A nivel del job solo corre 1 ejecución simultánea contra el Sandbox en todo el repositorio, con hasta 100 ejecuciones pendientes; si la cola está llena, GitHub cancela las ejecuciones adicionales. A nivel del workflow, un grupo por PR conserva la ejecución activa y reemplaza únicamente la ejecución pendiente de esa misma PR cuando llega una nueva.
+2. **Suite Core (`bun run test:smoke`)**: En cada PR y push solo se ejecutan los tests mínimos de lectura y flujo crítico para evitar cuellos de botella y consumo innecesario de cuota.
+3. **Filtro de rutas (`paths`)**: No se dispara si los cambios solo tocan documentación (`docs/**`, `wiki/**`, `*.md`).
+4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow emite un aviso de GitHub Actions y finaliza con éxito de forma limpia sin bloquear el merge.
+5. **Ejecución manual flexible (`workflow_dispatch`)**: Permite correr manualmente el workflow desde la pestaña Actions de GitHub seleccionando la suite:
+   - `smoke` (Core rápida, predeterminada).
+   - `integration` (Suite completa de integración).
+
+### Secretos en GitHub Actions
+Los siguientes secretos están configurados en el repositorio:
+- `PAYKU_PUBLIC_TOKEN`
+- `PAYKU_PRIVATE_TOKEN`
+- `PAYKU_ENVIRONMENT` (`sandbox`)

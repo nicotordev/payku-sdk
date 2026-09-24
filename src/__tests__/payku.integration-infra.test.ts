@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { PaykuAPIError, PaykuError } from "../errors";
 import {
   IntegrationCleanupTracker,
@@ -26,10 +26,13 @@ describe("Payku Integration Test Infrastructure", () => {
     test("accepts sandbox environment", () => {
       expect(() => assertSandboxEnvironment("sandbox")).not.toThrow();
       expect(() => assertSandboxEnvironment("SANDBOX")).not.toThrow();
-      expect(() => assertSandboxEnvironment(undefined)).not.toThrow();
     });
 
-    test("throws security error on production or any other environment", () => {
+    test("throws security error on production, non-sandbox or missing environment", () => {
+      expect(() => assertSandboxEnvironment(undefined)).toThrow(
+        /SECURITY ERROR/i,
+      );
+      expect(() => assertSandboxEnvironment("")).toThrow(/SECURITY ERROR/i);
       expect(() => assertSandboxEnvironment("production")).toThrow(
         /SECURITY ERROR/i,
       );
@@ -142,6 +145,17 @@ describe("Payku Integration Test Infrastructure", () => {
 
       expect(cleanedUpOnError).toBe(true);
     });
+
+    test("withCleanup throws AggregateError when a cleanup task fails on successful action", async () => {
+      await expect(
+        withCleanup(async (tracker) => {
+          tracker.register(async () => {
+            throw new Error("Cleanup failed");
+          });
+          return "ok";
+        }),
+      ).rejects.toThrow("Fallaron 1 tareas de cleanup en Sandbox");
+    });
   });
 
   describe("withRetry", () => {
@@ -175,7 +189,8 @@ describe("Payku Integration Test Infrastructure", () => {
 
   describe("redactSensitiveData and redactSensitiveString", () => {
     test("redacts Bearer tokens and Sign headers in strings", () => {
-      const input = "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
+      const input =
+        "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
       const redacted = redactSensitiveString(input);
       expect(redacted).not.toContain("mysecrettoken123");
       expect(redacted).toContain("Bearer [REDACTED]");
@@ -285,15 +300,114 @@ describe("Payku Integration Test Infrastructure", () => {
   });
 
   describe("client factories", () => {
-    test("createSandboxChileClient configures sandbox environment", () => {
-      const client = createSandboxChileClient();
-      expect(client.country).toBe("CL");
-      expect(client.environment).toBe("sandbox");
+    let originalEnvironment: string | undefined;
+
+    beforeEach(() => {
+      originalEnvironment = process.env.PAYKU_ENVIRONMENT;
+      process.env.PAYKU_ENVIRONMENT = "sandbox";
     });
 
-    test("createSandboxClient configures sandbox environment", () => {
-      const client = createSandboxClient();
+    afterEach(() => {
+      if (originalEnvironment === undefined) {
+        delete process.env.PAYKU_ENVIRONMENT;
+      } else {
+        process.env.PAYKU_ENVIRONMENT = originalEnvironment;
+      }
+    });
+
+    function captureDefaultLoggerMessage(
+      logger:
+        | {
+            error(event: {
+              operation: string;
+              statusCode?: number;
+              type?: string;
+              message: string;
+            }): void;
+          }
+        | undefined,
+    ): string {
+      const originalConsoleError = console.error;
+      let capturedMessage = "";
+      console.error = ((...args: unknown[]) => {
+        const event = args[1];
+        if (
+          typeof event === "object" &&
+          event !== null &&
+          "message" in event &&
+          typeof event.message === "string"
+        ) {
+          capturedMessage = event.message;
+        }
+      }) as typeof console.error;
+      try {
+        logger?.error({
+          operation: "testOp",
+          statusCode: 500,
+          type: "ApiError",
+          message: "Bearer sandbox-test-token",
+        });
+      } finally {
+        console.error = originalConsoleError;
+      }
+      return capturedMessage;
+    }
+
+    test("createSandboxChileClient configures sandbox environment and redacts messages sent to the base logger", () => {
+      let loggedMessage = "";
+      const client = createSandboxChileClient({
+        logger: {
+          error(event) {
+            loggedMessage = event.message;
+          },
+        },
+      });
+      expect(client.country).toBe("CL");
       expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
+      const signature = "ab".repeat(32);
+      client.options.logger?.error({
+        operation: "testOp",
+        statusCode: 500,
+        type: "ApiError",
+        message: `Failed with Bearer sandbox-test-token and Sign: ${signature}`,
+      });
+      expect(loggedMessage).toBe(
+        "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
+
+      const defaultClient = createSandboxChileClient();
+      expect(captureDefaultLoggerMessage(defaultClient.options.logger)).toBe(
+        "Bearer [REDACTED]",
+      );
+    });
+
+    test("createSandboxClient configures sandbox environment and redacts messages sent to the base logger", () => {
+      let loggedMessage = "";
+      const client = createSandboxClient({
+        logger: {
+          error(event) {
+            loggedMessage = event.message;
+          },
+        },
+      });
+      expect(client.environment).toBe("sandbox");
+      expect(client.options.logger).toBeDefined();
+      const signature = "ab".repeat(32);
+      client.options.logger?.error({
+        operation: "testOp",
+        statusCode: 500,
+        type: "ApiError",
+        message: `Failed with Bearer sandbox-test-token and Sign: ${signature}`,
+      });
+      expect(loggedMessage).toBe(
+        "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
+
+      const defaultClient = createSandboxClient();
+      expect(captureDefaultLoggerMessage(defaultClient.options.logger)).toBe(
+        "Bearer [REDACTED]",
+      );
     });
   });
 });
