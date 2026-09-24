@@ -1,12 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { PaykuAPIError, PaykuError } from "../errors";
 import {
   IntegrationCleanupTracker,
   SANDBOX_TEST_RUT,
   SANDBOX_TIMEOUT_MS,
   assertSandboxEnvironment,
+  capabilityDependentReason,
   createSandboxChileClient,
   createSandboxClient,
   createSandboxRedactingLogger,
+  isSignRejection,
+  santiagoDateOnly,
   generateUniqueEmail,
   generateUniqueId,
   generateUniqueOrder,
@@ -234,6 +238,64 @@ describe("Payku Integration Test Infrastructure", () => {
 
       expect(loggedMessage).toContain("Bearer [REDACTED]");
       expect(loggedMessage).not.toContain("secrettoken456");
+    });
+  });
+
+  describe("sign and capability classification", () => {
+    test("isSignRejection matches waiting sign and ignores other failures", () => {
+      expect(
+        isSignRejection(
+          new PaykuAPIError("waiting sign", { statusCode: 400 }),
+        ),
+      ).toBe(true);
+      expect(
+        isSignRejection(new PaykuError("not found", { statusCode: 404 })),
+      ).toBe(false);
+      expect(isSignRejection(new Error("waiting sign"))).toBe(false);
+      expect(
+        isSignRejection(
+          new PaykuError("No se pudo confirmar la transacción"),
+        ),
+      ).toBe(false);
+    });
+
+    test("capabilityDependentReason skips sign failures and matches disabled products", () => {
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("waiting sign", { statusCode: 401 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("module not enabled", { statusCode: 200 }),
+        ),
+      ).toBe("module not enabled");
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("forbidden", { statusCode: 403 }),
+        ),
+      ).toBe("HTTP 403");
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("Unauthorized", { statusCode: 401 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("no autorizado", { statusCode: 200 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("permission denied", { statusCode: 401 }),
+        ),
+      ).toBeUndefined();
+    });
+
+    test("santiagoDateOnly returns YYYY-MM-DD", () => {
+      expect(santiagoDateOnly(new Date("2026-01-15T15:00:00.000Z"))).toBe(
+        "2026-01-15",
+      );
     });
   });
 
