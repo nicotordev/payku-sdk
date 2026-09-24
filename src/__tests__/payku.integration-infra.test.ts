@@ -25,7 +25,9 @@ describe("Payku Integration Test Infrastructure", () => {
     });
 
     test("throws security error on production, non-sandbox or missing environment", () => {
-      expect(() => assertSandboxEnvironment(undefined)).toThrow(/SECURITY ERROR/i);
+      expect(() => assertSandboxEnvironment(undefined)).toThrow(
+        /SECURITY ERROR/i,
+      );
       expect(() => assertSandboxEnvironment("")).toThrow(/SECURITY ERROR/i);
       expect(() => assertSandboxEnvironment("production")).toThrow(
         /SECURITY ERROR/i,
@@ -183,7 +185,8 @@ describe("Payku Integration Test Infrastructure", () => {
 
   describe("redactSensitiveData and redactSensitiveString", () => {
     test("redacts Bearer tokens and Sign headers in strings", () => {
-      const input = "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
+      const input =
+        "Request with Bearer mysecrettoken123 and Sign: a1b2c3d4e5f607182930415263748596a1b2c3d4e5f607182930415263748596 in header";
       const redacted = redactSensitiveString(input);
       expect(redacted).not.toContain("mysecrettoken123");
       expect(redacted).toContain("Bearer [REDACTED]");
@@ -250,6 +253,44 @@ describe("Payku Integration Test Infrastructure", () => {
       }
     });
 
+    function captureDefaultLoggerMessage(
+      logger:
+        | {
+            error(event: {
+              operation: string;
+              statusCode?: number;
+              type?: string;
+              message: string;
+            }): void;
+          }
+        | undefined,
+    ): string {
+      const originalConsoleError = console.error;
+      let capturedMessage = "";
+      console.error = ((...args: unknown[]) => {
+        const event = args[1];
+        if (
+          typeof event === "object" &&
+          event !== null &&
+          "message" in event &&
+          typeof event.message === "string"
+        ) {
+          capturedMessage = event.message;
+        }
+      }) as typeof console.error;
+      try {
+        logger?.error({
+          operation: "testOp",
+          statusCode: 500,
+          type: "ApiError",
+          message: "Bearer sandbox-test-token",
+        });
+      } finally {
+        console.error = originalConsoleError;
+      }
+      return capturedMessage;
+    }
+
     test("createSandboxChileClient configures sandbox environment and redacts messages sent to the base logger", () => {
       let loggedMessage = "";
       const client = createSandboxChileClient({
@@ -271,6 +312,11 @@ describe("Payku Integration Test Infrastructure", () => {
       });
       expect(loggedMessage).toBe(
         "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
+
+      const defaultClient = createSandboxChileClient();
+      expect(captureDefaultLoggerMessage(defaultClient.options.logger)).toBe(
+        "Bearer [REDACTED]",
       );
     });
 
@@ -294,6 +340,11 @@ describe("Payku Integration Test Infrastructure", () => {
       });
       expect(loggedMessage).toBe(
         "Failed with Bearer [REDACTED] and Sign: [REDACTED_SIGN]",
+      );
+
+      const defaultClient = createSandboxClient();
+      expect(captureDefaultLoggerMessage(defaultClient.options.logger)).toBe(
+        "Bearer [REDACTED]",
       );
     });
   });
