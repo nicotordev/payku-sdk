@@ -107,25 +107,34 @@ export const describePaykuIntegration = shouldRunIntegrationTests
 
 /**
  * Detecta si un error devuelto por la API de Payku indica que la capability,
+const CAPABILITY_UNAVAILABLE_PATTERNS = [
+  "skipped: capability unavailable",
+  "capability unavailable",
+  "your account is not escrow",
+  "not data or your account is not escrow",
+  "not active",
+  "not enabled",
+  "no habilitado",
+  "no activo",
+  "sin permisos",
+  "sin acceso",
+  "feature disabled",
+  "plan or product not active",
+  "producto no habilitado",
+  "cuenta no autorizada para",
+] as const;
+
+/**
+ * Detecta si un error devuelto por la API de Payku indica que la capability,
  * producto o módulo correspondiente no está habilitado para la cuenta Sandbox.
+ *
+ * NOTA: Fallos de autenticación (ej. tokens inválidos) NO son considerados
+ * indisponibilidad de capability para evitar silenciar errores reales de credenciales.
  */
 export function isCapabilityUnavailableError(error: unknown): boolean {
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
-    if (
-      msg.includes("skipped: capability unavailable") ||
-      msg.includes("capability unavailable") ||
-      msg.includes("your account is not escrow") ||
-      msg.includes("not data or your account is not escrow") ||
-      msg.includes("not active") ||
-      msg.includes("not enabled") ||
-      msg.includes("no habilitado") ||
-      msg.includes("no activo") ||
-      msg.includes("unauthorized") ||
-      msg.includes("forbidden") ||
-      msg.includes("sin permisos") ||
-      msg.includes("sin acceso")
-    ) {
+    if (CAPABILITY_UNAVAILABLE_PATTERNS.some((p) => msg.includes(p))) {
       return true;
     }
   }
@@ -134,32 +143,12 @@ export function isCapabilityUnavailableError(error: unknown): boolean {
     return false;
   }
 
-  const statusCode = error.statusCode;
   const message = (error.message || "").toLowerCase();
   const type = (error.type || "").toLowerCase();
 
-  if (statusCode === 401 || statusCode === 403) {
-    return true;
-  }
-
-  const patterns = [
-    "unauthorized",
-    "forbidden",
-    "not active",
-    "not enabled",
-    "no habilitado",
-    "no activo",
-    "sin permisos",
-    "sin acceso",
-    "invalid token",
-    "feature disabled",
-    "capability unavailable",
-    "plan or product not active",
-    "your account is not escrow",
-    "not data or your account is not escrow",
-  ];
-
-  return patterns.some((p) => message.includes(p) || type.includes(p));
+  return CAPABILITY_UNAVAILABLE_PATTERNS.some(
+    (p) => message.includes(p) || type.includes(p),
+  );
 }
 
 export type CapabilityTestResult<T> =

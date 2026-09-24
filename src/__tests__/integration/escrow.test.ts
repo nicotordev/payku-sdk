@@ -2,19 +2,26 @@ import { expect, test } from "bun:test";
 import {
   createSandboxChileClient,
   describePaykuIntegration,
-  generateUniqueId,
   runCapabilityTest,
   SANDBOX_TIMEOUT_MS,
 } from "../../test-utils/paykuIntegration";
 
 describePaykuIntegration("integration / escrow", () => {
   test("authorizes settlement when escrow capability is available", async () => {
+    const escrowTxId = process.env.PAYKU_SANDBOX_ESCROW_TRANSACTION_ID;
+
+    if (!escrowTxId) {
+      console.info(
+        `\n⚠️  [Payku Sandbox Capability] skipped: capability unavailable (escrow.authorize: PAYKU_SANDBOX_ESCROW_TRANSACTION_ID environment variable is not set)\n`,
+      );
+      return;
+    }
+
     const payku = createSandboxChileClient();
-    const mockTxId = generateUniqueId("trx_escrow");
 
     const result = await runCapabilityTest("escrow.authorize", () =>
       payku.escrow.authorize({
-        transactions: [mockTxId],
+        transactions: [escrowTxId],
       }),
     );
 

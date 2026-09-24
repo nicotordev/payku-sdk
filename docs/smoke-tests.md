@@ -44,11 +44,9 @@ PAYKU_ENVIRONMENT=sandbox
 
 ---
 
-## 4. Ejecución de Tests
+### Ejecutar Smoke Tests
 
-### Ejecutar Core Smoke Tests (Recomendado para CI y validación rápida)
-
-Ejecuta únicamente el subconjunto esencial de pruebas de lectura y flujo crítico (`credentials`, `banks`, `payment-methods`, `transactions` - ~4 llamadas HTTP en ~1.5 segundos):
+Ejecuta el conjunto completo de las 9 suites de pruebas de integración (`credentials`, `banks`, `payment-methods`, `transactions`, `marketplace`, `mall`, `wallet`, `escrow`, `conciliation`). Tenga en cuenta que los módulos como Marketplace, Mall y Wallet pueden crear recursos temporales en Sandbox y consumir mayor tiempo y cuota de red:
 
 ```bash
 bun run test:smoke
@@ -182,13 +180,13 @@ Los tests de smoke deben validar que los campos críticos y tipos básicos exist
 
 ## 6. Ejecución en CI Protegida (`smoke-tests.yml`)
 
-El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](../.github/workflows/smoke-tests.yml)) que corre como **check de PR** contra el Sandbox de Payku.
+El proyecto cuenta con un workflow dedicado en GitHub Actions ([`.github/workflows/smoke-tests.yml`](../.github/workflows/smoke-tests.yml)) que se ejecuta para pull requests elegibles dirigidas a `main` y pushes a `main` contra el Sandbox de Payku.
 
 ### Prevención de saturación y colas en Sandbox
 1. **Cola de concurrencia global (`group: payku-sandbox-smoke-tests`, `cancel-in-progress: false`, `queue: max`)**: A nivel del job solo corre 1 ejecución simultánea contra el Sandbox en todo el repositorio, con hasta 100 ejecuciones pendientes; si la cola está llena, GitHub cancela las ejecuciones adicionales. A nivel del workflow, un grupo por PR conserva la ejecución activa y reemplaza únicamente la ejecución pendiente de esa misma PR cuando llega una nueva.
-2. **Suite Core (`bun run test:smoke`)**: En cada PR y push solo se ejecutan los tests mínimos de lectura y flujo crítico para evitar cuellos de botella y consumo innecesario de cuota.
+2. **Suite Smoke (`bun run test:smoke`)**: En cada PR elegible y push a `main` se ejecutan los smoke tests para validar la integración.
 3. **Filtro de rutas (`paths`)**: No se dispara si los cambios solo tocan documentación (`docs/**`, `wiki/**`, `*.md`).
-4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow emite un aviso de GitHub Actions y finaliza con éxito de forma limpia sin bloquear el merge.
+4. **Protección para forks**: Si una pull request proviene de un fork externo (sin acceso a los secrets del repositorio), el workflow detecta la falta de secretos, emite un aviso explicativo de GitHub Actions y omite los smoke tests finalizando de forma limpia sin bloquear el merge.
 5. **Ejecución manual flexible (`workflow_dispatch`)**: Permite correr manualmente el workflow desde la pestaña Actions de GitHub seleccionando la suite:
    - `smoke` (Core rápida, predeterminada).
    - `integration` (Suite completa de integración).
