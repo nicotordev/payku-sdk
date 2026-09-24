@@ -105,8 +105,6 @@ export const describePaykuIntegration = shouldRunIntegrationTests
 // Detección y manejo de Capabilities en Sandbox
 // ---------------------------------------------------------------------------
 
-/**
- * Detecta si un error devuelto por la API de Payku indica que la capability,
 const CAPABILITY_UNAVAILABLE_PATTERNS = [
   "skipped: capability unavailable",
   "capability unavailable",
