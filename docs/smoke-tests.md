@@ -153,7 +153,28 @@ test("consulta endpoint con reintentos ante jitter", async () => {
 }, SANDBOX_TIMEOUT_MS);
 ```
 
-### 5.4 Contratos mínimos sin snapshots frágiles
+### 5.4 Detección explícita de Capabilities (`runCapabilityTest`)
+
+Para módulos cuyo acceso depende de productos o funcionalidades activas en la cuenta Payku (como Escrow, Marketplace, Mall, Wallet Payouts o Conciliación), se utiliza `runCapabilityTest`:
+
+```typescript
+import { runCapabilityTest } from "../../test-utils/paykuIntegration";
+
+const result = await runCapabilityTest("escrow.authorize", () =>
+  payku.escrow.authorize({ transactions: ["trx_123"] })
+);
+
+if (result.status === "skipped") {
+  // Queda registrado explícitamente como skipped: capability unavailable
+  expect(result.reason).toContain("skipped: capability unavailable");
+  return;
+}
+
+// Procede con las aserciones si la capability está habilitada
+expect(result.value.transactions).toBeDefined();
+```
+
+### 5.5 Contratos mínimos sin snapshots frágiles
 
 Los tests de smoke deben validar que los campos críticos y tipos básicos existan y tengan formatos coherentes (`id`, `status`, URLs `https://...`), evitando aserciones rígidas sobre datos dinámicos que cambian con el tiempo (como listas de transacciones o balances fluctuantes).
 

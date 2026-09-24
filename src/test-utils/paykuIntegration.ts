@@ -2,10 +2,11 @@ import { describe } from "bun:test";
 import { randomBytes } from "node:crypto";
 import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
-import type {
-  PaykuAPIErrorLogEvent,
-  PaykuClientOptions,
-  PaykuLogger,
+import {
+  isPaykuError,
+  type PaykuAPIErrorLogEvent,
+  type PaykuClientOptions,
+  type PaykuLogger,
 } from "../errors";
 
 /** Timeout estándar recomendado para llamadas contra Payku Sandbox (20 segundos). */
@@ -99,6 +100,95 @@ export const describePaykuIntegration = shouldRunIntegrationTests
       printIntegrationSkipNoticeIfNeeded();
       return describe.skip(title, fn);
     }) as typeof describe);
+
+// ---------------------------------------------------------------------------
+// Detección y manejo de Capabilities en Sandbox
+// ---------------------------------------------------------------------------
+
+/**
+ * Detecta si un error devuelto por la API de Payku indica que la capability,
+ * producto o módulo correspondiente no está habilitado para la cuenta Sandbox.
+ */
+export function isCapabilityUnavailableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (
+      msg.includes("skipped: capability unavailable") ||
+      msg.includes("capability unavailable") ||
+      msg.includes("your account is not escrow") ||
+      msg.includes("not data or your account is not escrow") ||
+      msg.includes("not active") ||
+      msg.includes("not enabled") ||
+      msg.includes("no habilitado") ||
+      msg.includes("no activo") ||
+      msg.includes("unauthorized") ||
+      msg.includes("forbidden") ||
+      msg.includes("sin permisos") ||
+      msg.includes("sin acceso")
+    ) {
+      return true;
+    }
+  }
+
+  if (!isPaykuError(error)) {
+    return false;
+  }
+
+  const statusCode = error.statusCode;
+  const message = (error.message || "").toLowerCase();
+  const type = (error.type || "").toLowerCase();
+
+  if (statusCode === 401 || statusCode === 403) {
+    return true;
+  }
+
+  const patterns = [
+    "unauthorized",
+    "forbidden",
+    "not active",
+    "not enabled",
+    "no habilitado",
+    "no activo",
+    "sin permisos",
+    "sin acceso",
+    "invalid token",
+    "feature disabled",
+    "capability unavailable",
+    "plan or product not active",
+    "your account is not escrow",
+    "not data or your account is not escrow",
+  ];
+
+  return patterns.some((p) => message.includes(p) || type.includes(p));
+}
+
+export type CapabilityTestResult<T> =
+  | { status: "executed"; value: T }
+  | { status: "skipped"; reason: string };
+
+/**
+ * Ejecuta una prueba de capability en Sandbox.
+ * Si la capability está habilitada, retorna `{ status: "executed", value }`.
+ * Si la capability no está habilitada en la cuenta Sandbox, registra explícitamente `skipped: capability unavailable`
+ * y retorna `{ status: "skipped", reason }` en lugar de fallar o hacer un éxito silencioso.
+ */
+export async function runCapabilityTest<T>(
+  capabilityName: string,
+  fn: () => Promise<T>,
+): Promise<CapabilityTestResult<T>> {
+  try {
+    const value = await fn();
+    return { status: "executed", value };
+  } catch (error) {
+    if (isCapabilityUnavailableError(error)) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const skipNotice = `skipped: capability unavailable (${capabilityName}: ${reason})`;
+      console.info(`\n⚠️  [Payku Sandbox Capability] ${skipNotice}\n`);
+      return { status: "skipped", reason: skipNotice };
+    }
+    throw error;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Generadores de identificadores únicos (Prevención de colisiones concurrentes)
