@@ -244,18 +244,14 @@ describe("Payku Integration Test Infrastructure", () => {
   describe("sign and capability classification", () => {
     test("isSignRejection matches waiting sign and ignores other failures", () => {
       expect(
-        isSignRejection(
-          new PaykuAPIError("waiting sign", { statusCode: 400 }),
-        ),
+        isSignRejection(new PaykuAPIError("waiting sign", { statusCode: 400 })),
       ).toBe(true);
       expect(
         isSignRejection(new PaykuError("not found", { statusCode: 404 })),
       ).toBe(false);
       expect(isSignRejection(new Error("waiting sign"))).toBe(false);
       expect(
-        isSignRejection(
-          new PaykuError("No se pudo confirmar la transacción"),
-        ),
+        isSignRejection(new PaykuError("No se pudo confirmar la transacción")),
       ).toBe(false);
     });
 
@@ -274,7 +270,22 @@ describe("Payku Integration Test Infrastructure", () => {
         capabilityDependentReason(
           new PaykuAPIError("forbidden", { statusCode: 403 }),
         ),
-      ).toBe("HTTP 403");
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("product unavailable", { statusCode: 403 }),
+        ),
+      ).toBe("product unavailable");
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("feature not available", { statusCode: 400 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("module not enabled", { statusCode: 503 }),
+        ),
+      ).toBeUndefined();
       expect(
         capabilityDependentReason(
           new PaykuAPIError("Unauthorized", { statusCode: 401 }),

@@ -165,11 +165,7 @@ export type PaykuWalletListResponse = PaykuWalletBalanceResponse;
 
 /** Estados documentados de payout GET / payoutv3. */
 export type PaykuPayoutStatus =
-  | "pending"
-  | "processing"
-  | "success"
-  | "banking_error"
-  | "fraud_prevention";
+  "pending" | "processing" | "success" | "banking_error" | "fraud_prevention";
 
 /**
  * Detalle anidado en `GET /api/payout/{id}` y `GET /api/payoutv3/{id}`.
@@ -297,4 +293,3 @@ export interface PaykuCreateWalletPayoutResponse {
 
 /** @deprecated Preferir `PaykuCreateWalletPayoutResponse`. */
 export type PaykuWalletPayoutCreateResponse = PaykuCreateWalletPayoutResponse;
-

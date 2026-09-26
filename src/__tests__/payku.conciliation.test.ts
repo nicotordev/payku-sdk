@@ -49,9 +49,13 @@ describe("PaykuConciliation", () => {
     expect(response.conciliation).toHaveLength(1);
     expect(response.conciliation[0]?.id).toBe("1");
     expect(response.conciliation[0]?.status).toBe("paid_out");
-    expect(response.conciliation[0]?.transaction?.[0]?.transaction_id).toBe("trx_1001");
+    expect(response.conciliation[0]?.transaction?.[0]?.transaction_id).toBe(
+      "trx_1001",
+    );
     expect(response.conciliation[0]?.transaction?.[0]?.amount).toBe(10000);
-    expect(response.conciliation[0]?.transaction?.[0]?.amount_deposit).toBe(9500);
+    expect(response.conciliation[0]?.transaction?.[0]?.amount_deposit).toBe(
+      9500,
+    );
   });
 
   test("create is a backwards-compatible alias of list", async () => {
@@ -186,7 +190,10 @@ describe("PaykuConciliation", () => {
     test("conciliation.list enforces validation before network call", async () => {
       // Invalid date should reject before making an HTTP request
       await expect(
-        conciliation.list({ date_init: "invalid-date", date_end: "2024-01-01" }),
+        conciliation.list({
+          date_init: "invalid-date",
+          date_end: "2024-01-01",
+        }),
       ).rejects.toThrow(PaykuError);
       expect(mock.history.post).toHaveLength(0);
     });

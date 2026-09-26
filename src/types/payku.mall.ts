@@ -20,8 +20,7 @@ export interface PaykuMallMerchantInput {
 
 /** Input de `merchant[]`: 5-tupla wire u objeto nombrado. */
 export type PaykuMallMerchantItem =
-  | PaykuMallMerchantTuple
-  | PaykuMallMerchantInput;
+  PaykuMallMerchantTuple | PaykuMallMerchantInput;
 
 /** `POST /api/mall` — crear transacción Mall. */
 export interface PaykuMallTransactionRequest {
@@ -37,11 +36,7 @@ export interface PaykuMallTransactionRequest {
 
 /** Estados documentados de transacción Mall. */
 export type PaykuMallTransactionStatus =
-  | "pending"
-  | "success"
-  | "rejected"
-  | "refunded partial"
-  | "refunded";
+  "pending" | "success" | "rejected" | "refunded partial" | "refunded";
 
 export interface PaykuMallIndividualOrder {
   merchant: string;
@@ -129,5 +124,4 @@ export type PaykuVerifyMallNotifyResult =
 
 /** @deprecated Prefer PaykuMallCreateResponse / PaykuMallGetResponse */
 export type PaykuMallTransactionResponse =
-  | PaykuMallCreateResponse
-  | PaykuMallGetResponse;
+  PaykuMallCreateResponse | PaykuMallGetResponse;

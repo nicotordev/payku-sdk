@@ -1,7 +1,9 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import Payku, { PaykuPaymentMethods as PaykuPaymentMethodsExport } from "../index";
+import Payku, {
+  PaykuPaymentMethods as PaykuPaymentMethodsExport,
+} from "../index";
 import PaykuPaymentMethods from "../clients/payku.payment-methods";
 import { PaykuScopedPaymentMethods } from "../clients/payku.payment-methods.scoped";
 import { PaykuError } from "../errors";
@@ -97,7 +99,10 @@ describe("PaykuPaymentMethods", () => {
 
   describe("PaykuScopedPaymentMethods (forCountry integration)", () => {
     test("infers CLP currency automatically for Chile when called without arguments", async () => {
-      const scopedPaymentMethods = new PaykuScopedPaymentMethods(paymentMethods, "CL");
+      const scopedPaymentMethods = new PaykuScopedPaymentMethods(
+        paymentMethods,
+        "CL",
+      );
 
       mock.onGet("/paymentmethods").reply((config) => {
         expect(config.params).toEqual({ currency: "clp" });
@@ -109,7 +114,10 @@ describe("PaykuPaymentMethods", () => {
     });
 
     test("infers PEN currency automatically for Peru", async () => {
-      const scopedPaymentMethods = new PaykuScopedPaymentMethods(paymentMethods, "PE");
+      const scopedPaymentMethods = new PaykuScopedPaymentMethods(
+        paymentMethods,
+        "PE",
+      );
 
       mock.onGet("/paymentmethods").reply((config) => {
         expect(config.params).toEqual({ currency: "pen" });
@@ -121,7 +129,10 @@ describe("PaykuPaymentMethods", () => {
     });
 
     test("infers VES currency automatically for Venezuela", async () => {
-      const scopedPaymentMethods = new PaykuScopedPaymentMethods(paymentMethods, "VE");
+      const scopedPaymentMethods = new PaykuScopedPaymentMethods(
+        paymentMethods,
+        "VE",
+      );
 
       mock.onGet("/paymentmethods").reply((config) => {
         expect(config.params).toEqual({ currency: "ves" });
@@ -133,7 +144,10 @@ describe("PaykuPaymentMethods", () => {
     });
 
     test("allows explicit currency override in scoped payment methods", async () => {
-      const scopedPaymentMethods = new PaykuScopedPaymentMethods(paymentMethods, "CL");
+      const scopedPaymentMethods = new PaykuScopedPaymentMethods(
+        paymentMethods,
+        "CL",
+      );
 
       mock.onGet("/paymentmethods").reply((config) => {
         expect(config.params).toEqual({ currency: "pen" });
@@ -151,7 +165,9 @@ describe("PaykuPaymentMethods", () => {
         environment: "sandbox",
       });
 
-      expect(paykuChile.paymentMethods).toBeInstanceOf(PaykuScopedPaymentMethods);
+      expect(paykuChile.paymentMethods).toBeInstanceOf(
+        PaykuScopedPaymentMethods,
+      );
     });
   });
 

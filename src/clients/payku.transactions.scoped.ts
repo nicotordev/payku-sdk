@@ -104,7 +104,8 @@ export class PaykuScopedTransactions {
   /**
    * Alias de `PaykuTransactions.parseReturnQuery`.
    */
-  public static parsePaymentReturnQuery = PaykuTransactions.parsePaymentReturnQuery;
+  public static parsePaymentReturnQuery =
+    PaykuTransactions.parsePaymentReturnQuery;
 
   /**
    * Determina si una transacción, respuesta o payload está pagada exitosamente (`status: "success"`).

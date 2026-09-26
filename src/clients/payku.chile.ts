@@ -39,7 +39,10 @@ export class PaykuChile extends PaykuCountryBase {
     );
     this.wallet = core.wallet;
     this.banks = new PaykuScopedBanks(core.banks, "CL");
-    this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "CL");
+    this.paymentMethods = new PaykuScopedPaymentMethods(
+      core.paymentMethods,
+      "CL",
+    );
     this.subscriptions = core.subscriptions;
     this.consumptionSubscriptions = core.consumptionSubscriptions;
     this.marketplace = core.marketplace;

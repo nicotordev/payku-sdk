@@ -482,10 +482,7 @@ export interface PaykuSubscriptionPaymentNotifyPayload {
 }
 
 export type PaykuVerifySubscriptionActivationNotifyFailureReason =
-  | "missing_id"
-  | "missing_status"
-  | "status_mismatch"
-  | "payku_api_error";
+  "missing_id" | "missing_status" | "status_mismatch" | "payku_api_error";
 
 export interface PaykuVerifySubscriptionActivationNotifyOptions {
   expectedStatus?: string;

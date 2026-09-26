@@ -118,18 +118,17 @@ export type PaykuCreateEvent = PaykuCreateEventRequestInput;
 const mallMerchantAmountSchema = z
   .union([
     z.number(),
-    z.string().refine(
-      (s) => s.trim().length > 0 && Number.isFinite(Number(s)),
-      "amount must be finite",
-    ),
+    z
+      .string()
+      .refine(
+        (s) => s.trim().length > 0 && Number.isFinite(Number(s)),
+        "amount must be finite",
+      ),
   ])
-  .refine(
-    (val) => {
-      const num = Number(val);
-      return Number.isFinite(num) && num > 0;
-    },
-    "merchant amount must be greater than 0",
-  );
+  .refine((val) => {
+    const num = Number(val);
+    return Number.isFinite(num) && num > 0;
+  }, "merchant amount must be greater than 0");
 
 /**
  * Tupla wire de un beneficiario Mall de 5 elementos:
@@ -179,16 +178,14 @@ export const PaykuCreateMallTransactionSchema = z
     payment: z
       .number()
       .refine(
-        (code) => (PAYKU_MALL_PAYMENT_CODES as readonly number[]).includes(code),
+        (code) =>
+          (PAYKU_MALL_PAYMENT_CODES as readonly number[]).includes(code),
         { message: "payment code is invalid for Mall" },
       ),
     merchant: z
       .array(PaykuMallMerchantItemSchema)
       .min(1, "merchant must be a non-empty array"),
-    order: z.union([
-      requireNonEmptyString("order"),
-      z.number(),
-    ]),
+    order: z.union([requireNonEmptyString("order"), z.number()]),
     urlreturn: requireNonEmptyString("urlreturn"),
     urlnotify: z.string().optional(),
   })
@@ -199,8 +196,7 @@ export type PaykuCreateMallTransactionRequestInput = z.infer<
 >;
 export type PaykuCreateMallTransactionInput =
   PaykuCreateMallTransactionRequestInput;
-export type PaykuCreateMallTransaction =
-  PaykuCreateMallTransactionRequestInput;
+export type PaykuCreateMallTransaction = PaykuCreateMallTransactionRequestInput;
 
 /**
  * Par de afiliación para Marketplace: [clientId, percentage]
@@ -208,9 +204,7 @@ export type PaykuCreateMallTransaction =
 const marketplaceMemberPercentageSchema = z
   .union([
     z.number(),
-    z
-      .string()
-      .refine((s) => s.trim().length > 0, "percentage is required"),
+    z.string().refine((s) => s.trim().length > 0, "percentage is required"),
   ])
   .transform((val) => String(val))
   .refine((val) => {
@@ -235,9 +229,10 @@ export const PaykuMarketplaceAffiliationObjectSchema = z
       ),
     percentage: marketplaceMemberPercentageSchema,
   })
-  .transform(
-    (member): [string, string] => [member.clientId, member.percentage],
-  );
+  .transform((member): [string, string] => [
+    member.clientId,
+    member.percentage,
+  ]);
 
 export const PaykuMarketplaceAffiliationItemSchema = z.union([
   PaykuMarketplaceAffiliationPairSchema,
@@ -258,12 +253,7 @@ export const PaykuMarketplaceAffiliationSchema = z
     percentage: z
       .union([
         z.number(),
-        z
-          .string()
-          .refine(
-            (s) => s.trim().length > 0,
-            "percentage is required",
-          ),
+        z.string().refine((s) => s.trim().length > 0, "percentage is required"),
       ])
       .transform((val) => String(val))
       .refine((val) => {

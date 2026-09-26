@@ -151,10 +151,7 @@ export default class PaykuMall {
         nonEmptyString(options.expectedAmount) ??
         nonEmptyString(payload.amount);
       const actualAmount = nonEmptyString(mall.amount);
-      if (
-        expectedAmount !== undefined &&
-        actualAmount !== expectedAmount
-      ) {
+      if (expectedAmount !== undefined && actualAmount !== expectedAmount) {
         return {
           valid: false,
           reason: "amount_mismatch",

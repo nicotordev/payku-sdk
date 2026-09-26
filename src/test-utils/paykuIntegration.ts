@@ -151,8 +151,7 @@ export function isCapabilityUnavailableError(error: unknown): boolean {
 }
 
 export type CapabilityTestResult<T> =
-  | { status: "executed"; value: T }
-  | { status: "skipped"; reason: string };
+  { status: "executed"; value: T } | { status: "skipped"; reason: string };
 
 /**
  * Ejecuta una prueba de capability en Sandbox.
@@ -270,7 +269,9 @@ export async function withRetry<T>(
       if (options.shouldRetry && !options.shouldRetry(error)) {
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+      await new Promise((resolve) =>
+        setTimeout(resolve, delayMs * (attempt + 1)),
+      );
     }
   }
 
@@ -386,9 +387,15 @@ export function redactSensitiveString(text: string): string {
     );
   }
   // Reemplazar headers Bearer
-  redacted = redacted.replace(/Bearer\s+[A-Za-z0-9_\-.]+/gi, "Bearer [REDACTED]");
+  redacted = redacted.replace(
+    /Bearer\s+[A-Za-z0-9_\-.]+/gi,
+    "Bearer [REDACTED]",
+  );
   // Reemplazar hashes HMAC hex de 64 caracteres
-  redacted = redacted.replace(/Sign:\s*[a-f0-9]{64}/gi, "Sign: [REDACTED_SIGN]");
+  redacted = redacted.replace(
+    /Sign:\s*[a-f0-9]{64}/gi,
+    "Sign: [REDACTED_SIGN]",
+  );
   return redacted;
 }
 
@@ -486,25 +493,27 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
   const privateToken =
     paykuIntegrationConfig.privateToken || "sandbox_private_token_placeholder";
 
-  return new Payku(
-    publicToken,
-    privateToken,
-    "sandbox",
-    {
-      ...options,
-      logger: createSandboxRedactingLogger(options.logger),
-    },
-  );
+  return new Payku(publicToken, privateToken, "sandbox", {
+    ...options,
+    logger: createSandboxRedactingLogger(options.logger),
+  });
 }
 
 const CAPABILITY_HINTS = [
   "no habilit",
   "not enabled",
-  "not available",
-  "sin acceso",
-  "forbidden",
-  "permission",
-  "permiso",
+  "feature disabled",
+  "product disabled",
+  "capability disabled",
+  "module disabled",
+  "producto no disponible",
+  "producto no habilitado",
+  "product unavailable",
+  "product not available",
+  "capability unavailable",
+  "capability not available",
+  "module unavailable",
+  "module not available",
 ] as const;
 
 /** Payku rechazó la firma, no el producto. */
@@ -530,8 +539,8 @@ export function capabilityDependentReason(error: unknown): string | undefined {
     return undefined;
   }
 
-  if (error.statusCode === 403) {
-    return `HTTP ${error.statusCode}`;
+  if (error.statusCode !== undefined && error.statusCode >= 500) {
+    return undefined;
   }
 
   const message = error.message.toLowerCase();

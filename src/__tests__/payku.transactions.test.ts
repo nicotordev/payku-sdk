@@ -37,7 +37,6 @@ import getNotFound404Fixture from "./fixtures/chile/transactions/get-not-found-4
 import listSuccessFixture from "./fixtures/chile/transactions/list-success.json";
 import listEmptyNoRecordsFixture from "./fixtures/chile/transactions/list-empty-no-records.json";
 
-
 const chileCreateBase = {
   email: "cliente@example.com",
   order: "orden-001",
@@ -391,7 +390,10 @@ describe("formatPaykuExpiredInSantiago", () => {
 
   test("formats combined duration (days and hours)", () => {
     expect(
-      formatPaykuExpiredInSantiago({ days: 1, hours: 2, minutes: 15 }, fixedNow),
+      formatPaykuExpiredInSantiago(
+        { days: 1, hours: 2, minutes: 15 },
+        fixedNow,
+      ),
     ).toBe("2026-09-21 15:15");
   });
 
@@ -867,10 +869,7 @@ describe("PaykuTransactions HTTP", () => {
       });
 
       if (page === 2) {
-        return [
-          200,
-          { transaction: [{ id: "tx-2a" }, { id: "tx-2b" }] },
-        ];
+        return [200, { transaction: [{ id: "tx-2a" }, { id: "tx-2b" }] }];
       }
 
       if (page === 3) {
@@ -986,9 +985,9 @@ describe("PaykuTransactions HTTP", () => {
       "per_page must be between 1 and 4000",
     );
 
-    await expect(
-      transactions.iterate({ per_page: 0 }).next(),
-    ).rejects.toThrow("per_page must be between 1 and 4000");
+    await expect(transactions.iterate({ per_page: 0 }).next()).rejects.toThrow(
+      "per_page must be between 1 and 4000",
+    );
 
     expect(mock.history.get).toHaveLength(0);
   });
@@ -1152,7 +1151,9 @@ describe("resolvePaymentMethod", () => {
 describe("SDK entrypoint exports", () => {
   test("exports validation and formatting functions", () => {
     expect(typeof PaykuSDK.validateCreateTransactionRequest).toBe("function");
-    expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe("function");
+    expect(typeof PaykuSDK.validateChileCreateTransactionRequest).toBe(
+      "function",
+    );
     expect(typeof PaykuSDK.parsePaymentReturnQuery).toBe("function");
     expect(typeof PaykuSDK.parseReturnQuery).toBe("function");
     expect(typeof PaykuSDK.formatPaykuExpiredInSantiago).toBe("function");
@@ -1161,7 +1162,9 @@ describe("SDK entrypoint exports", () => {
     expect(typeof PaykuSDK.normalizePaykuRut).toBe("function");
     expect(typeof PaykuSDK.parsePaykuExpiredInSantiago).toBe("function");
     expect(typeof PaykuSDK.PaykuTransactions.parseReturnQuery).toBe("function");
-    expect(typeof PaykuSDK.PaykuTransactions.parsePaymentReturnQuery).toBe("function");
+    expect(typeof PaykuSDK.PaykuTransactions.parsePaymentReturnQuery).toBe(
+      "function",
+    );
   });
 
   test("payku.transactions includes parseReturnQuery and parsePaymentReturnQuery methods", () => {
@@ -1169,18 +1172,28 @@ describe("SDK entrypoint exports", () => {
     expect(typeof payku.transactions.parseReturnQuery).toBe("function");
     expect(typeof payku.transactions.parsePaymentReturnQuery).toBe("function");
 
-    const parsed = payku.transactions.parseReturnQuery("https://example.com/return?id=trx_obj_1&status=success");
+    const parsed = payku.transactions.parseReturnQuery(
+      "https://example.com/return?id=trx_obj_1&status=success",
+    );
     expect(parsed.id).toBe("trx_obj_1");
     expect(parsed.expired).toBe(false);
 
-    const parsedAlias = payku.transactions.parsePaymentReturnQuery("https://example.com/return?id=trx_obj_2&message_error=expired");
+    const parsedAlias = payku.transactions.parsePaymentReturnQuery(
+      "https://example.com/return?id=trx_obj_2&message_error=expired",
+    );
     expect(parsedAlias.id).toBe("trx_obj_2");
     expect(parsedAlias.expired).toBe(true);
 
-    const chile = PaykuSDK.default.forCountry("CL", { publicToken: "pub", privateToken: "priv", environment: "sandbox" });
+    const chile = PaykuSDK.default.forCountry("CL", {
+      publicToken: "pub",
+      privateToken: "priv",
+      environment: "sandbox",
+    });
     expect(typeof chile.transactions.parseReturnQuery).toBe("function");
     expect(typeof chile.transactions.parsePaymentReturnQuery).toBe("function");
-    expect(chile.transactions.parseReturnQuery("?id=chile_trx").id).toBe("chile_trx");
+    expect(chile.transactions.parseReturnQuery("?id=chile_trx").id).toBe(
+      "chile_trx",
+    );
   });
 });
 
@@ -1274,7 +1287,8 @@ describe("parsePaymentReturnQuery", () => {
   });
 
   test("strips URL hash fragment from param values", () => {
-    const url = "https://example.com/return?id=trx123456&message_error=expired#section";
+    const url =
+      "https://example.com/return?id=trx123456&message_error=expired#section";
     const result = parsePaymentReturnQuery(url);
 
     expect(result.id).toBe("trx123456");
@@ -1282,14 +1296,18 @@ describe("parsePaymentReturnQuery", () => {
   });
 
   test("avoids false positives like message_error=not_expired", () => {
-    const result = parsePaymentReturnQuery("id=trx-99&message_error=not_expired");
+    const result = parsePaymentReturnQuery(
+      "id=trx-99&message_error=not_expired",
+    );
 
     expect(result.id).toBe("trx-99");
     expect(result.expired).toBe(false);
   });
 
   test("parses URL instance", () => {
-    const url = new URL("https://example.com/return?id=trx-url-1&status=success");
+    const url = new URL(
+      "https://example.com/return?id=trx-url-1&status=success",
+    );
     const result = parsePaymentReturnQuery(url);
 
     expect(result.id).toBe("trx-url-1");
@@ -1328,7 +1346,8 @@ describe("transactions.handleReturn", () => {
   });
 
   test("returns isExpired: true immediately without calling API when session expired", async () => {
-    const url = "https://example.com/checkout/return?message_error=expired&id=trx-exp-1";
+    const url =
+      "https://example.com/checkout/return?message_error=expired&id=trx-exp-1";
     const result = await transactions.handleReturn(url);
 
     expect(result).toEqual({
@@ -1350,7 +1369,8 @@ describe("transactions.handleReturn", () => {
       amount: 15000,
     });
 
-    const url = "https://example.com/checkout/return?id=trx-paid-1&status=success";
+    const url =
+      "https://example.com/checkout/return?id=trx-paid-1&status=success";
     const result = await transactions.handleReturn(url);
 
     expect(result.id).toBe("trx-paid-1");
@@ -1385,7 +1405,9 @@ describe("transactions.handleReturn", () => {
       order: "ORD-PEND",
     });
 
-    const result = await transactions.handleReturn("id=trx-pend-1&status=pending");
+    const result = await transactions.handleReturn(
+      "id=trx-pend-1&status=pending",
+    );
 
     expect(result.id).toBe("trx-pend-1");
     expect(result.isPaid).toBe(false);
@@ -1415,7 +1437,9 @@ describe("transactions.handleReturn", () => {
       status: "rejected",
     });
 
-    const result = await transactions.handleReturn("id=trx-fail-1&status=failed");
+    const result = await transactions.handleReturn(
+      "id=trx-fail-1&status=failed",
+    );
 
     expect(result.id).toBe("trx-fail-1");
     expect(result.isPaid).toBe(false);
@@ -1444,7 +1468,9 @@ describe("transactions.handleReturn", () => {
       status: "success",
     });
 
-    const url = new URL("https://example.com/return?id=trx-url-inst&status=success");
+    const url = new URL(
+      "https://example.com/return?id=trx-url-inst&status=success",
+    );
     const result = await transactions.handleReturn(url);
 
     expect(result.isPaid).toBe(true);
@@ -1465,12 +1491,16 @@ describe("transactions.handleReturn", () => {
   });
 
   test("does not confirm payment from query alone when id is missing", async () => {
-    const resultSuccess = await transactions.handleReturn({ status: "success" });
+    const resultSuccess = await transactions.handleReturn({
+      status: "success",
+    });
     expect(resultSuccess.isPaid).toBe(false);
     expect(resultSuccess.rawStatus).toBe("success");
     expect(resultSuccess.transaction).toBeUndefined();
 
-    const resultPending = await transactions.handleReturn({ status: "pending" });
+    const resultPending = await transactions.handleReturn({
+      status: "pending",
+    });
     expect(resultPending.isPending).toBe(true);
 
     const resultFailed = await transactions.handleReturn({ status: "failed" });
@@ -1587,7 +1617,9 @@ describe("PaykuTransactions fixtures", () => {
   test("get not found fixture (404 Not Found)", async () => {
     mock.onGet("/transaction/trx-missing").reply(404, getNotFound404Fixture);
 
-    await expect(transactions.get("trx-missing")).rejects.toThrow("it is not valid");
+    await expect(transactions.get("trx-missing")).rejects.toThrow(
+      "it is not valid",
+    );
   });
 
   test("list success fixture (200 OK with mixed amount string/number)", async () => {

@@ -176,10 +176,10 @@ describe("PaykuMarketplace maclient", () => {
       return [200, { ...clientFixture, name: "John Doe Doe" }];
     });
 
-    const response = await marketplace.clients.update(
-      "madb93fc00a2cf6f4449",
-      { name: "John Doe Doe", phone: "923122312" },
-    );
+    const response = await marketplace.clients.update("madb93fc00a2cf6f4449", {
+      name: "John Doe Doe",
+      phone: "923122312",
+    });
 
     expect(response.name).toBe("John Doe Doe");
   });
@@ -549,9 +549,7 @@ describe("PaykuMarketplace validations", () => {
         name: "John",
         phone: "123",
         bank: null,
-      } as unknown as Parameters<
-        PaykuMarketplace["clients"]["create"]
-      >[0]),
+      } as unknown as Parameters<PaykuMarketplace["clients"]["create"]>[0]),
     ).rejects.toThrow("bank is required");
 
     expect(mock.history.post.length).toBe(0);

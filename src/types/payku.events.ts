@@ -9,8 +9,7 @@ export interface PaykuEventAffiliationMemberInput {
 
 /** Input de `affiliation[]`: tupla wire o `{ email, percent }`. */
 export type PaykuEventAffiliationInput =
-  | readonly [email: string, percent: number]
-  | PaykuEventAffiliationMemberInput;
+  readonly [email: string, percent: number] | PaykuEventAffiliationMemberInput;
 
 /**
  * `POST /api/event` — crear evento.
@@ -76,5 +75,4 @@ export interface PaykuGetEventResponse {
 
 /** @deprecated Prefer PaykuCreateEventResponse / PaykuGetEventResponse */
 export type PaykuEventResponse =
-  | PaykuCreateEventResponse
-  | PaykuGetEventResponse;
+  PaykuCreateEventResponse | PaykuGetEventResponse;

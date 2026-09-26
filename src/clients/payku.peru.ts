@@ -24,6 +24,9 @@ export class PaykuPeru extends PaykuCountryBase {
     );
     this.wallet = new PaykuSharedWallet(core.wallet, "PE");
     this.banks = new PaykuScopedBanks(core.banks, "PE");
-    this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "PE");
+    this.paymentMethods = new PaykuScopedPaymentMethods(
+      core.paymentMethods,
+      "PE",
+    );
   }
 }

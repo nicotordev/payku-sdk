@@ -18,9 +18,7 @@ export type PaykuVesPaymentSlug = Lowercase<
   keyof PaykuPaymentMethodsCatalog["VES"]
 >;
 export type PaykuPaymentSlug =
-  | PaykuClpPaymentSlug
-  | PaykuPenPaymentSlug
-  | PaykuVesPaymentSlug;
+  PaykuClpPaymentSlug | PaykuPenPaymentSlug | PaykuVesPaymentSlug;
 export type PaykuPaymentMethodInput = PaykuPaymentSlug | number;
 
 export interface PaykuTransactionAdditionalParameters {
@@ -46,10 +44,7 @@ export type PaykuExpirationDuration = {
  * Formatos aceptados para definir la expiración de la transacción.
  * Acepta string fecha hora ("YYYY-MM-DD HH:mm"), objeto Date o duración relativa.
  */
-export type PaykuExpirationInput =
-  | string
-  | Date
-  | PaykuExpirationDuration;
+export type PaykuExpirationInput = string | Date | PaykuExpirationDuration;
 
 export interface PaykuCreateTransactionRequest {
   email?: string;
@@ -213,16 +208,12 @@ export type PaykuFailedTransaction<T = PaykuTransaction> = T & {
   status: "rejected" | "failed";
 };
 
-
 /**
  * Entrada flexible para procesar el retorno del cliente en urlreturn.
  * Acepta string de URL / query, instancia de URL, URLSearchParams o un objeto record (Next.js, Express, etc.).
  */
 export type PaykuReturnInput =
-  | string
-  | URL
-  | URLSearchParams
-  | Record<string, unknown>;
+  string | URL | URLSearchParams | Record<string, unknown>;
 
 /**
  * Resultado procesado del retorno del cliente en urlreturn con flags booleanos y detalle de transacción.

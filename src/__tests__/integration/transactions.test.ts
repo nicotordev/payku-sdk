@@ -14,12 +14,16 @@ import {
 const INITIAL_STATUSES = ["pending", "register", "success"] as const;
 
 describePaykuIntegration("integration / transactions", () => {
-  test("lists transactions without throwing", async () => {
-    const payku = createSandboxChileClient();
-    const transactions = await payku.transactions.list({ page: 1 });
+  test(
+    "lists transactions without throwing",
+    async () => {
+      const payku = createSandboxChileClient();
+      const transactions = await payku.transactions.list({ page: 1 });
 
-    expect(Array.isArray(transactions)).toBe(true);
-  }, SANDBOX_TIMEOUT_MS);
+      expect(Array.isArray(transactions)).toBe(true);
+    },
+    SANDBOX_TIMEOUT_MS,
+  );
 
   test(
     "creates a pending CLP transaction, fetches it, and lists that day",
@@ -75,30 +79,34 @@ describePaykuIntegration("integration / transactions", () => {
     SANDBOX_LONG_TIMEOUT_MS,
   );
 
-  test("throws PaykuAPIError for a missing transaction", async () => {
-    const payku = createSandboxChileClient();
+  test(
+    "throws PaykuAPIError for a missing transaction",
+    async () => {
+      const payku = createSandboxChileClient();
 
-    try {
-      await payku.transactions.get("trx_does_not_exist_smoke");
-      expect.unreachable("should have thrown");
-    } catch (error) {
-      expect(error).toBeInstanceOf(PaykuAPIError);
-      const err = error as PaykuAPIError;
-      const response = err.response;
-      if (
-        response !== null &&
-        typeof response === "object" &&
-        "status" in response
-      ) {
-        expect((response as { status?: unknown }).status).toBe("failed");
+      try {
+        await payku.transactions.get("trx_does_not_exist_smoke");
+        expect.unreachable("should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(PaykuAPIError);
+        const err = error as PaykuAPIError;
+        const response = err.response;
+        if (
+          response !== null &&
+          typeof response === "object" &&
+          "status" in response
+        ) {
+          expect((response as { status?: unknown }).status).toBe("failed");
+        }
+        expect(
+          err.statusCode === 200 ||
+            err.statusCode === 404 ||
+            err.statusCode === 400 ||
+            err.type === "Not Found" ||
+            err.type === "Unprocessable Entity",
+        ).toBe(true);
       }
-      expect(
-        err.statusCode === 200 ||
-          err.statusCode === 404 ||
-          err.statusCode === 400 ||
-          err.type === "Not Found" ||
-          err.type === "Unprocessable Entity",
-      ).toBe(true);
-    }
-  }, SANDBOX_TIMEOUT_MS);
+    },
+    SANDBOX_TIMEOUT_MS,
+  );
 });

@@ -33,4 +33,3 @@ export default class PaykuBanks {
     return Array.isArray(response?.banks) ? response.banks : [];
   }
 }
-

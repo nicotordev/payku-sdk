@@ -762,12 +762,13 @@ describe("PaykuSubscriptions verifyActivationNotify", () => {
   });
 
   test("returns valid: true when GET /sususcription/{id} status matches", async () => {
-    mock
-      .onGet("/sususcription/su74866857980c7d2b4306")
-      .reply(200, getSubscriptionFixture({
+    mock.onGet("/sususcription/su74866857980c7d2b4306").reply(
+      200,
+      getSubscriptionFixture({
         id: "su74866857980c7d2b4306",
         status: "active",
-      }));
+      }),
+    );
 
     const result = await subscriptions.verifyActivationNotify(
       activationNotifyFixture,
@@ -811,12 +812,13 @@ describe("PaykuSubscriptions verifyActivationNotify", () => {
   });
 
   test("returns status_mismatch when GET status differs", async () => {
-    mock
-      .onGet("/sususcription/su74866857980c7d2b4306")
-      .reply(200, getSubscriptionFixture({
+    mock.onGet("/sususcription/su74866857980c7d2b4306").reply(
+      200,
+      getSubscriptionFixture({
         id: "su74866857980c7d2b4306",
         status: "register",
-      }));
+      }),
+    );
 
     const result = await subscriptions.verifyActivationNotify(
       activationNotifyFixture,
@@ -829,12 +831,13 @@ describe("PaykuSubscriptions verifyActivationNotify", () => {
   });
 
   test("uses expectedStatus over payload status", async () => {
-    mock
-      .onGet("/sususcription/su74866857980c7d2b4306")
-      .reply(200, getSubscriptionFixture({
+    mock.onGet("/sususcription/su74866857980c7d2b4306").reply(
+      200,
+      getSubscriptionFixture({
         id: "su74866857980c7d2b4306",
         status: "suspended",
-      }));
+      }),
+    );
 
     const result = await subscriptions.verifyActivationNotify(
       activationNotifyFixture,
@@ -845,12 +848,13 @@ describe("PaykuSubscriptions verifyActivationNotify", () => {
   });
 
   test("does not map notify failed to rejected for activation", async () => {
-    mock
-      .onGet("/sususcription/su74866857980c7d2b4306")
-      .reply(200, getSubscriptionFixture({
+    mock.onGet("/sususcription/su74866857980c7d2b4306").reply(
+      200,
+      getSubscriptionFixture({
         id: "su74866857980c7d2b4306",
         status: "rejected",
-      }));
+      }),
+    );
 
     const result = await subscriptions.verifyActivationNotify({
       id: "su74866857980c7d2b4306",
@@ -914,9 +918,8 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
       .onGet("/sususcription/su3ce571420e90b600eafb")
       .reply(200, getSubscriptionFixture());
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(true);
     if (result.valid) {
@@ -984,14 +987,12 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
   });
 
   test("returns transaction_not_found when nested transaction is missing", async () => {
-    mock.onGet("/sususcription/su3ce571420e90b600eafb").reply(
-      200,
-      getSubscriptionFixture({ transactions: [] }),
-    );
+    mock
+      .onGet("/sususcription/su3ce571420e90b600eafb")
+      .reply(200, getSubscriptionFixture({ transactions: [] }));
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -1037,9 +1038,8 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
       }),
     );
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -1084,9 +1084,8 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
       .onGet("/sususcription/su3ce571420e90b600eafb")
       .reply(200, getSubscriptionFixture());
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(true);
   });
@@ -1107,9 +1106,8 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
       }),
     );
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -1147,9 +1145,8 @@ describe("PaykuSubscriptions verifyPaymentNotify", () => {
       message_error: "id:it is not valid",
     });
 
-    const result = await subscriptions.verifyPaymentNotify(
-      paymentNotifyFixture,
-    );
+    const result =
+      await subscriptions.verifyPaymentNotify(paymentNotifyFixture);
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
