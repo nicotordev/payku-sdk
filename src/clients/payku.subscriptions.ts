@@ -391,8 +391,7 @@ export default class PaykuSubscriptions {
       }
 
       const expectedOrder =
-        nonEmptyString(options.expectedOrder) ??
-        nonEmptyString(payload.order);
+        nonEmptyString(options.expectedOrder) ?? nonEmptyString(payload.order);
       const actualOrder = nonEmptyString(transaction.order);
       if (expectedOrder !== undefined && actualOrder !== expectedOrder) {
         return {

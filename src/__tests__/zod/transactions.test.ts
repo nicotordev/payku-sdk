@@ -353,24 +353,42 @@ describe("PaykuCreateTransactionSchema", () => {
 
 describe("PaykuExpirationDurationSchema", () => {
   test("accepts valid durations", () => {
-    expect(PaykuExpirationDurationSchema.safeParse({ minutes: 30 }).success).toBe(true);
-    expect(PaykuExpirationDurationSchema.safeParse({ hours: 2 }).success).toBe(true);
-    expect(PaykuExpirationDurationSchema.safeParse({ days: 1 }).success).toBe(true);
     expect(
-      PaykuExpirationDurationSchema.safeParse({ days: 1, hours: 2, minutes: 15 }).success,
+      PaykuExpirationDurationSchema.safeParse({ minutes: 30 }).success,
+    ).toBe(true);
+    expect(PaykuExpirationDurationSchema.safeParse({ hours: 2 }).success).toBe(
+      true,
+    );
+    expect(PaykuExpirationDurationSchema.safeParse({ days: 1 }).success).toBe(
+      true,
+    );
+    expect(
+      PaykuExpirationDurationSchema.safeParse({
+        days: 1,
+        hours: 2,
+        minutes: 15,
+      }).success,
     ).toBe(true);
   });
 
   test("rejects non-positive durations", () => {
-    expect(PaykuExpirationDurationSchema.safeParse({ minutes: 0 }).success).toBe(false);
-    expect(PaykuExpirationDurationSchema.safeParse({ minutes: -5 }).success).toBe(false);
+    expect(
+      PaykuExpirationDurationSchema.safeParse({ minutes: 0 }).success,
+    ).toBe(false);
+    expect(
+      PaykuExpirationDurationSchema.safeParse({ minutes: -5 }).success,
+    ).toBe(false);
     expect(PaykuExpirationDurationSchema.safeParse({}).success).toBe(false);
   });
 
   test("PaykuExpirationInputSchema accepts string, Date and duration", () => {
-    expect(PaykuExpirationInputSchema.safeParse("2026-12-31 23:59").success).toBe(true);
+    expect(
+      PaykuExpirationInputSchema.safeParse("2026-12-31 23:59").success,
+    ).toBe(true);
     expect(PaykuExpirationInputSchema.safeParse(new Date()).success).toBe(true);
-    expect(PaykuExpirationInputSchema.safeParse({ minutes: 30 }).success).toBe(true);
+    expect(PaykuExpirationInputSchema.safeParse({ minutes: 30 }).success).toBe(
+      true,
+    );
     expect(PaykuExpirationInputSchema.safeParse(123).success).toBe(false);
   });
 });
@@ -511,7 +529,9 @@ describe("PaykuChileCreateTransactionSchema", () => {
     expect(res.success).toBe(false);
     if (!res.success) {
       expect(
-        res.error.issues.some((i) => i.message.includes("urlreturn is required")),
+        res.error.issues.some((i) =>
+          i.message.includes("urlreturn is required"),
+        ),
       ).toBe(true);
     }
   });
@@ -534,7 +554,9 @@ describe("PaykuChileCreateTransactionSchema", () => {
     expect(res.success).toBe(false);
     if (!res.success) {
       expect(
-        res.error.issues.some((i) => i.message.includes("urlreturn is required")),
+        res.error.issues.some((i) =>
+          i.message.includes("urlreturn is required"),
+        ),
       ).toBe(true);
     }
   });

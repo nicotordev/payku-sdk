@@ -290,18 +290,21 @@ describe("PaykuWebhooks", () => {
         }) as PaykuGetTransactionResponse,
     });
 
-    const request = new globalThis.Request("https://tu-sitio.com/api/webhooks/payku", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        transaction_id: "1",
-        payment_key: "trx1",
-        transaction_key: "2",
-        verification_key: "3",
-        order: "order-1",
-        status: "success",
-      }),
-    });
+    const request = new globalThis.Request(
+      "https://tu-sitio.com/api/webhooks/payku",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          transaction_id: "1",
+          payment_key: "trx1",
+          transaction_key: "2",
+          verification_key: "3",
+          order: "order-1",
+          status: "success",
+        }),
+      },
+    );
 
     const result = await webhooks.handleRequest(request);
     expect(result.valid).toBe(true);
@@ -377,7 +380,11 @@ describe("PaykuWebhooks", () => {
       expect(fromSearchParams.status).toBe("success");
       expect(fromSearchParams.expired).toBe(false);
 
-      const recordQuery = { id: "trx-500", status: "rejected", message_error: "none" };
+      const recordQuery = {
+        id: "trx-500",
+        status: "rejected",
+        message_error: "none",
+      };
       const fromRecord = PaykuWebhooks.parseReturnQuery(recordQuery);
       expect(fromRecord.id).toBe("trx-500");
       expect(fromRecord.status).toBe("rejected");
@@ -435,7 +442,9 @@ describe("PaykuWebhooks", () => {
       expect(chile.webhooks.mapStatus("failed")).toBe("rejected");
       expect(chile.webhooks.mapStatus("success")).toBe("success");
 
-      const parsed = chile.webhooks.parseReturnQuery("?id=cl-trx-1&status=success");
+      const parsed = chile.webhooks.parseReturnQuery(
+        "?id=cl-trx-1&status=success",
+      );
       expect(parsed.id).toBe("cl-trx-1");
       expect(parsed.expired).toBe(false);
     });
@@ -453,8 +462,12 @@ describe("entrypoint exports", () => {
     expect(typeof PaykuSDK.parsePaymentReturnQuery).toBe("function");
     expect(typeof PaykuSDK.mapNotifyStatusToTransactionStatus).toBe("function");
 
-    expect(PaykuSDK.mapNotifyStatusToTransactionStatus("failed")).toBe("rejected");
-    const parsed = PaykuSDK.parsePaymentReturnQuery("?id=standalone&status=success");
+    expect(PaykuSDK.mapNotifyStatusToTransactionStatus("failed")).toBe(
+      "rejected",
+    );
+    const parsed = PaykuSDK.parsePaymentReturnQuery(
+      "?id=standalone&status=success",
+    );
     expect(parsed.id).toBe("standalone");
     expect(parsed.expired).toBe(false);
   });

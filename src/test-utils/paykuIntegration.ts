@@ -3,6 +3,9 @@ import { randomBytes } from "node:crypto";
 import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
 import {
+  isPaykuError,
+  PaykuAPIError,
+  PaykuAuthenticationError,
   PaykuError,
   type PaykuAPIErrorLogEvent,
   type PaykuClientOptions,
@@ -102,6 +105,101 @@ export const describePaykuIntegration = shouldRunIntegrationTests
     }) as typeof describe);
 
 // ---------------------------------------------------------------------------
+// Detección y manejo de Capabilities en Sandbox
+// ---------------------------------------------------------------------------
+
+const CAPABILITY_UNAVAILABLE_PATTERNS = [
+  "skipped: capability unavailable",
+  "capability unavailable",
+  "your account is not escrow",
+  "not data or your account is not escrow",
+  "not active",
+  "not enabled",
+  "no habilitado",
+  "no activo",
+  "sin permisos",
+  "sin acceso",
+  "feature disabled",
+  "plan or product not active",
+  "producto no habilitado",
+  "cuenta no autorizada para",
+] as const;
+
+/**
+ * Detecta si un error devuelto por la API de Payku indica que la capability,
+ * producto o módulo correspondiente no está habilitado para la cuenta Sandbox.
+ *
+ * NOTA: Fallos de autenticación (ej. tokens inválidos, 401, rechazo de firma)
+ * y caídas de servidor (5xx) NO son considerados indisponibilidad de capability
+ * para evitar silenciar errores reales de credenciales o de infraestructura.
+ */
+export function isCapabilityUnavailableError(error: unknown): boolean {
+  if (
+    error instanceof PaykuAuthenticationError ||
+    (error instanceof PaykuError && error.type === "AuthenticationError") ||
+    isSignRejection(error)
+  ) {
+    return false;
+  }
+
+  const statusCode =
+    error instanceof PaykuError
+      ? error.statusCode
+      : typeof (error as { statusCode?: unknown })?.statusCode === "number"
+        ? (error as { statusCode: number }).statusCode
+        : undefined;
+
+  if (statusCode === 401 || (statusCode !== undefined && statusCode >= 500)) {
+    return false;
+  }
+
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (CAPABILITY_UNAVAILABLE_PATTERNS.some((p) => msg.includes(p))) {
+      return true;
+    }
+  }
+
+  if (!isPaykuError(error)) {
+    return false;
+  }
+
+  const message = (error.message || "").toLowerCase();
+  const type = (error.type || "").toLowerCase();
+
+  return CAPABILITY_UNAVAILABLE_PATTERNS.some(
+    (p) => message.includes(p) || type.includes(p),
+  );
+}
+
+export type CapabilityTestResult<T> =
+  { status: "executed"; value: T } | { status: "skipped"; reason: string };
+
+/**
+ * Ejecuta una prueba de capability en Sandbox.
+ * Si la capability está habilitada, retorna `{ status: "executed", value }`.
+ * Si la capability no está habilitada en la cuenta Sandbox, registra explícitamente `skipped: capability unavailable`
+ * y retorna `{ status: "skipped", reason }` en lugar de fallar o hacer un éxito silencioso.
+ */
+export async function runCapabilityTest<T>(
+  capabilityName: string,
+  fn: () => Promise<T>,
+): Promise<CapabilityTestResult<T>> {
+  try {
+    const value = await fn();
+    return { status: "executed", value };
+  } catch (error) {
+    if (isCapabilityUnavailableError(error)) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const skipNotice = `skipped: capability unavailable (${capabilityName}: ${reason})`;
+      console.info(`\n⚠️  [Payku Sandbox Capability] ${skipNotice}\n`);
+      return { status: "skipped", reason: skipNotice };
+    }
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Generadores de identificadores únicos (Prevención de colisiones concurrentes)
 // ---------------------------------------------------------------------------
 
@@ -193,7 +291,9 @@ export async function withRetry<T>(
       if (options.shouldRetry && !options.shouldRetry(error)) {
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+      await new Promise((resolve) =>
+        setTimeout(resolve, delayMs * (attempt + 1)),
+      );
     }
   }
 
@@ -309,9 +409,15 @@ export function redactSensitiveString(text: string): string {
     );
   }
   // Reemplazar headers Bearer
-  redacted = redacted.replace(/Bearer\s+[A-Za-z0-9_\-.]+/gi, "Bearer [REDACTED]");
+  redacted = redacted.replace(
+    /Bearer\s+[A-Za-z0-9_\-.]+/gi,
+    "Bearer [REDACTED]",
+  );
   // Reemplazar hashes HMAC hex de 64 caracteres
-  redacted = redacted.replace(/Sign:\s*[a-f0-9]{64}/gi, "Sign: [REDACTED_SIGN]");
+  redacted = redacted.replace(
+    /Sign:\s*[a-f0-9]{64}/gi,
+    "Sign: [REDACTED_SIGN]",
+  );
   return redacted;
 }
 
@@ -409,25 +515,27 @@ export function createSandboxClient(options: PaykuClientOptions = {}): Payku {
   const privateToken =
     paykuIntegrationConfig.privateToken || "sandbox_private_token_placeholder";
 
-  return new Payku(
-    publicToken,
-    privateToken,
-    "sandbox",
-    {
-      ...options,
-      logger: createSandboxRedactingLogger(options.logger),
-    },
-  );
+  return new Payku(publicToken, privateToken, "sandbox", {
+    ...options,
+    logger: createSandboxRedactingLogger(options.logger),
+  });
 }
 
 const CAPABILITY_HINTS = [
   "no habilit",
   "not enabled",
-  "not available",
-  "sin acceso",
-  "forbidden",
-  "permission",
-  "permiso",
+  "feature disabled",
+  "product disabled",
+  "capability disabled",
+  "module disabled",
+  "producto no disponible",
+  "producto no habilitado",
+  "product unavailable",
+  "product not available",
+  "capability unavailable",
+  "capability not available",
+  "module unavailable",
+  "module not available",
 ] as const;
 
 /** Payku rechazó la firma, no el producto. */
@@ -453,8 +561,8 @@ export function capabilityDependentReason(error: unknown): string | undefined {
     return undefined;
   }
 
-  if (error.statusCode === 403) {
-    return `HTTP ${error.statusCode}`;
+  if (error.statusCode !== undefined && error.statusCode >= 500) {
+    return undefined;
   }
 
   const message = error.message.toLowerCase();

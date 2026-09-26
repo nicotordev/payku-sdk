@@ -54,8 +54,7 @@ export interface PaykuGetNullificationResponse {
 
 /** @deprecated Preferir `PaykuCreateNullificationResponse` / `PaykuGetNullificationResponse`. */
 export type PaykuNullificationResponse =
-  | PaykuCreateNullificationResponse
-  | PaykuGetNullificationResponse;
+  PaykuCreateNullificationResponse | PaykuGetNullificationResponse;
 
 /**
  * Payload enviado por Payku al endpoint o webhook de callback de anulación.

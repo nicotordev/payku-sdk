@@ -2,8 +2,6 @@
   "status": "failed",
   "type": "Bad Request",
   "message_error": {
-    "email": [
-      "The email field is required."
-    ]
+    "email": ["The email field is required."]
   }
 }

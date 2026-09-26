@@ -107,13 +107,7 @@ describe("PaykuMall", () => {
         email: "joedoe@example.com",
         payment: 1,
         merchant: [
-          [
-            "81b6179e4feeef2b50af71d660f830de",
-            "30000",
-            "item1",
-            null,
-            "4545",
-          ],
+          ["81b6179e4feeef2b50af71d660f830de", "30000", "item1", null, "4545"],
           [
             "bcf6c06c523d9394be41bc0174c43d1476f274abb342955aac93cc8014737b3b",
             "25000",
@@ -241,9 +235,7 @@ describe("PaykuMall", () => {
         mall.create({
           email: "",
           payment: 1,
-          merchant: [
-            ["token1", "1000", "sub", null, "ord1"],
-          ],
+          merchant: [["token1", "1000", "sub", null, "ord1"]],
           order: 123,
           urlreturn: "https://example.com/return",
         }),
@@ -253,9 +245,7 @@ describe("PaykuMall", () => {
         mall.create({
           email: "test@example.com",
           payment: 2, // invalid Mall payment code
-          merchant: [
-            ["token1", "1000", "sub", null, "ord1"],
-          ],
+          merchant: [["token1", "1000", "sub", null, "ord1"]],
           order: 123,
           urlreturn: "https://example.com/return",
         }),
@@ -275,9 +265,7 @@ describe("PaykuMall", () => {
         mall.create({
           email: "test@example.com",
           payment: 1,
-          merchant: [
-            ["token1", 0, "sub", null, "ord1"],
-          ],
+          merchant: [["token1", 0, "sub", null, "ord1"]],
           order: 123,
           urlreturn: "https://example.com/return",
         }),

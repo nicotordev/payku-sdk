@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { PaykuAPIError, PaykuError } from "../errors";
+import { PaykuAPIError, PaykuAuthenticationError, PaykuError } from "../errors";
 import {
   IntegrationCleanupTracker,
   SANDBOX_TEST_RUT,
@@ -9,7 +9,9 @@ import {
   createSandboxChileClient,
   createSandboxClient,
   createSandboxRedactingLogger,
+  isCapabilityUnavailableError,
   isSignRejection,
+  runCapabilityTest,
   santiagoDateOnly,
   generateUniqueEmail,
   generateUniqueId,
@@ -244,18 +246,14 @@ describe("Payku Integration Test Infrastructure", () => {
   describe("sign and capability classification", () => {
     test("isSignRejection matches waiting sign and ignores other failures", () => {
       expect(
-        isSignRejection(
-          new PaykuAPIError("waiting sign", { statusCode: 400 }),
-        ),
+        isSignRejection(new PaykuAPIError("waiting sign", { statusCode: 400 })),
       ).toBe(true);
       expect(
         isSignRejection(new PaykuError("not found", { statusCode: 404 })),
       ).toBe(false);
       expect(isSignRejection(new Error("waiting sign"))).toBe(false);
       expect(
-        isSignRejection(
-          new PaykuError("No se pudo confirmar la transacción"),
-        ),
+        isSignRejection(new PaykuError("No se pudo confirmar la transacción")),
       ).toBe(false);
     });
 
@@ -274,7 +272,22 @@ describe("Payku Integration Test Infrastructure", () => {
         capabilityDependentReason(
           new PaykuAPIError("forbidden", { statusCode: 403 }),
         ),
-      ).toBe("HTTP 403");
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("product unavailable", { statusCode: 403 }),
+        ),
+      ).toBe("product unavailable");
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("feature not available", { statusCode: 400 }),
+        ),
+      ).toBeUndefined();
+      expect(
+        capabilityDependentReason(
+          new PaykuAPIError("module not enabled", { statusCode: 503 }),
+        ),
+      ).toBeUndefined();
       expect(
         capabilityDependentReason(
           new PaykuAPIError("Unauthorized", { statusCode: 401 }),
@@ -296,6 +309,132 @@ describe("Payku Integration Test Infrastructure", () => {
       expect(santiagoDateOnly(new Date("2026-01-15T15:00:00.000Z"))).toBe(
         "2026-01-15",
       );
+    });
+
+    test("isCapabilityUnavailableError rejects authentication errors and server failures before matching capability patterns", () => {
+      // 401 Unauthorized must NOT be skipped, even if message matches a capability pattern
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("not active", { statusCode: 401 }),
+        ),
+      ).toBe(false);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("producto no habilitado", { statusCode: 401 }),
+        ),
+      ).toBe(false);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("sin permisos", { statusCode: 401 }),
+        ),
+      ).toBe(false);
+
+      // Server failures (5xx) must NOT be skipped, even if message matches
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("module not enabled", { statusCode: 500 }),
+        ),
+      ).toBe(false);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("feature disabled", { statusCode: 502 }),
+        ),
+      ).toBe(false);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("capability unavailable", { statusCode: 503 }),
+        ),
+      ).toBe(false);
+
+      // Sign rejections and PaykuAuthenticationError must NOT be skipped
+      expect(
+        isSignRejection(new PaykuAPIError("waiting sign", { statusCode: 400 })),
+      ).toBe(true);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("waiting sign", { statusCode: 400 }),
+        ),
+      ).toBe(false);
+      expect(
+        isCapabilityUnavailableError(new PaykuAuthenticationError()),
+      ).toBe(false);
+
+      // Eligible capability errors SHOULD match
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("producto no habilitado", { statusCode: 403 }),
+        ),
+      ).toBe(true);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("cuenta no autorizada para", { statusCode: 403 }),
+        ),
+      ).toBe(true);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("sin permisos", { statusCode: 403 }),
+        ),
+      ).toBe(true);
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("some error", {
+            statusCode: 200,
+            type: "feature disabled",
+          }),
+        ),
+      ).toBe(true);
+      expect(
+        isCapabilityUnavailableError(
+          new Error("skipped: capability unavailable"),
+        ),
+      ).toBe(true);
+
+      // Non-matching errors must NOT be skipped
+      expect(
+        isCapabilityUnavailableError(
+          new PaykuAPIError("transaction not found", { statusCode: 404 }),
+        ),
+      ).toBe(false);
+      expect(isCapabilityUnavailableError(new Error("network timeout"))).toBe(
+        false,
+      );
+    });
+
+    test("runCapabilityTest executes fn or skips only on capability unavailable errors", async () => {
+      // Successful execution returns executed
+      const ok = await runCapabilityTest("ok-test", async () => 42);
+      expect(ok).toEqual({ status: "executed", value: 42 });
+
+      // Eligible capability error returns skipped
+      const skipped = await runCapabilityTest("disabled-test", async () => {
+        throw new PaykuAPIError("producto no habilitado", { statusCode: 403 });
+      });
+      expect(skipped.status).toBe("skipped");
+      if (skipped.status === "skipped") {
+        expect(skipped.reason).toContain("skipped: capability unavailable");
+        expect(skipped.reason).toContain("producto no habilitado");
+      }
+
+      // 401 authentication error throws and is not skipped
+      await expect(
+        runCapabilityTest("auth-fail", async () => {
+          throw new PaykuAPIError("not active", { statusCode: 401 });
+        }),
+      ).rejects.toBeInstanceOf(PaykuAPIError);
+
+      // 500 server error throws and is not skipped
+      await expect(
+        runCapabilityTest("server-fail", async () => {
+          throw new PaykuAPIError("module not enabled", { statusCode: 500 });
+        }),
+      ).rejects.toBeInstanceOf(PaykuAPIError);
+
+      // Sign rejection throws and is not skipped
+      await expect(
+        runCapabilityTest("sign-fail", async () => {
+          throw new PaykuAPIError("waiting sign", { statusCode: 400 });
+        }),
+      ).rejects.toBeInstanceOf(PaykuAPIError);
     });
   });
 

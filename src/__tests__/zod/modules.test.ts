@@ -78,10 +78,7 @@ describe("PaykuCreateEventSchema", () => {
   test("accepts mixed affiliation tuples and objects", () => {
     const res = PaykuCreateEventSchema.safeParse({
       ...validEvent,
-      affiliation: [
-        ["a@x.com", 40],
-        { email: "b@x.com", percent: 60 },
-      ],
+      affiliation: [["a@x.com", 40], { email: "b@x.com", percent: 60 }],
     });
     expect(res.success).toBe(true);
     if (res.success) {
@@ -300,7 +297,9 @@ describe("PaykuMarketplaceAffiliationSchema", () => {
     });
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.issues.some((i) => i.message.includes("must sum to 100"))).toBe(true);
+      expect(
+        res.error.issues.some((i) => i.message.includes("must sum to 100")),
+      ).toBe(true);
     }
   });
 

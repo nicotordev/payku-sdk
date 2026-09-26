@@ -42,10 +42,7 @@ describe("PaykuEscrow authorize", () => {
 
       const body = JSON.parse(String(config.data)) as Record<string, unknown>;
       expect(body).toEqual({
-        transactions: [
-          "trx3b4d77b43acd9a720",
-          "trx3b4d77b43acd9a385",
-        ],
+        transactions: ["trx3b4d77b43acd9a720", "trx3b4d77b43acd9a385"],
       });
       expect(body).not.toHaveProperty("transaction");
 
@@ -53,10 +50,7 @@ describe("PaykuEscrow authorize", () => {
     });
 
     await escrow.authorize({
-      transactions: [
-        "trx3b4d77b43acd9a720",
-        "trx3b4d77b43acd9a385",
-      ],
+      transactions: ["trx3b4d77b43acd9a720", "trx3b4d77b43acd9a385"],
     });
   });
 
@@ -64,10 +58,7 @@ describe("PaykuEscrow authorize", () => {
     mock.onPost("/escrow").reply(200, authorize200Fixture);
 
     const response = await escrow.authorize({
-      transactions: [
-        "trx3b4d77b43acd9a720",
-        "trx3b4d77b43acd9a385",
-      ],
+      transactions: ["trx3b4d77b43acd9a720", "trx3b4d77b43acd9a385"],
     });
 
     expect(response).toEqual(authorize200Fixture);
@@ -92,9 +83,9 @@ describe("PaykuEscrow authorize", () => {
 
   describe("validations", () => {
     test("authorize throws PaykuEscrowError when transactions is empty or not an array", async () => {
-      await expect(
-        escrow.authorize({ transactions: [] }),
-      ).rejects.toThrow(PaykuEscrowError);
+      await expect(escrow.authorize({ transactions: [] })).rejects.toThrow(
+        PaykuEscrowError,
+      );
 
       await expect(
         escrow.authorize({ transactions: null as unknown as string[] }),

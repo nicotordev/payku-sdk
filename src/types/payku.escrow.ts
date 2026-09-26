@@ -8,11 +8,7 @@ export interface PaykuEscrowAuthorizeRequest {
 
 /** Estados de liquidación documentados en authorize escrow. */
 export type PaykuEscrowSettlementStatus =
-  | "not found"
-  | "pending"
-  | "liquidate"
-  | "pending for deposit"
-  | "paid";
+  "not found" | "pending" | "liquidate" | "pending for deposit" | "paid";
 
 export interface PaykuEscrowSettlementItem {
   /** Documentados + fallback `string` por valores futuros de Payku (#17). */

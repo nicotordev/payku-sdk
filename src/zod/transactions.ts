@@ -174,8 +174,7 @@ export function createTransactionSchema(
         } catch (error) {
           ctx.addIssue({
             code: "custom",
-            message:
-              error instanceof Error ? error.message : String(error),
+            message: error instanceof Error ? error.message : String(error),
             path: ["payment"],
           });
         }

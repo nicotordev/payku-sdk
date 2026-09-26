@@ -29,8 +29,7 @@ export interface PaykuUpdateMarketplaceClientRequest {
 
 /** @deprecated Preferir create/update específicos. */
 export type PaykuMarketplaceClientRequest =
-  | PaykuCreateMarketplaceClientRequest
-  | PaykuUpdateMarketplaceClientRequest;
+  PaykuCreateMarketplaceClientRequest | PaykuUpdateMarketplaceClientRequest;
 
 export interface PaykuMarketplaceClientBankResponse {
   sbif: string;
@@ -70,8 +69,10 @@ export interface PaykuMarketplaceClientResponse {
  * Response `PUT /api/maclient/{id}` — incluye `affiliations_details`.
  * Docs muestran un array anidado de objetos de afiliación.
  */
-export interface PaykuUpdateMarketplaceClientResponse
-  extends Omit<PaykuMarketplaceClientResponse, "created_at" | "update_at"> {
+export interface PaykuUpdateMarketplaceClientResponse extends Omit<
+  PaykuMarketplaceClientResponse,
+  "created_at" | "update_at"
+> {
   created_at?: string;
   update_at?: string | null;
   affiliations_details?: PaykuMarketplaceClientAffiliationDetail[][];

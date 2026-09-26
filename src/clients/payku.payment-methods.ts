@@ -12,7 +12,11 @@ import {
   resolvePaymentMethod,
 } from "../utils/payku.utils";
 
-const PAYMENT_CURRENCIES = ["CLP", "PEN", "VES"] as const satisfies readonly PaykuCurrency[];
+const PAYMENT_CURRENCIES = [
+  "CLP",
+  "PEN",
+  "VES",
+] as const satisfies readonly PaykuCurrency[];
 
 /**
  * Código numérico → slug canónico.

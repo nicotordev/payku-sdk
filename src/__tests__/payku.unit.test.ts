@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import Payku, { PaykuChile, PaykuPeru, PaykuVenezuela } from "../clients/payku";
-import { PaykuError, PaykuUnsupportedFeatureError, isPaykuError } from "../errors";
+import {
+  PaykuError,
+  PaykuUnsupportedFeatureError,
+  isPaykuError,
+} from "../errors";
 import { buildSign } from "../http/sign";
 import {
   extractPaykuErrorMessage,

@@ -349,7 +349,9 @@ describe("PaykuWallet payout get and getV3", () => {
 
     expect(response).toEqual(payoutGetV3Fixture as PaykuGetPayoutV3Response);
     expect(response.payout.status).toBe("banking_error");
-    expect(response.payout.reason_rejection).toContain("error_creditor_account");
+    expect(response.payout.reason_rejection).toContain(
+      "error_creditor_account",
+    );
   });
 });
 
@@ -400,7 +402,11 @@ describe("PaykuWallet balance and movements", () => {
     mock.onGet("/wallet/list").reply((config) => {
       expect(config.headers?.Authorization).toBe("Bearer public-token");
       expect(config.headers?.Sign).toMatch(/^[a-f0-9]{64}$/);
-      expect(config.params).toMatchObject({ page: 1, per_page: 10, currency: "CLP" });
+      expect(config.params).toMatchObject({
+        page: 1,
+        per_page: 10,
+        currency: "CLP",
+      });
       return [200, movementsListFixture];
     });
 
@@ -465,7 +471,9 @@ describe("PaykuWallet payouts.verifyNotify", () => {
       },
     });
 
-    const result = await wallet.payouts.verifyNotify(payoutNotifySuccessFixture);
+    const result = await wallet.payouts.verifyNotify(
+      payoutNotifySuccessFixture,
+    );
 
     expect(result.valid).toBe(true);
     if (result.valid) {
@@ -483,16 +491,19 @@ describe("PaykuWallet payouts.verifyNotify", () => {
       },
     });
 
-    const result = await wallet.payouts.verifyNotify(payoutNotifyRejectedFixture, {
-      useV3: true,
-    });
+    const result = await wallet.payouts.verifyNotify(
+      payoutNotifyRejectedFixture,
+      {
+        useV3: true,
+      },
+    );
 
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.payout.status).toBe("banking_error");
-      expect((result.payout as { reason_rejection?: string }).reason_rejection).toBe(
-        "Cuenta inexistente",
-      );
+      expect(
+        (result.payout as { reason_rejection?: string }).reason_rejection,
+      ).toBe("Cuenta inexistente");
     }
   });
 
@@ -549,7 +560,9 @@ describe("PaykuWallet payouts.verifyNotify", () => {
       },
     });
 
-    const result = await wallet.payouts.verifyNotify(payoutNotifySuccessFixture);
+    const result = await wallet.payouts.verifyNotify(
+      payoutNotifySuccessFixture,
+    );
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -566,9 +579,12 @@ describe("PaykuWallet payouts.verifyNotify", () => {
       },
     });
 
-    const result = await wallet.payouts.verifyNotify(payoutNotifySuccessFixture, {
-      expectedOrder: "different-order",
-    });
+    const result = await wallet.payouts.verifyNotify(
+      payoutNotifySuccessFixture,
+      {
+        expectedOrder: "different-order",
+      },
+    );
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -581,7 +597,9 @@ describe("PaykuWallet payouts.verifyNotify", () => {
       status: "register not found",
     });
 
-    const result = await wallet.payouts.verifyNotify(payoutNotifySuccessFixture);
+    const result = await wallet.payouts.verifyNotify(
+      payoutNotifySuccessFixture,
+    );
 
     expect(result.valid).toBe(false);
     if (!result.valid) {

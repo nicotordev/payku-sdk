@@ -23,6 +23,9 @@ export class PaykuVenezuela extends PaykuCountryBase {
     );
     this.wallet = new PaykuSharedWallet(core.wallet, "VE");
     this.banks = new PaykuScopedBanks(core.banks, "VE");
-    this.paymentMethods = new PaykuScopedPaymentMethods(core.paymentMethods, "VE");
+    this.paymentMethods = new PaykuScopedPaymentMethods(
+      core.paymentMethods,
+      "VE",
+    );
   }
 }

@@ -110,7 +110,7 @@
     "build": "rm -rf dist && bun build ./src/index.ts --outdir=./dist --target=node --format=esm --external axios --external crypto-js && bun build ./src/zod/index.ts --outdir=./dist/zod --target=node --format=esm --external zod && tsc",
     "test": "bun run test:unit",
     "test:unit": "bun test src/__tests__ src/http",
-    "test:smoke": "bun test --path-ignore-patterns '' src/__tests__/integration/credentials.test.ts src/__tests__/integration/banks.test.ts src/__tests__/integration/payment-methods.test.ts src/__tests__/integration/transactions.test.ts",
+    "test:smoke": "bun test --path-ignore-patterns '' src/__tests__/integration/credentials.test.ts src/__tests__/integration/banks.test.ts src/__tests__/integration/payment-methods.test.ts src/__tests__/integration/transactions.test.ts src/__tests__/integration/marketplace.test.ts src/__tests__/integration/mall.test.ts src/__tests__/integration/wallet.test.ts src/__tests__/integration/escrow.test.ts src/__tests__/integration/conciliation.test.ts",
     "test:integration": "bun test --path-ignore-patterns '' src/__tests__/integration",
     "docs:api": "typedoc",
     "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
