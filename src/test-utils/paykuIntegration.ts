@@ -4,6 +4,8 @@ import Payku from "../clients/payku";
 import type { PaykuChile } from "../clients/payku.chile";
 import {
   isPaykuError,
+  PaykuAPIError,
+  PaykuAuthenticationError,
   PaykuError,
   type PaykuAPIErrorLogEvent,
   type PaykuClientOptions,
@@ -127,10 +129,30 @@ const CAPABILITY_UNAVAILABLE_PATTERNS = [
  * Detecta si un error devuelto por la API de Payku indica que la capability,
  * producto o módulo correspondiente no está habilitado para la cuenta Sandbox.
  *
- * NOTA: Fallos de autenticación (ej. tokens inválidos) NO son considerados
- * indisponibilidad de capability para evitar silenciar errores reales de credenciales.
+ * NOTA: Fallos de autenticación (ej. tokens inválidos, 401, rechazo de firma)
+ * y caídas de servidor (5xx) NO son considerados indisponibilidad de capability
+ * para evitar silenciar errores reales de credenciales o de infraestructura.
  */
 export function isCapabilityUnavailableError(error: unknown): boolean {
+  if (
+    error instanceof PaykuAuthenticationError ||
+    (error instanceof PaykuError && error.type === "AuthenticationError") ||
+    isSignRejection(error)
+  ) {
+    return false;
+  }
+
+  const statusCode =
+    error instanceof PaykuError
+      ? error.statusCode
+      : typeof (error as { statusCode?: unknown })?.statusCode === "number"
+        ? (error as { statusCode: number }).statusCode
+        : undefined;
+
+  if (statusCode === 401 || (statusCode !== undefined && statusCode >= 500)) {
+    return false;
+  }
+
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
     if (CAPABILITY_UNAVAILABLE_PATTERNS.some((p) => msg.includes(p))) {
