@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-01
+
 ### Security
 
 - `webhooks.verifyNotify` compara `payload.verification_key` con `transaction.payment.verification_key` cuando ambos existen (`verification_key_mismatch`), con HMAC y `crypto.timingSafeEqual`.
@@ -38,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validación `per_page` en `transactions.list` (máx. 4000).
 - `mapNotifyStatusToTransactionStatus` y mapeo `failed`→`rejected` en `verifyNotify`.
 - Validación de `expired` en create: requiere `urlreturn`, formato `YYYY-MM-DD HH:mm:ss`, margen > 5 min en `America/Santiago`.
+
+### Fixed
+
+- Build con Bun 1.4.2: evita un entry point con exports sin definir generado por Bun 1.4.0; prueba de importación de ambos entry points en Node.
 
 ## [1.2.0] - 2026-08-31
 

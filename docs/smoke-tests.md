@@ -54,6 +54,14 @@ bun run test:smoke
 
 ### Ejecutar toda la suite de integración
 
+La prueba de consumo crea una suscripción sin activar una tarjeta. En sandbox se
+observó que DELETE responde HTTP 200 con `type: "suscription"` y
+`message_error: "suscription status failed"`. La limpieza tolera únicamente ese
+rechazo si un GET posterior confirma el mismo ID en estado `register`, y emite
+`SANDBOX CLEANUP INCOMPLETE`. Esto no acredita la eliminación: puede quedar una
+suscripción pendiente de limpieza manual en sandbox. Los demás errores se
+propagan y la limpieza del cliente se intenta igualmente.
+
 ```bash
 bun run test:integration
 ```

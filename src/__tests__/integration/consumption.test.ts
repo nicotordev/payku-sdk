@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { PaykuError } from "../../errors";
+import { PaykuError, PaykuSubscriptionsError } from "../../errors";
 import {
   SANDBOX_LONG_TIMEOUT_MS,
   createSandboxChileClient,
@@ -70,7 +70,29 @@ describePaykuIntegration("integration / consumption", () => {
         expect(subscription.url).toMatch(/^https?:\/\//);
 
         tracker.register(async () => {
-          await payku.subscriptions.subscriptions.delete(subscription.id);
+          try {
+            await payku.subscriptions.subscriptions.delete(subscription.id);
+          } catch (error) {
+            // Observed in sandbox: an unactivated consumption subscription
+            // rejects DELETE. Do not generalize this to other provider errors.
+            if (
+              !(error instanceof PaykuSubscriptionsError) ||
+              error.statusCode !== 200 ||
+              error.type !== "suscription" ||
+              error.message !== "suscription status failed"
+            ) {
+              throw error;
+            }
+            const current = await payku.subscriptions.subscriptions.get(
+              subscription.id,
+            );
+            if (current.id !== subscription.id || current.status !== "register") {
+              throw error;
+            }
+            console.warn(
+              "SANDBOX CLEANUP INCOMPLETE: Payku rejected deletion of an unactivated consumption subscription (GET confirmed register). Manual sandbox cleanup may be required.",
+            );
+          }
         }, "delete consumption subscription");
 
         try {

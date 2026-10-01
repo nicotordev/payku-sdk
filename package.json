@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@nicotordev/payku",
-  "version": "1.2.0",
-  "packageManager": "bun@1.4.0",
+  "version": "1.3.0",
+  "packageManager": "bun@1.4.2",
   "description": "SDK en TypeScript para integrar Payku, la pasarela de pagos LATAM, en aplicaciones web",
   "homepage": "https://github.com/nicotordev/payku-sdk#readme",
   "repository": {
@@ -97,12 +97,12 @@
   "devEngines": {
     "runtime": {
       "name": "bun",
-      "version": ">=1.4.0",
+      "version": ">=1.4.2",
       "onFail": "error"
     },
     "packageManager": {
       "name": "bun",
-      "version": ">=1.4.0",
+      "version": ">=1.4.2",
       "onFail": "error"
     }
   },
